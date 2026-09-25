@@ -8,7 +8,7 @@ import GamesSection from '@/components/GamesSection';
 import BonfireScene from '@/components/BonfireScene';
 import KaraokeScene from '@/components/KaraokeScene';
 import ProgramTimeline from '@/components/ProgramTimeline';
-import { schedule } from '@/data/schedule';
+
 
 export default function Home() {
   return (

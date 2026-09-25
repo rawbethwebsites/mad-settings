@@ -95,8 +95,8 @@ export default function BonfireScene() {
           key={`star-${i}`}
           className="bonfire-star absolute w-1 h-1 bg-brand-cream rounded-full"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 60}%`,
+            left: `${(i * 37 + 11) % 100}%`,
+            top: `${(i * 23 + 7) % 60}%`,
             opacity: 0.3,
           }}
         />
@@ -121,7 +121,7 @@ export default function BonfireScene() {
           <div
             key={`ember-${i}`}
             className="ember absolute bottom-8 w-1.5 h-1.5 bg-brand-acid rounded-full"
-            style={{ left: `${Math.random() * 100}%`, bottom: `${Math.random() * 20}%` }}
+            style={{ left: `${(i * 41 + 13) % 100}%`, bottom: `${(i * 17 + 3) % 20}%` }}
           />
         ))}
       </div>

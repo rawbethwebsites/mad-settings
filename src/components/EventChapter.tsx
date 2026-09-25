@@ -41,7 +41,6 @@ export default function EventChapter({ id, time, headline, subheadline, children
       });
 
       // Headline words reveal one by one
-      const words = headline.split(' ');
       gsap.from('.chapter-headline-word', {
         y: 80,
         opacity: 0,
