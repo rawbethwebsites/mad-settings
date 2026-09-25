@@ -1,26 +1,179 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand-purple: #6D28D9;
+  --color-brand-acid: #BEF264;
+  --color-brand-cream: #FDFBF7;
+  --color-brand-black: #0A0A0A;
+  --color-brand-coral: #FB7185;
+  --color-brand-cyan: #22D3EE;
+  --font-display: var(--font-geist-sans);
+  --font-body: var(--font-geist-sans);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #FDFBF7;
+  --foreground: #0A0A0A;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #FDFBF7;
+  color: #0A0A0A;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .poster-border {
+    border: 4px solid #0A0A0A;
+  }
+  .poster-shadow {
+    box-shadow: 8px 8px 0px 0px #0A0A0A;
+  }
+  .text-outline {
+    -webkit-text-stroke: 2px #0A0A0A;
+    color: transparent;
+  }
+}
+
+/* ===== Keyframe Animations ===== */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(-3deg); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.85; }
+  50% { opacity: 0.95; }
+  75% { opacity: 0.8; }
+}
+@keyframes bounce-arrow {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(10px); opacity: 0.8; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+.animate-float-medium { animation: float-medium 4s ease-in-out infinite; }
+.animate-float-fast { animation: float-fast 3s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-flicker { animation: flicker 2s ease-in-out infinite; }
+.animate-bounce-arrow { animation: bounce-arrow 2s ease-in-out infinite; }
+
+/* Waveform bars for karaoke */
+.wave-bar {
+  animation: wave 0.8s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+/* Scroll progress bar */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6D28D9, #BEF264, #FB7185);
+  z-index: 100;
+  width: 0%;
+  transition: width 0.1s ease-out;
+}
+
+/* Floating mobile CTA */
+.mobile-cta {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: #6D28D9;
+  color: #FDFBF7;
+  border: 4px solid #0A0A0A;
+  box-shadow: 6px 6px 0px 0px #0A0A0A;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 14px;
+  letter-spacing: -0.02em;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.mobile-cta:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0px 0px #0A0A0A;
+}
+@media (min-width: 768px) {
+  .mobile-cta { display: none; }
+}
+
+/* Game card 3D tilt */
+.game-card {
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+.game-card:hover {
+  box-shadow: 12px 12px 0px 0px #0A0A0A;
+}
+
+/* Headline word reveal */
+.headline-word {
+  display: inline-block;
+  overflow: hidden;
+}
+.headline-word-inner {
+  display: inline-block;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-float-slow,
+  .animate-float-medium,
+  .animate-float-fast,
+  .animate-spin-slow,
+  .animate-pulse-glow,
+  .animate-flicker,
+  .animate-bounce-arrow,
+  .wave-bar {
+    animation: none !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FDFBF7;
+}
+::-webkit-scrollbar-thumb {
+  background: #6D28D9;
+  border-radius: 10px;
 }
