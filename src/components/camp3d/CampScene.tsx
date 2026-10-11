@@ -3,7 +3,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { sampleCamp, TENT_COLORS, type Vec3 } from "@/data/campWorld";
+import { sampleCamp, sampleDaylight, TENT_COLORS, type Vec3 } from "@/data/campWorld";
 import CampPeople, { Dj, Footballers, KaraokeCrowd } from "./CampPeople";
 import { TalkDirector } from "./CampTalk";
 
@@ -27,7 +27,8 @@ function Atmosphere({ progress }: { progress: ProgressRef }) {
     to.set(sample.skyB);
     color.copy(from).lerp(to, sample.mix);
     fog.color.copy(color);
-    fog.density = 0.016 + (1 - sample.fire) * 0.012;
+    const { day } = sampleDaylight(progress.current);
+    fog.density = (0.016 + (1 - sample.fire) * 0.012) * (1 - day * 0.55);
   });
 
   return null;
@@ -54,12 +55,19 @@ function CameraRig({ progress }: { progress: ProgressRef }) {
   return null;
 }
 
-function Ground() {
+const GRASS_NIGHT = new THREE.Color("#142414");
+const GRASS_DAY = new THREE.Color("#4f7a3a");
+
+function Ground({ progress }: { progress: ProgressRef }) {
+  const grass = useRef<THREE.MeshStandardMaterial>(null);
+  useFrame(() => {
+    grass.current?.color.copy(GRASS_NIGHT).lerp(GRASS_DAY, sampleDaylight(progress.current).day);
+  });
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[48, 48]} />
-        <meshStandardMaterial color="#142414" roughness={0.95} />
+        <meshStandardMaterial ref={grass} color="#142414" roughness={0.95} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 10]} receiveShadow>
         <planeGeometry args={[3.2, 22]} />
@@ -314,7 +322,11 @@ function FootballPitch() {
   );
 }
 
-function Stars() {
+function Stars({ progress }: { progress: ProgressRef }) {
+  const material = useRef<THREE.PointsMaterial>(null);
+  useFrame(() => {
+    if (material.current) material.current.opacity = 1 - Math.min(1, sampleDaylight(progress.current).day * 1.6);
+  });
   const positions = useMemo(() => {
     const arr = new Float32Array(500 * 3);
     for (let i = 0; i < 500; i += 1) {
@@ -333,17 +345,97 @@ function Stars() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color="#FDFBF7" size={0.11} sizeAttenuation />
+      <pointsMaterial ref={material} color="#FDFBF7" size={0.11} sizeAttenuation transparent depthWrite={false} />
     </points>
   );
 }
 
-function Moon() {
+function Moon({ progress }: { progress: ProgressRef }) {
+  const moon = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (!moon.current) return;
+    const night = 1 - sampleDaylight(progress.current).day;
+    moon.current.visible = night > 0.05;
+    (moon.current.material as THREE.MeshStandardMaterial).opacity = night;
+  });
   return (
-    <mesh position={[-12, 16, -10]}>
+    <mesh ref={moon} position={[-12, 16, -10]}>
       <sphereGeometry args={[1.4, 16, 16]} />
-      <meshStandardMaterial color="#FDFBF7" emissive="#FDFBF7" emissiveIntensity={0.7} />
+      <meshStandardMaterial color="#FDFBF7" emissive="#FDFBF7" emissiveIntensity={0.7} transparent />
     </mesh>
+  );
+}
+
+const SUN_WARM = new THREE.Color("#ff8a4c");
+const SUN_WHITE = new THREE.Color("#fff6e0");
+
+/** Sets behind the movie screen in the evening, rises over the pitch in the morning. */
+function Sun({ progress }: { progress: ProgressRef }) {
+  const sun = useRef<THREE.Mesh>(null);
+  const halo = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    const t = progress.current;
+    const { sun: height, glow } = sampleDaylight(t);
+    const evening = t < 0.5;
+    const x = evening ? -14 : 18;
+    const z = evening ? -46 : 52;
+    const y = -3 + height * 24;
+    const color = SUN_WHITE.clone().lerp(SUN_WARM, Math.max(glow, 1 - Math.min(1, height * 2)));
+    for (const m of [sun.current, halo.current]) {
+      if (!m) continue;
+      m.position.set(x, y, z);
+      m.visible = height > -0.2;
+      (m.material as THREE.MeshBasicMaterial).color.copy(color);
+    }
+    if (halo.current) (halo.current.material as THREE.MeshBasicMaterial).opacity = 0.18 + glow * 0.25;
+  });
+  return (
+    <group>
+      <mesh ref={sun}>
+        <sphereGeometry args={[2.4, 20, 16]} />
+        <meshBasicMaterial color="#fff6e0" fog={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={halo}>
+        <sphereGeometry args={[4.6, 20, 16]} />
+        <meshBasicMaterial color="#ffb37a" fog={false} transparent opacity={0.25} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+const SUNLIGHT_DAY = new THREE.Color("#fff3df");
+const SUNLIGHT_GOLD = new THREE.Color("#ff9a5a");
+const HEMI_NIGHT = new THREE.Color("#9bb7ff");
+const HEMI_DAY = new THREE.Color("#cfe6ff");
+
+function SkyLights({ progress }: { progress: ProgressRef }) {
+  const sunLight = useRef<THREE.DirectionalLight>(null);
+  const moonLight = useRef<THREE.DirectionalLight>(null);
+  const hemi = useRef<THREE.HemisphereLight>(null);
+  const ambient = useRef<THREE.AmbientLight>(null);
+  useFrame(() => {
+    const t = progress.current;
+    const { day, glow, sun } = sampleDaylight(t);
+    const evening = t < 0.5;
+    if (sunLight.current) {
+      sunLight.current.position.set(evening ? -14 : 18, Math.max(0.5, sun * 24), evening ? -46 : 52);
+      sunLight.current.intensity = day * 1.9;
+      sunLight.current.color.copy(SUNLIGHT_DAY).lerp(SUNLIGHT_GOLD, glow);
+    }
+    if (moonLight.current) moonLight.current.intensity = 0.55 * (1 - day);
+    if (hemi.current) {
+      hemi.current.intensity = 0.45 + day * 0.85;
+      hemi.current.color.copy(HEMI_NIGHT).lerp(HEMI_DAY, day);
+    }
+    if (ambient.current) ambient.current.intensity = 0.16 + day * 0.25;
+  });
+  return (
+    <>
+      <hemisphereLight ref={hemi} args={["#9bb7ff", "#1a120c", 0.45]} />
+      <directionalLight ref={moonLight} position={[-12, 18, -8]} intensity={0.55} color="#e8e4ff" />
+      <directionalLight ref={sunLight} position={[-14, 20, -46]} intensity={0} color="#fff3df" />
+      <ambientLight ref={ambient} intensity={0.16} />
+    </>
   );
 }
 
@@ -351,9 +443,9 @@ const CLOUD_PUFF = new THREE.IcosahedronGeometry(1, 1);
 const CLOUD_MAT = new THREE.MeshStandardMaterial({ color: "#3a3157", emissive: "#1b1430", roughness: 1, flatShading: true });
 const CLOUD_NIGHT = new THREE.Color("#4a3f6e");
 const CLOUD_DAWN = new THREE.Color("#ffd6e4");
-const CLOUD_DAY = new THREE.Color("#fdfbf7");
+const CLOUD_DAY = new THREE.Color("#ffffff");
 const GLOW_NIGHT = new THREE.Color("#2a2147");
-const GLOW_DAY = new THREE.Color("#8a6f8f");
+const GLOW_DAY = new THREE.Color("#a99fb0");
 
 function buildClouds() {
   let seed = 7;
@@ -383,16 +475,14 @@ function buildClouds() {
 
 const CLOUDS = buildClouds();
 
-/** Low-poly clouds drifting over the treeline: moonlit at night, candy-pink at dawn. */
+/** Low-poly clouds drifting over the treeline: white by day, pink at sunset and sunrise, moonlit at night. */
 function Clouds({ progress }: { progress: ProgressRef }) {
   const group = useRef<THREE.Group>(null);
 
   useFrame(({ clock }, delta) => {
-    const t = progress.current;
-    const rise = smoothstep(0.7, 0.86, t);
-    const noon = smoothstep(0.86, 1, t);
-    CLOUD_MAT.color.copy(CLOUD_NIGHT).lerp(CLOUD_DAWN, rise).lerp(CLOUD_DAY, noon);
-    CLOUD_MAT.emissive.copy(GLOW_NIGHT).lerp(GLOW_DAY, rise * (1 - noon * 0.6));
+    const { day, glow } = sampleDaylight(progress.current);
+    CLOUD_MAT.color.copy(CLOUD_NIGHT).lerp(CLOUD_DAY, day).lerp(CLOUD_DAWN, glow * 0.8);
+    CLOUD_MAT.emissive.copy(GLOW_NIGHT).lerp(GLOW_DAY, Math.max(day * 0.5, glow));
     if (!group.current) return;
     group.current.rotation.y += delta * 0.006;
     group.current.children.forEach((cloud, i) => {
@@ -423,10 +513,8 @@ export default function CampScene({ progress }: { progress: ProgressRef }) {
     <>
       <Atmosphere progress={progress} />
       <CameraRig progress={progress} />
-      <hemisphereLight args={["#9bb7ff", "#1a120c", 0.45]} />
-      <directionalLight position={[-12, 18, -8]} intensity={0.55} color="#e8e4ff" />
-      <ambientLight intensity={0.16} />
-      <Ground />
+      <SkyLights progress={progress} />
+      <Ground progress={progress} />
       <Forest />
       <TentRing />
       <Bonfire progress={progress} />
@@ -434,8 +522,9 @@ export default function CampScene({ progress }: { progress: ProgressRef }) {
       <KaraokeStage progress={progress} />
       <DjBooth />
       <FootballPitch />
-      <Stars />
-      <Moon />
+      <Stars progress={progress} />
+      <Moon progress={progress} />
+      <Sun progress={progress} />
       <Clouds progress={progress} />
       <CampPeople />
       <TalkDirector />

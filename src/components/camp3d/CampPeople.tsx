@@ -14,7 +14,7 @@ import { registerTalker } from "./CampTalk";
 const PERSON_SCALE = 0.8;
 
 type Pose = "walk" | "run" | "sit" | "ground" | "dance" | "sing" | "dj";
-type Hair = "short" | "afro" | "cap" | "bun" | "bald";
+type Hair = "short" | "afro" | "cap" | "bun" | "bald" | "braids";
 
 type Look = {
   skin: string;
@@ -32,32 +32,38 @@ const SHOE = "#111015";
 
 // Shared geometry: one allocation for every camper on the page.
 const GEO = {
-  thigh: new THREE.CylinderGeometry(0.078, 0.064, 0.45, 6),
-  shin: new THREE.CylinderGeometry(0.062, 0.05, 0.42, 6),
-  shoe: new THREE.BoxGeometry(0.11, 0.07, 0.24),
-  hips: new THREE.BoxGeometry(0.32, 0.16, 0.2),
-  chest: new THREE.CylinderGeometry(0.2, 0.16, 0.5, 6),
-  neck: new THREE.CylinderGeometry(0.05, 0.056, 0.1, 6),
-  head: new THREE.IcosahedronGeometry(0.12, 1),
-  upperArm: new THREE.CylinderGeometry(0.056, 0.048, 0.28, 6),
-  forearm: new THREE.CylinderGeometry(0.046, 0.04, 0.26, 6),
-  hand: new THREE.IcosahedronGeometry(0.046, 0),
-  hairShort: new THREE.SphereGeometry(0.128, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.52),
-  afro: new THREE.IcosahedronGeometry(0.17, 1),
-  brim: new THREE.BoxGeometry(0.2, 0.024, 0.13),
-  bun: new THREE.IcosahedronGeometry(0.06, 0),
-  mic: new THREE.CylinderGeometry(0.02, 0.014, 0.16, 6),
-  micHead: new THREE.IcosahedronGeometry(0.032, 0),
+  thigh: new THREE.CylinderGeometry(0.08, 0.062, 0.45, 10),
+  shin: new THREE.CylinderGeometry(0.06, 0.046, 0.42, 10),
+  shoe: new THREE.BoxGeometry(0.105, 0.075, 0.25),
+  sole: new THREE.BoxGeometry(0.115, 0.03, 0.26),
+  hips: new THREE.CylinderGeometry(0.165, 0.155, 0.18, 12),
+  chest: new THREE.CylinderGeometry(0.19, 0.155, 0.5, 12),
+  shoulderCap: new THREE.SphereGeometry(0.075, 10, 8),
+  neck: new THREE.CylinderGeometry(0.048, 0.056, 0.12, 10),
+  head: new THREE.SphereGeometry(0.12, 16, 12),
+  eye: new THREE.SphereGeometry(0.013, 6, 4),
+  nose: new THREE.ConeGeometry(0.022, 0.05, 6),
+  ear: new THREE.SphereGeometry(0.026, 6, 5),
+  upperArm: new THREE.CylinderGeometry(0.054, 0.046, 0.28, 10),
+  forearm: new THREE.CylinderGeometry(0.044, 0.036, 0.26, 10),
+  hand: new THREE.SphereGeometry(0.045, 8, 6),
+  hairShort: new THREE.SphereGeometry(0.127, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5),
+  afro: new THREE.IcosahedronGeometry(0.17, 2),
+  brim: new THREE.BoxGeometry(0.2, 0.022, 0.13),
+  bun: new THREE.SphereGeometry(0.06, 10, 8),
+  braid: new THREE.CylinderGeometry(0.022, 0.014, 0.34, 6),
+  mic: new THREE.CylinderGeometry(0.02, 0.014, 0.16, 8),
+  micHead: new THREE.SphereGeometry(0.032, 8, 6),
   log: new THREE.CylinderGeometry(0.17, 0.19, 1.5, 7),
   ball: new THREE.IcosahedronGeometry(0.11, 1),
 };
 
 const MATERIALS = new Map<string, THREE.MeshStandardMaterial>();
-function mat(color: string, roughness = 0.78) {
-  const key = `${color}:${roughness}`;
+function mat(color: string, roughness = 0.78, flat = false) {
+  const key = `${color}:${roughness}:${flat}`;
   let m = MATERIALS.get(key);
   if (!m) {
-    m = new THREE.MeshStandardMaterial({ color, roughness, flatShading: true });
+    m = new THREE.MeshStandardMaterial({ color, roughness, flatShading: flat });
     MATERIALS.set(key, m);
   }
   return m;
@@ -231,6 +237,7 @@ function Person({
 
     r.body.position.y = bodyY;
     r.torso.rotation.set(lean, 0, sway);
+    r.torso.scale.set(1, 1 + Math.sin(t * 1.7) * 0.012, 1 + Math.sin(t * 1.7) * 0.02);
     r.head.rotation.set(headX, headY, 0);
     for (let i = 0; i < 2; i += 1) {
       r.hip[i]?.rotation.set(hip[i], 0, 0);
@@ -270,7 +277,8 @@ function Person({
               }}
             >
               <mesh geometry={GEO.shin} material={pants} position={[0, -0.21, 0]} />
-              <mesh geometry={GEO.shoe} material={shoe} position={[0, -0.43, 0.05]} />
+              <mesh geometry={GEO.shoe} material={shoe} position={[0, -0.415, 0.05]} />
+              <mesh geometry={GEO.sole} material={mat("#ECE8E0", 0.6)} position={[0, -0.455, 0.05]} />
             </group>
           </group>
         ))}
@@ -281,8 +289,11 @@ function Person({
             rig.current.torso = g;
           }}
         >
-          <mesh geometry={GEO.hips} material={pants} position={[0, 0.05, 0]} scale={[build, 1, 1]} />
+          <mesh geometry={GEO.hips} material={pants} position={[0, 0.05, 0]} scale={[build, 1, 0.66]} />
           <mesh geometry={GEO.chest} material={shirt} position={[0, 0.33, 0]} scale={[build, 1, 0.62]} />
+          {SIDES.map((side) => (
+            <mesh key={side} geometry={GEO.shoulderCap} material={shirt} position={[side * 0.2 * build, 0.53, 0]} scale={[1, 0.8, 0.9]} />
+          ))}
           <mesh geometry={GEO.neck} material={skin} position={[0, 0.62, 0]} />
           <group
             position={[0, 0.66, 0]}
@@ -290,7 +301,18 @@ function Person({
               rig.current.head = g;
             }}
           >
-            <mesh geometry={GEO.head} material={skin} position={[0, 0.11, 0.01]} scale={[0.95, 1.1, 1]} />
+            <mesh geometry={GEO.head} material={skin} position={[0, 0.11, 0.01]} scale={[0.92, 1.12, 1]} />
+            {SIDES.map((side) => (
+              <group key={side}>
+                <mesh geometry={GEO.eye} material={mat("#0b0705", 0.3)} position={[side * 0.042, 0.13, 0.115]} />
+                <mesh geometry={GEO.ear} material={skin} position={[side * 0.11, 0.11, 0.0]} scale={[0.5, 1, 0.8]} />
+              </group>
+            ))}
+            <mesh geometry={GEO.nose} material={skin} position={[0, 0.095, 0.128]} rotation={[Math.PI / 2, 0, 0]} />
+            {look.hair === "braids" &&
+              [-0.07, -0.025, 0.025, 0.07].map((x) => (
+                <mesh key={x} geometry={GEO.braid} material={hair} position={[x, 0.02, -0.09]} rotation={[0.25, 0, x * 1.5]} />
+              ))}
             {look.hair !== "bald" && look.hair !== "afro" && (
               <mesh geometry={GEO.hairShort} material={hair} position={[0, 0.13, -0.01]} rotation={[-0.25, 0, 0]} />
             )}
@@ -338,7 +360,7 @@ function FireCircle() {
   const logs = [150, 215, 280, 345];
   const looks: Look[] = [
     { skin: SKIN[0], shirt: "#6D28D9", pants: "#1d1d2a", hair: "afro" },
-    { skin: SKIN[3], shirt: "#FDFBF7", pants: "#2a3a5a", hair: "bun", build: 0.92 },
+    { skin: SKIN[3], shirt: "#FDFBF7", pants: "#2a3a5a", hair: "braids", build: 0.92 },
     { skin: SKIN[1], shirt: "#BEF264", pants: "#22222e", hair: "cap" },
     { skin: SKIN[5], shirt: "#FB7185", pants: "#1d1d2a", hair: "short", build: 0.94 },
     { skin: SKIN[4], shirt: "#22D3EE", pants: "#3a3226", hair: "short", build: 1.08 },
@@ -359,7 +381,7 @@ function FireCircle() {
           <mesh
             key={deg}
             geometry={GEO.log}
-            material={mat("#4a2c16", 1)}
+            material={mat("#4a2c16", 1, true)}
             position={[Math.cos(a) * 2.75, 0.17, Math.sin(a) * 2.75]}
             rotation={[0, -a, Math.PI / 2]}
           />
@@ -416,7 +438,7 @@ function MovieCrowd() {
           key={i}
           position={p}
           rotation={Math.PI + (p[0] > 0 ? 0.08 : -0.08)}
-          look={{ skin: pick(SKIN, i + 2), shirt: pick(["#2b2b3a", "#6D28D9", "#22D3EE", "#FB7185", "#1d1d2a", "#BEF264"], i), pants: "#1d1d2a", hair: pick(["afro", "short", "bun", "cap", "short", "bald"] as const, i) }}
+          look={{ skin: pick(SKIN, i + 2), shirt: pick(["#2b2b3a", "#6D28D9", "#22D3EE", "#FB7185", "#1d1d2a", "#BEF264"], i), pants: "#1d1d2a", hair: pick(["afro", "short", "braids", "cap", "bun", "bald"] as const, i) }}
           pose="ground"
           phase={i * 1.7}
         />
@@ -429,7 +451,7 @@ function MovieCrowd() {
 export function KaraokeCrowd() {
   return (
     <group>
-      <Person position={[0.55, 0.24, 0.35]} look={{ skin: SKIN[3], shirt: "#BEF264", pants: "#1d1d2a", hair: "bun", build: 0.92 }} pose="sing" mic />
+      <Person position={[0.55, 0.24, 0.35]} look={{ skin: SKIN[3], shirt: "#BEF264", pants: "#1d1d2a", hair: "braids", build: 0.92 }} pose="sing" mic />
       <Person position={[-1.15, 0.24, -0.75]} rotation={0.25} look={{ skin: SKIN[5], shirt: "#22D3EE", pants: "#1d1d2a", hair: "afro" }} pose="dance" phase={0.7} />
       <Person position={[1.6, 0.24, -0.95]} rotation={-0.3} look={{ skin: SKIN[2], shirt: "#FB7185", pants: "#2a3a5a", hair: "cap", build: 1.05 }} pose="dance" phase={2.4} />
       {(
@@ -481,7 +503,7 @@ export function Footballers() {
 
   return (
     <group>
-      <mesh ref={ball} geometry={GEO.ball} material={mat("#FDFBF7", 0.5)} />
+      <mesh ref={ball} geometry={GEO.ball} material={mat("#FDFBF7", 0.5, true)} />
       {players.map((pl, i) => {
         const path: PathFn = (time) => {
           const at = (s: number) => {
