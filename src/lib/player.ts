@@ -11,6 +11,7 @@ export interface Player {
     search: number;
     puzzles: number;
     vault: number;
+    same: number;
   };
   vaultPieces: string[]; // code pieces collected from other games
   badges: string[]; // achievement badges
@@ -30,7 +31,7 @@ export function createPlayer(name: string, avatar: string, roomCode: string): Pl
     avatar,
     roomCode: roomCode.toUpperCase(),
     joinedAt: Date.now(),
-    scores: { bingo: 0, search: 0, puzzles: 0, vault: 0 },
+    scores: { bingo: 0, search: 0, puzzles: 0, vault: 0, same: 0 },
     vaultPieces: [],
     badges: [],
   };
@@ -60,7 +61,8 @@ export function updatePlayer(updates: Partial<Player>): Player | null {
 export function addScore(game: keyof Player['scores'], points: number): Player | null {
   const player = getPlayer();
   if (!player) return null;
-  player.scores[game] += points;
+  // Players saved before a game existed have no slot for it yet
+  player.scores[game] = (player.scores[game] ?? 0) + points;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
   return player;
 }

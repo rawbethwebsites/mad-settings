@@ -6,10 +6,11 @@ import { getPlayer, getTotalScore, clearPlayer, Player } from '@/lib/player';
 import { VAULT_PIECES } from '@/data/gameContent';
 
 const GAMES = [
-  { id: 'bingo', name: 'SMART BINGO', emoji: '🎯', tagline: 'Classic. Upgraded.', path: '/games/bingo', color: 'bg-brand-purple' },
-  { id: 'search', name: 'ULTIMATE SEARCH', emoji: '🔍', tagline: 'Find it. Scan it.', path: '/games/search', color: 'bg-brand-acid' },
-  { id: 'puzzles', name: 'PUZZLE RUSH', emoji: '🧩', tagline: 'Think fast.', path: '/games/puzzles', color: 'bg-brand-coral' },
-  { id: 'vault', name: 'THE VAULT', emoji: '🔐', tagline: 'Crack the code.', path: '/games/vault', color: 'bg-brand-black' },
+  { id: 'bingo', name: 'SMART BINGO', emoji: '🎯', tagline: 'Classic. Upgraded.', path: '/games/bingo', color: 'bg-brand-purple text-brand-cream' },
+  { id: 'search', name: 'ULTIMATE SEARCH', emoji: '🔍', tagline: 'Find it. Scan it.', path: '/games/search', color: 'bg-brand-acid text-brand-black' },
+  { id: 'puzzles', name: 'PUZZLE RUSH', emoji: '🧩', tagline: 'Think fast.', path: '/games/puzzles', color: 'bg-brand-coral text-brand-black' },
+  { id: 'vault', name: 'THE VAULT', emoji: '🔐', tagline: 'Crack the code.', path: '/games/vault', color: 'bg-brand-black text-brand-cream' },
+  { id: 'same', name: "DON'T SAY IT", emoji: '🤐', tagline: "2v2. Don't say the same thing.", path: '/games/same', color: 'bg-brand-cyan text-brand-black' },
 ];
 
 export default function GamesHub() {
@@ -61,11 +62,11 @@ export default function GamesHub() {
           </div>
 
           {/* Individual scores */}
-          <div className="grid grid-cols-4 gap-2 mt-6">
+          <div className="grid grid-cols-5 gap-2 mt-6">
             {GAMES.map(g => (
               <div key={g.id} className="text-center p-2 border-2 border-brand-cream/20">
                 <div className="text-lg">{g.emoji}</div>
-                <div className="font-display font-black text-xl">{player.scores[g.id as keyof typeof player.scores]}</div>
+                <div className="font-display font-black text-xl">{player.scores[g.id as keyof typeof player.scores] ?? 0}</div>
               </div>
             ))}
           </div>
@@ -108,7 +109,7 @@ export default function GamesHub() {
             <button
               key={g.id}
               onClick={() => router.push(g.path)}
-              className={`group relative p-8 poster-border poster-shadow ${g.color} text-brand-cream text-left hover:-translate-y-2 hover:-translate-x-2 transition-all overflow-hidden`}
+              className={`group relative p-8 poster-border poster-shadow ${g.color} text-left hover:-translate-y-2 hover:-translate-x-2 transition-all overflow-hidden`}
             >
               <div className="absolute top-0 right-0 text-7xl opacity-20 group-hover:opacity-30 transition-opacity">
                 {g.emoji}
