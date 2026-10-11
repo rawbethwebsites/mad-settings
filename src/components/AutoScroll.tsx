@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { talkState } from "@/lib/talkState";
 
 const IDLE_MS = 5000;
 const MAX_SPEED = 55; // px per second
 const EASE_IN_MS = 1500;
+const READING_SPEED = 0.15; // fraction of full speed while a camper is talking
 
 /**
  * Tour mode: once the visitor goes quiet, the page drifts down on its own so the
@@ -19,6 +21,7 @@ export default function AutoScroll() {
     let startedAt = 0;
     let last = 0;
     let carry = 0;
+    let pace = 1;
 
     const stop = () => {
       cancelAnimationFrame(frame);
@@ -34,7 +37,10 @@ export default function AutoScroll() {
       const dt = Math.min(64, now - last);
       last = now;
       const ease = Math.min(1, (now - startedAt) / EASE_IN_MS);
-      carry += (MAX_SPEED * ease * ease * dt) / 1000;
+      // Ease almost to a stop while a speech bubble is up, so it can be read.
+      const target = talkState.speaking ? READING_SPEED : 1;
+      pace += (target - pace) * Math.min(1, dt / 400);
+      carry += (MAX_SPEED * ease * ease * pace * dt) / 1000;
       const whole = Math.floor(carry);
       if (whole > 0) {
         carry -= whole;

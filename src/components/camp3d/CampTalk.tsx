@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { talkState } from "@/lib/talkState";
 import { TALK_LINES, TALK_ROTATION, TALK_TAGS, type TalkLine } from "@/data/campTalk";
 
 /**
@@ -93,7 +94,7 @@ function readingTime(line: TalkLine) {
   return Math.min(9000, Math.max(4500, 1800 + words * 330));
 }
 
-const GAP_MS = 1400;
+const GAP_MS = 2800;
 
 function nextLine(state: { turn: number; used: Record<string, number> }) {
   const tag = TALK_ROTATION[state.turn % TALK_ROTATION.length];
@@ -112,7 +113,7 @@ export function TalkDirector() {
   const counter = useRef(0);
   const pointer = useRef<{ x: number; y: number; clicked: boolean; moved: boolean }>({ x: 0, y: 0, clicked: false, moved: false });
   const lastHover = useRef(0);
-  const lastRoomCheck = useRef(0);
+  const lastSpot = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -137,6 +138,7 @@ export function TalkDirector() {
     const line = nextLine(state.current);
     speaker.current = id;
     speaking.current = true;
+    talkState.speaking = true;
     phaseEnds.current = now + readingTime(line) + bonus;
     counter.current += 1;
     bubble.show?.({ key: counter.current, line });
@@ -145,6 +147,7 @@ export function TalkDirector() {
   const hush = (now: number) => {
     speaker.current = null;
     speaking.current = false;
+    talkState.speaking = false;
     phaseEnds.current = now + GAP_MS;
     bubble.show?.(null);
   };
@@ -192,19 +195,13 @@ export function TalkDirector() {
       el.style.opacity = "0";
       return;
     }
+    // Once a line starts it stays up for its full reading time. If the camper
+    // drifts out of shot, the bubble holds its last spot on screen.
     const s = headOnScreen(talker, camera, 1.1);
-    if (!s.visible) {
-      // Walked off-shot: let someone else pick up the conversation.
-      if (speaking.current && phaseEnds.current - now > 600) phaseEnds.current = now + 300;
-      el.style.opacity = "0";
-      return;
-    }
-    const { x, y } = toScreen(s, size);
-    // Page copy scrolled over them: wrap up and hand over to someone in the open.
-    if (now - lastRoomCheck.current > 400) {
-      lastRoomCheck.current = now;
-      if (!roomForBubble(x, y) && phaseEnds.current - now > 300) phaseEnds.current = now + 200;
-    }
+    let { x, y } = s.visible ? toScreen(s, size) : lastSpot.current;
+    x = Math.min(Math.max(x, 24), size.width - 24);
+    y = Math.min(Math.max(y, 150), size.height - 40);
+    lastSpot.current = { x, y };
     const shift = Math.min(Math.max(x, BUBBLE_HALF + 12), size.width - BUBBLE_HALF - 12) - x;
     el.style.opacity = "1";
     el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
