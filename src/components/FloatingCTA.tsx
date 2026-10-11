@@ -36,11 +36,11 @@ export default function FloatingCTA() {
   return (
     <a
       ref={ctaRef}
-      href="/join"
+      href="/register"
       className="mobile-cta"
-      aria-label="Join the games"
+      aria-label="Register for camp"
     >
-      🔥 JOIN GAME
+      REGISTER
     </a>
   );
 }
