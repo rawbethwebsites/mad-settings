@@ -171,15 +171,14 @@ export function TalkDirector() {
       if (speaking.current) {
         hush(now);
       } else {
-        const candidates: { id: string; dist: number }[] = [];
+        const inView: { id: string; dist: number; x: number; y: number }[] = [];
         talkers.forEach((t, id) => {
           const s = headOnScreen(t, camera, 0.62);
-          if (!s.visible) return;
-          const at = toScreen(s, size);
-          if (roomForBubble(at.x, at.y)) candidates.push({ id, dist: s.dist });
+          if (s.visible) inView.push({ id, dist: s.dist, ...toScreen(s, size) });
         });
+        inView.sort((a, b) => a.dist - b.dist);
+        const candidates = inView.slice(0, 10).filter((c) => roomForBubble(c.x, c.y));
         if (candidates.length) {
-          candidates.sort((a, b) => a.dist - b.dist);
           const pickFrom = candidates.slice(0, 4);
           say(pickFrom[Math.floor(Math.random() * pickFrom.length)].id, now);
         } else {

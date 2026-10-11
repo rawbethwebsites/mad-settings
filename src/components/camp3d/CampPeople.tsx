@@ -268,6 +268,9 @@ const PARTS: PartDef[] = [
 ];
 
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+const frustum = new THREE.Frustum();
+const viewProj = new THREE.Matrix4();
+const probe = new THREE.Sphere(new THREE.Vector3(), 1.3);
 const tmpColor = new THREE.Color();
 
 function Crowd() {
@@ -333,21 +336,38 @@ function Crowd() {
     };
   }, [heads, layout]);
 
-  useFrame(({ clock }) => {
+  const frame = useRef(0);
+
+  useFrame(({ clock, camera }) => {
     const time = clock.elapsedTime;
     const { root, body, hip, knee, torso, head, shoulder, elbow, parts } = rig;
+    frame.current += 1;
+    viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(viewProj);
 
     for (let i = 0; i < PEOPLE.length; i += 1) {
       const p = PEOPLE[i];
       const build = p.look.build ?? 1;
+      let px = p.x;
+      let pz = p.z;
+      let ry = p.ry;
       if (p.path) {
         const at = p.path(time);
-        root.position.set(at.x, p.y, at.z);
-        root.rotation.set(0, at.ry, 0);
-      } else {
-        root.position.set(p.x, p.y, p.z);
-        root.rotation.set(0, p.ry, 0);
+        px = at.x;
+        pz = at.z;
+        ry = at.ry;
       }
+      // Only pose campers the camera can see; far ones move at a lower rate.
+      probe.center.set(px, p.y + 0.7, pz);
+      if (!frustum.intersectsSphere(probe)) {
+        heads[i].position.set(px, p.y + 1.35, pz); // rough head spot for the bubbles
+        continue;
+      }
+      const dist = camera.position.distanceTo(probe.center);
+      const every = dist > 26 ? 3 : dist > 15 ? 2 : 1;
+      if (every > 1 && (frame.current + i) % every !== 0) continue;
+      root.position.set(px, p.y, pz);
+      root.rotation.set(0, ry, 0);
       root.scale.setScalar(PERSON_SCALE);
 
       // Body shape for this camper.

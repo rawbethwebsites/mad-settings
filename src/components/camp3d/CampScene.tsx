@@ -10,6 +10,10 @@ import { TalkDirector } from "./CampTalk";
 
 type ProgressRef = React.MutableRefObject<number>;
 
+/** Phones and small laptops get a lighter scene so it stays smooth. */
+const LOW_POWER =
+  typeof window !== "undefined" && (window.innerWidth < 768 || (navigator.hardwareConcurrency ?? 8) <= 4);
+
 function Atmosphere({ progress }: { progress: ProgressRef }) {
   const { scene } = useThree();
   const color = useMemo(() => new THREE.Color("#1b1430"), []);
@@ -29,7 +33,7 @@ function Atmosphere({ progress }: { progress: ProgressRef }) {
     color.copy(from).lerp(to, sample.mix);
     fog.color.copy(color);
     const { day } = sampleDaylight(progress.current);
-    fog.density = (0.016 + (1 - sample.fire) * 0.012) * (1 - day * 0.55);
+    fog.density = (0.012 + (1 - sample.fire) * 0.006) * (1 - day * 0.4);
   });
 
   return null;
@@ -56,7 +60,7 @@ function CameraRig({ progress }: { progress: ProgressRef }) {
   return null;
 }
 
-const GRASS_NIGHT = new THREE.Color("#142414");
+const GRASS_NIGHT = new THREE.Color("#22401f");
 const GRASS_DAY = new THREE.Color("#4f7a3a");
 
 function Ground({ progress }: { progress: ProgressRef }) {
@@ -331,7 +335,7 @@ function Bonfire({ progress }: { progress: ProgressRef }) {
         <pointsMaterial color="#ffb347" size={0.07} transparent opacity={0.9} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </points>
       <pointLight ref={light} position={[0, 1.3, 0]} color="#ff7a2a" intensity={3} distance={24} />
-      <pointLight ref={fill} position={[0, 0.5, 0]} color="#ff4a12" intensity={1} distance={8} />
+      {!LOW_POWER && <pointLight ref={fill} position={[0, 0.5, 0]} color="#ff4a12" intensity={1} distance={8} />}
     </group>
   );
 }
@@ -705,17 +709,17 @@ function SkyLights({ progress }: { progress: ProgressRef }) {
       sunLight.current.intensity = day * 1.9;
       sunLight.current.color.copy(SUNLIGHT_DAY).lerp(SUNLIGHT_GOLD, glow);
     }
-    if (moonLight.current) moonLight.current.intensity = 0.55 * (1 - day);
+    if (moonLight.current) moonLight.current.intensity = 1.1 * (1 - day);
     if (hemi.current) {
-      hemi.current.intensity = 0.45 + day * 0.85;
+      hemi.current.intensity = 0.85 + day * 0.45;
       hemi.current.color.copy(HEMI_NIGHT).lerp(HEMI_DAY, day);
     }
-    if (ambient.current) ambient.current.intensity = 0.16 + day * 0.25;
+    if (ambient.current) ambient.current.intensity = 0.32 + day * 0.12;
   });
   return (
     <>
       <hemisphereLight ref={hemi} args={["#9bb7ff", "#1a120c", 0.45]} />
-      <directionalLight ref={moonLight} position={[-12, 18, -8]} intensity={0.55} color="#e8e4ff" />
+      <directionalLight ref={moonLight} position={[-12, 18, -8]} intensity={1.1} color="#c8d4ff" />
       <directionalLight ref={sunLight} position={[-14, 20, -46]} intensity={0} color="#fff3df" />
       <ambientLight ref={ambient} intensity={0.16} />
     </>
