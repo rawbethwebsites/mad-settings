@@ -41,7 +41,7 @@ export default function JoinPage() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream flex items-center justify-center p-6">
+    <main className="min-h-screen bg-brand-cream text-brand-black flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -87,7 +87,7 @@ export default function JoinPage() {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Mike"
               maxLength={15}
-              className="w-full px-4 py-3 border-4 border-brand-black font-display font-bold text-xl uppercase focus:outline-none focus:bg-brand-acid/20"
+              className="w-full px-4 py-3 border-4 border-brand-black bg-white text-brand-black placeholder:text-brand-black/40 font-display font-bold text-xl uppercase focus:outline-none focus:bg-brand-acid/20"
             />
           </div>
 
@@ -125,7 +125,7 @@ export default function JoinPage() {
                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                 placeholder="e.g. MAD7"
                 maxLength={4}
-                className="w-full px-4 py-3 border-4 border-brand-black font-display font-black text-2xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
+                className="w-full px-4 py-3 border-4 border-brand-black bg-white text-brand-black placeholder:text-brand-black/40 font-display font-black text-2xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
               />
             </div>
           ) : (

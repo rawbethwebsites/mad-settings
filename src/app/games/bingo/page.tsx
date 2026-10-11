@@ -84,7 +84,7 @@ export default function BingoGame() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream p-4 md:p-6">
+    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">

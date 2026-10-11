@@ -114,7 +114,7 @@ export default function PuzzlesGame() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream p-4 md:p-6">
+    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -174,7 +174,7 @@ export default function PuzzlesGame() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 placeholder="Your answer..."
                 disabled={feedback === 'correct'}
-                className="flex-1 px-4 py-4 border-4 border-brand-black font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
+                className="flex-1 px-4 py-4 border-4 border-brand-black bg-white text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
               />
               <button
                 onClick={handleSubmit}
