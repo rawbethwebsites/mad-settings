@@ -11,16 +11,22 @@ import { TALK_LINES, TALK_ROTATION, TALK_TAGS, type TalkLine } from "@/data/camp
  * (outside the canvas) above their head every frame.
  */
 
-type Talker = { root: THREE.Object3D; head: THREE.Object3D };
+type Talker = { head: THREE.Object3D };
+type Picker = (raycaster: THREE.Raycaster) => string | undefined;
 
 const talkers = new Map<string, Talker>();
+let picker: Picker | null = null;
 
 export function registerTalker(id: string, talker: Talker) {
-  talker.root.userData.talkId = id;
   talkers.set(id, talker);
   return () => {
     talkers.delete(id);
   };
+}
+
+/** The crowd tells the director which camper sits under the pointer. */
+export function setTalkPicker(fn: Picker | null) {
+  picker = fn;
 }
 
 type Said = { key: number; line: TalkLine };
@@ -81,9 +87,13 @@ const toScreen = (s: { x: number; y: number }, size: { width: number; height: nu
   y: ((1 - s.y) / 2) * size.height,
 });
 
-const SHOW_MS = 6500;
+/** Long enough to read comfortably (~3 words a second), never hanging around. */
+function readingTime(line: TalkLine) {
+  const words = line.text.split(/\s+/).length + (line.cta ? 2 : 0);
+  return Math.min(9000, Math.max(4500, 1800 + words * 330));
+}
+
 const GAP_MS = 1400;
-const HOVER_HOLD_MS = 4500;
 
 function nextLine(state: { turn: number; used: Record<string, number> }) {
   const tag = TALK_ROTATION[state.turn % TALK_ROTATION.length];
@@ -123,12 +133,13 @@ export function TalkDirector() {
     };
   }, []);
 
-  const say = (id: string, now: number, hold = SHOW_MS) => {
+  const say = (id: string, now: number, bonus = 0) => {
+    const line = nextLine(state.current);
     speaker.current = id;
     speaking.current = true;
-    phaseEnds.current = now + hold;
+    phaseEnds.current = now + readingTime(line) + bonus;
     counter.current += 1;
-    bubble.show?.({ key: counter.current, line: nextLine(state.current) });
+    bubble.show?.({ key: counter.current, line });
   };
 
   const hush = (now: number) => {
@@ -148,13 +159,8 @@ export function TalkDirector() {
       p.moved = false;
       ndc.set(p.x, p.y);
       raycaster.setFromCamera(ndc, camera);
-      const hits = raycaster.intersectObjects(
-        Array.from(talkers.values(), (t) => t.root),
-        true,
-      );
-      let id: string | undefined;
-      for (let o: THREE.Object3D | null = hits[0]?.object ?? null; o && !id; o = o.parent) id = o.userData.talkId;
-      if (id && (id !== speaker.current || p.clicked)) say(id, now, HOVER_HOLD_MS + (p.clicked ? 2000 : 0));
+      const id = picker?.(raycaster);
+      if (id && (id !== speaker.current || p.clicked)) say(id, now, p.clicked ? 1500 : 0);
       p.clicked = false;
     }
 

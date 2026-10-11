@@ -3,8 +3,9 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { sampleCamp, sampleDaylight, TENT_COLORS, type Vec3 } from "@/data/campWorld";
-import CampPeople, { Dj, Footballers, KaraokeCrowd } from "./CampPeople";
+import { sampleCamp, sampleDaylight, type Vec3 } from "@/data/campWorld";
+import CampPeople from "./CampPeople";
+import { DJ_BOOTH, PITCH, STAGE, TENTS, treeAllowed } from "@/data/campLayout";
 import { TalkDirector } from "./CampTalk";
 
 type ProgressRef = React.MutableRefObject<number>;
@@ -69,45 +70,54 @@ function Ground({ progress }: { progress: ProgressRef }) {
         <circleGeometry args={[48, 48]} />
         <meshStandardMaterial ref={grass} color="#142414" roughness={0.95} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 10]} receiveShadow>
-        <planeGeometry args={[3.2, 22]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 8.4]} receiveShadow>
+        <planeGeometry args={[3.2, 15]} />
         <meshStandardMaterial color="#3a2a18" roughness={1} />
       </mesh>
     </group>
   );
 }
 
+const TREE_SPOTS = (() => {
+  const spots: { x: number; z: number; ry: number; s: number }[] = [];
+  const count = 70;
+  for (let i = 0; i < count; i += 1) {
+    const angle = (i / count) * Math.PI * 2;
+    const radius = 21 + (i % 5) * 1.4 + ((i * 7) % 3) * 0.4;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    if (treeAllowed(x, z)) spots.push({ x, z, ry: angle, s: 0.8 + (i % 4) * 0.22 });
+  }
+  return spots;
+})();
+
 function Forest() {
   const foliage = useRef<THREE.InstancedMesh>(null);
   const trunks = useRef<THREE.InstancedMesh>(null);
-  const count = 42;
 
   useLayoutEffect(() => {
     const dummy = new THREE.Object3D();
-    for (let i = 0; i < count; i += 1) {
-      const angle = (i / count) * Math.PI * 2;
-      const radius = 17.5 + (i % 5) * 1.35;
-      dummy.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-      dummy.rotation.set(0, angle, 0);
-      dummy.scale.setScalar(0.75 + (i % 4) * 0.22);
+    TREE_SPOTS.forEach((t, i) => {
+      dummy.position.set(t.x, 0, t.z);
+      dummy.rotation.set(0, t.ry, 0);
+      dummy.scale.setScalar(t.s);
       dummy.updateMatrix();
       foliage.current?.setMatrixAt(i, dummy.matrix);
-      dummy.position.y = 0;
       dummy.scale.set(0.35, 1, 0.35);
       dummy.updateMatrix();
       trunks.current?.setMatrixAt(i, dummy.matrix);
-    }
+    });
     if (foliage.current) foliage.current.instanceMatrix.needsUpdate = true;
     if (trunks.current) trunks.current.instanceMatrix.needsUpdate = true;
   }, []);
 
   return (
     <group>
-      <instancedMesh ref={trunks} args={[undefined, undefined, count]}>
+      <instancedMesh ref={trunks} args={[undefined, undefined, TREE_SPOTS.length]} frustumCulled={false}>
         <cylinderGeometry args={[0.18, 0.28, 1.4, 5]} />
         <meshStandardMaterial color="#3b2414" roughness={1} />
       </instancedMesh>
-      <instancedMesh ref={foliage} args={[undefined, undefined, count]} position={[0, 2.1, 0]}>
+      <instancedMesh ref={foliage} args={[undefined, undefined, TREE_SPOTS.length]} position={[0, 2.1, 0]} frustumCulled={false}>
         <coneGeometry args={[1.15, 4.1, 6]} />
         <meshStandardMaterial color="#0f2a18" roughness={0.85} />
       </instancedMesh>
@@ -115,69 +125,159 @@ function Forest() {
   );
 }
 
-function Tent({ position, color, rotation = 0 }: { position: Vec3; color: string; rotation?: number }) {
-  return (
-    <group position={position} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <coneGeometry args={[1.4, 1.8, 4]} />
-        <meshStandardMaterial color={color} roughness={0.62} metalness={0.04} />
-      </mesh>
-      <mesh position={[0, 0.28, 0.62]}>
-        <boxGeometry args={[0.58, 0.5, 0.08]} />
-        <meshStandardMaterial color="#1a120c" />
-      </mesh>
-    </group>
-  );
-}
+/** 50 tents in staggered rings, doors facing the fire. */
+function Tents() {
+  const shells = useRef<THREE.InstancedMesh>(null);
+  const doors = useRef<THREE.InstancedMesh>(null);
+  const sheets = useRef<THREE.InstancedMesh>(null);
 
-function TentRing() {
+  useLayoutEffect(() => {
+    const root = new THREE.Object3D();
+    const shell = new THREE.Object3D();
+    shell.position.set(0, 0.9, 0);
+    shell.rotation.set(0, Math.PI / 4, 0);
+    const door = new THREE.Object3D();
+    door.position.set(0, 0.42, 0.66);
+    door.rotation.set(-0.5, 0, 0);
+    root.add(shell, door);
+    const color = new THREE.Color();
+    TENTS.forEach((tent, i) => {
+      root.position.set(tent.x, 0, tent.z);
+      root.rotation.set(0, tent.ry, 0);
+      root.scale.setScalar(tent.scale);
+      root.updateMatrixWorld(true);
+      shells.current?.setMatrixAt(i, shell.matrixWorld);
+      shells.current?.setColorAt(i, color.set(tent.color));
+      doors.current?.setMatrixAt(i, door.matrixWorld);
+      sheets.current?.setMatrixAt(i, root.matrixWorld);
+    });
+    for (const m of [shells.current, doors.current, sheets.current]) {
+      if (!m) continue;
+      m.instanceMatrix.needsUpdate = true;
+      if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    }
+  }, []);
+
   return (
     <group>
-      {Array.from({ length: 8 }, (_, i) => {
-        const angle = (i / 8) * Math.PI * 2 + 0.2;
-        const radius = 8.2;
-        return (
-          <Tent
-            key={i}
-            position={[Math.cos(angle) * radius, 0, Math.sin(angle) * radius]}
-            color={TENT_COLORS[i % TENT_COLORS.length]}
-            rotation={-angle + Math.PI}
-          />
-        );
-      })}
+      <instancedMesh ref={shells} args={[undefined, undefined, TENTS.length]} frustumCulled={false}>
+        <coneGeometry args={[1.4, 1.8, 4]} />
+        <meshStandardMaterial roughness={0.62} metalness={0.04} flatShading />
+      </instancedMesh>
+      <instancedMesh ref={doors} args={[undefined, undefined, TENTS.length]} frustumCulled={false}>
+        <planeGeometry args={[0.6, 0.78]} />
+        <meshStandardMaterial color="#1a120c" side={THREE.DoubleSide} />
+      </instancedMesh>
+      <instancedMesh ref={sheets} args={[undefined, undefined, TENTS.length]} frustumCulled={false}>
+        <boxGeometry args={[2.2, 0.02, 2.4]} />
+        <meshStandardMaterial color="#2b2a24" roughness={1} />
+      </instancedMesh>
     </group>
   );
 }
 
+function makeGlowTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d")!;
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255,200,120,1)");
+  grad.addColorStop(0.35, "rgba(255,120,40,0.55)");
+  grad.addColorStop(1, "rgba(255,60,10,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const FLAMES = [
+  // outer tongues
+  { x: 0.2, z: 0.05, r: 0.34, h: 1.25, color: "#ff3d14", speed: 9, phase: 0 },
+  { x: -0.18, z: 0.12, r: 0.32, h: 1.15, color: "#ff3d14", speed: 10, phase: 1.3 },
+  { x: 0.02, z: -0.2, r: 0.33, h: 1.2, color: "#ff4a18", speed: 8.5, phase: 2.1 },
+  { x: -0.06, z: 0.22, r: 0.3, h: 1.05, color: "#ff4a18", speed: 11, phase: 3.4 },
+  // body
+  { x: 0.1, z: -0.04, r: 0.3, h: 1.55, color: "#ff7a1a", speed: 12, phase: 0.7 },
+  { x: -0.1, z: 0.04, r: 0.28, h: 1.45, color: "#ff8c1f", speed: 13, phase: 2.6 },
+  { x: 0.0, z: 0.1, r: 0.26, h: 1.35, color: "#ff9a24", speed: 10.5, phase: 4.2 },
+  // heart
+  { x: 0.03, z: 0.0, r: 0.2, h: 1.2, color: "#ffc93c", speed: 14, phase: 1.9 },
+  { x: -0.02, z: 0.02, r: 0.11, h: 0.85, color: "#fff1b3", speed: 16, phase: 3.1 },
+];
+
+const SPARK_COUNT = 110;
+
 function Bonfire({ progress }: { progress: ProgressRef }) {
-  const flameA = useRef<THREE.Mesh>(null);
-  const flameB = useRef<THREE.Mesh>(null);
-  const flameC = useRef<THREE.Mesh>(null);
+  const flames = useRef<(THREE.Mesh | null)[]>([]);
+  const embers = useRef<THREE.MeshBasicMaterial>(null);
+  const glow = useRef<THREE.Sprite>(null);
   const light = useRef<THREE.PointLight>(null);
-  const sparkPositions = useMemo(() => new Float32Array(48 * 3), []);
+  const fill = useRef<THREE.PointLight>(null);
   const sparks = useRef<THREE.Points>(null);
+  const glowTexture = useMemo(makeGlowTexture, []);
+  const sparkPositions = useMemo(() => new Float32Array(SPARK_COUNT * 3), []);
   const seeds = useMemo(
-    () => Array.from({ length: 48 }, () => ({ a: Math.random() * Math.PI * 2, s: 0.45 + Math.random() * 0.9, h: 1.1 + Math.random() * 2.2 })),
+    () =>
+      Array.from({ length: SPARK_COUNT }, (_, i) => ({
+        a: (i * 2.39996) % (Math.PI * 2),
+        s: 0.35 + ((i * 37) % 100) / 100,
+        h: 1.4 + ((i * 53) % 100) / 40,
+        drift: 0.2 + ((i * 17) % 100) / 180,
+      })),
+    [],
+  );
+  const flameMaterials = useMemo(
+    () =>
+      FLAMES.map(
+        (f) =>
+          new THREE.MeshBasicMaterial({
+            color: f.color,
+            transparent: true,
+            opacity: 0.68,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            toneMapped: false,
+          }),
+      ),
     [],
   );
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     const fire = sampleCamp(progress.current).fire;
-    const flicker = 0.86 + Math.sin(t * 11) * 0.08 + Math.sin(t * 17) * 0.05;
-    if (flameA.current) flameA.current.scale.set(0.9 * fire * flicker, (1.1 + fire) * flicker, 0.9 * fire * flicker);
-    if (flameB.current) flameB.current.scale.set(0.7 * fire, (0.85 + fire * 0.8) * (0.9 + Math.sin(t * 9) * 0.1), 0.7 * fire);
-    if (flameC.current) flameC.current.scale.set(0.45 * fire, 0.6 + fire * 0.7, 0.45 * fire);
-    if (light.current) {
-      light.current.intensity = 1.1 + fire * 3.4 * flicker;
-      light.current.distance = 18 + fire * 10;
+    const size = 0.55 + fire * 0.75;
+    const flicker = 0.85 + Math.sin(t * 11) * 0.08 + Math.sin(t * 17.3) * 0.05 + Math.sin(t * 29.1) * 0.03;
+
+    FLAMES.forEach((f, i) => {
+      const m = flames.current[i];
+      if (!m) return;
+      const lick = 0.78 + Math.sin(t * f.speed + f.phase) * 0.14 + Math.sin(t * f.speed * 1.9 + f.phase * 2) * 0.08;
+      m.scale.set(size * (0.9 + Math.sin(t * 7 + f.phase) * 0.08), size * lick, size * (0.9 + Math.cos(t * 6 + f.phase) * 0.08));
+      m.position.set(f.x * size, (f.h * size * lick) / 2 + 0.12, f.z * size);
+      m.rotation.set(Math.sin(t * 3.1 + f.phase) * 0.12, t * 0.6 + f.phase, Math.cos(t * 2.7 + f.phase) * 0.12);
+    });
+
+    if (embers.current) embers.current.color.setRGB(1, 0.32 + flicker * 0.12, 0.08);
+    if (glow.current) {
+      const s = 2.6 + fire * 3.2 * flicker;
+      glow.current.scale.set(s, s * 1.15, 1);
+      glow.current.material.opacity = 0.25 + fire * 0.55;
     }
-    for (let i = 0; i < 48; i += 1) {
+    if (light.current) {
+      light.current.intensity = 1.4 + fire * 4.4 * flicker;
+      light.current.distance = 18 + fire * 12;
+      light.current.position.x = Math.sin(t * 13) * 0.08;
+    }
+    if (fill.current) fill.current.intensity = 0.5 + fire * 1.6 * (1.7 - flicker);
+
+    for (let i = 0; i < SPARK_COUNT; i += 1) {
       const seed = seeds[i];
-      const rise = (t * seed.s + i * 0.07) % 1;
-      sparkPositions[i * 3] = Math.cos(seed.a + t * 0.4) * (0.12 + rise * 0.55);
-      sparkPositions[i * 3 + 1] = 0.35 + rise * seed.h * (0.5 + fire);
-      sparkPositions[i * 3 + 2] = Math.sin(seed.a + t * 0.4) * (0.12 + rise * 0.55);
+      const rise = (t * seed.s * 0.6 + i * 0.037) % 1;
+      const swirl = seed.a + t * 0.5 + rise * 3;
+      sparkPositions[i * 3] = Math.cos(swirl) * (0.1 + rise * seed.drift * 2.2);
+      sparkPositions[i * 3 + 1] = 0.4 + rise * seed.h * (0.6 + fire);
+      sparkPositions[i * 3 + 2] = Math.sin(swirl) * (0.1 + rise * seed.drift * 2.2);
     }
     const attr = sparks.current?.geometry.getAttribute("position");
     if (attr) attr.needsUpdate = true;
@@ -185,60 +285,146 @@ function Bonfire({ progress }: { progress: ProgressRef }) {
 
   return (
     <group>
-      <mesh position={[0.35, 0.12, 0.1]} rotation={[0.2, 0.4, 0.2]}>
-        <boxGeometry args={[0.9, 0.18, 0.22]} />
-        <meshStandardMaterial color="#4a2c16" roughness={1} />
+      {/* stone ring */}
+      {Array.from({ length: 14 }, (_, i) => {
+        const a = (i / 14) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.95, 0.09, Math.sin(a) * 0.95]} rotation={[i, i * 2, 0]} scale={[1, 0.7, 1]}>
+            <dodecahedronGeometry args={[0.16 + (i % 3) * 0.02, 0]} />
+            <meshStandardMaterial color="#55504a" roughness={1} flatShading />
+          </mesh>
+        );
+      })}
+      {/* teepee of logs */}
+      {Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.32, 0.42, Math.sin(a) * 0.32]} rotation={[Math.sin(a) * -0.55, 0, Math.cos(a) * 0.55]}>
+            <cylinderGeometry args={[0.055, 0.075, 1.0, 6]} />
+            <meshStandardMaterial color={i % 2 ? "#3a2210" : "#4a2c16"} roughness={1} flatShading />
+          </mesh>
+        );
+      })}
+      {/* ember bed */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
+        <circleGeometry args={[0.72, 18]} />
+        <meshBasicMaterial ref={embers} color="#ff4a12" toneMapped={false} />
       </mesh>
-      <mesh position={[-0.3, 0.12, -0.05]} rotation={[-0.15, -0.5, 0.1]}>
-        <boxGeometry args={[0.85, 0.16, 0.2]} />
-        <meshStandardMaterial color="#3a2210" roughness={1} />
-      </mesh>
-      <mesh ref={flameA} position={[0, 0.55, 0]}>
-        <coneGeometry args={[0.55, 1.5, 6]} />
-        <meshStandardMaterial color="#FB7185" emissive="#FB7185" emissiveIntensity={2.2} toneMapped={false} />
-      </mesh>
-      <mesh ref={flameB} position={[0.08, 0.7, 0.04]}>
-        <coneGeometry args={[0.32, 1.15, 5]} />
-        <meshStandardMaterial color="#BEF264" emissive="#F59E0B" emissiveIntensity={1.8} toneMapped={false} />
-      </mesh>
-      <mesh ref={flameC} position={[0, 0.85, 0]}>
-        <coneGeometry args={[0.16, 0.8, 5]} />
-        <meshStandardMaterial color="#FDFBF7" emissive="#FDFBF7" emissiveIntensity={1.4} toneMapped={false} />
-      </mesh>
+      {FLAMES.map((f, i) => (
+        <mesh
+          key={i}
+          ref={(m) => {
+            flames.current[i] = m;
+          }}
+          material={flameMaterials[i]}
+        >
+          <coneGeometry args={[f.r, f.h, 7, 1, true]} />
+        </mesh>
+      ))}
+      <sprite ref={glow} position={[0, 0.9, 0]}>
+        <spriteMaterial map={glowTexture} transparent blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </sprite>
       <points ref={sparks}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[sparkPositions, 3]} />
         </bufferGeometry>
-        <pointsMaterial color="#FB7185" size={0.07} transparent opacity={0.85} depthWrite={false} />
+        <pointsMaterial color="#ffb347" size={0.07} transparent opacity={0.9} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </points>
-      <pointLight ref={light} position={[0, 1.4, 0]} color="#FB7185" intensity={3} distance={22} />
+      <pointLight ref={light} position={[0, 1.3, 0]} color="#ff7a2a" intensity={3} distance={24} />
+      <pointLight ref={fill} position={[0, 0.5, 0]} color="#ff4a12" intensity={1} distance={8} />
     </group>
   );
 }
 
+function makeAdStrip() {
+  const c = document.createElement("canvas");
+  c.width = 2048;
+  c.height = 176;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#6D28D9";
+  g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = "#BEF264";
+  g.fillRect(0, 0, 18, c.height);
+  const font = "system-ui, -apple-system, Helvetica, Arial, sans-serif";
+  g.textBaseline = "middle";
+  g.fillStyle = "#FDFBF7";
+  g.font = `900 60px ${font}`;
+  g.fillText("THE BOOST NATION", 60, 92);
+  const titleEnd = 60 + g.measureText("THE BOOST NATION").width;
+  g.font = `900 48px ${font}`;
+  const url = "theboostnation.space";
+  const urlStart = c.width - 50 - g.measureText(url).width;
+  g.fillStyle = "#BEF264";
+  g.fillText(url, urlStart, 92);
+  g.fillStyle = "#FDFBF7";
+  g.font = `600 46px ${font}`;
+  const line = "Idea → live page in 48–72 hours";
+  const gap = urlStart - titleEnd;
+  g.fillText(line, titleEnd + (gap - g.measureText(line).width) / 2, 92);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/** The camp screen plays a TBN ad between films: the live site, slowly zooming. */
 function MovieScreen({ progress }: { progress: ProgressRef }) {
-  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  const screen = useRef<THREE.MeshBasicMaterial>(null);
+  const site = useMemo(() => {
+    const tex = new THREE.TextureLoader().load("/ads/tbn-site.jpg");
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return tex;
+  }, []);
+  const strip = useMemo(makeAdStrip, []);
+
   useFrame(({ clock }) => {
     const t = progress.current;
-    const on = smoothstep(0.32, 0.4, t) * (1 - smoothstep(0.46, 0.54, t));
-    if (mat.current) {
-      mat.current.emissiveIntensity = 0.15 + on * (1.8 + Math.sin(clock.elapsedTime * 8) * 0.2);
+    const showtime = smoothstep(0.32, 0.4, t) * (1 - smoothstep(0.46, 0.54, t));
+    const { day } = sampleDaylight(t);
+    if (screen.current) {
+      const b = 0.62 + showtime * 0.38 - day * 0.1;
+      screen.current.color.setRGB(b, b, b);
     }
+    // Ken Burns: wide shot → push in on the headline → drift to the offer → back out.
+    const cycle = (clock.elapsedTime % 26) / 26;
+    const push = 0.5 - 0.5 * Math.cos(cycle * Math.PI * 2);
+    const zoom = 1 + push * 0.55;
+    const cu = 0.36 + Math.sin(cycle * Math.PI * 2) * 0.08 * push;
+    const cv = 0.6 - push * 0.08;
+    site.repeat.set(1 / zoom, 1 / zoom);
+    site.offset.set(
+      Math.min(1 - 1 / zoom, Math.max(0, cu - 0.5 / zoom)),
+      Math.min(1 - 1 / zoom, Math.max(0, cv - 0.5 / zoom)),
+    );
   });
+
   return (
     <group position={[0, 0, -12.4]}>
-      <mesh position={[0, 2.2, 0]}>
-        <boxGeometry args={[6.4, 3.6, 0.16]} />
-        <meshStandardMaterial ref={mat} color="#111018" emissive="#22D3EE" emissiveIntensity={0.2} />
+      {/* frame */}
+      <mesh position={[0, 2.75, -0.06]}>
+        <boxGeometry args={[6.7, 3.9, 0.14]} />
+        <meshStandardMaterial color="#0c0b12" />
       </mesh>
-      <mesh position={[0, 0.3, 0.4]}>
-        <boxGeometry args={[0.25, 0.6, 0.25]} />
-        <meshStandardMaterial color="#1a1a1a" />
+      <mesh position={[0, 2.75, 0.02]}>
+        <planeGeometry args={[6.4, 3.6]} />
+        <meshBasicMaterial ref={screen} map={site} toneMapped={false} />
       </mesh>
-      <mesh position={[0, 0.3, -0.4]}>
-        <boxGeometry args={[0.25, 0.6, 0.25]} />
-        <meshStandardMaterial color="#1a1a1a" />
+      {/* ad strip under the screen */}
+      <mesh position={[0, 0.58, 0.02]}>
+        <planeGeometry args={[6.4, 0.55]} />
+        <meshBasicMaterial map={strip} toneMapped={false} />
       </mesh>
+      <mesh position={[0, 0.58, -0.04]}>
+        <boxGeometry args={[6.5, 0.62, 0.08]} />
+        <meshStandardMaterial color="#0c0b12" />
+      </mesh>
+      {[-3.15, 3.15].map((x) => (
+        <mesh key={x} position={[x, 2.3, -0.12]}>
+          <boxGeometry args={[0.16, 4.6, 0.16]} />
+          <meshStandardMaterial color="#1a1a1a" />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -254,7 +440,7 @@ function KaraokeStage({ progress }: { progress: ProgressRef }) {
     if (right.current) right.current.intensity = on * 2.2 * (1.2 - pulse);
   });
   return (
-    <group position={[10.4, 0, 3.4]} rotation={[0, -0.7, 0]}>
+    <group position={[STAGE.x, 0, STAGE.z]} rotation={[0, STAGE.ry, 0]}>
       <mesh position={[0, 0.12, 0]} receiveShadow>
         <boxGeometry args={[4.2, 0.24, 3.1]} />
         <meshStandardMaterial color="#2a1248" />
@@ -269,14 +455,13 @@ function KaraokeStage({ progress }: { progress: ProgressRef }) {
       </mesh>
       <pointLight ref={left} position={[-1.4, 2.2, 0.6]} color="#6D28D9" intensity={0.4} distance={8} />
       <pointLight ref={right} position={[1.4, 2.2, 0.6]} color="#22D3EE" intensity={0.4} distance={8} />
-      <KaraokeCrowd />
     </group>
   );
 }
 
 function DjBooth() {
   return (
-    <group position={[-10.2, 0, 5.4]} rotation={[0, 0.6, 0]}>
+    <group position={[DJ_BOOTH.x, 0, DJ_BOOTH.z]} rotation={[0, DJ_BOOTH.ry, 0]}>
       <mesh position={[0, 0.46, 0]}>
         <boxGeometry args={[2.4, 0.92, 1.1]} />
         <meshStandardMaterial color="#1a1028" />
@@ -293,31 +478,129 @@ function DjBooth() {
         <boxGeometry args={[0.7, 1.6, 0.7]} />
         <meshStandardMaterial color="#111" />
       </mesh>
-      <Dj />
+    </group>
+  );
+}
+
+const LINE = "#FDFBF7";
+
+/** A flat painted line on the pitch, pitch-local metres. */
+function PitchLine({ x, z, w, d }: { x: number; z: number; w: number; d: number }) {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.03, z]}>
+      <planeGeometry args={[w, d]} />
+      <meshBasicMaterial color={LINE} />
+    </mesh>
+  );
+}
+
+function Goal({ side }: { side: 1 | -1 }) {
+  const x = side * (PITCH.length / 2);
+  const depth = 0.8 * side;
+  const post = <cylinderGeometry args={[0.05, 0.05, 1.2, 8]} />;
+  const white = <meshStandardMaterial color="#FDFBF7" roughness={0.4} />;
+  const net = <meshBasicMaterial color="#e8e8e8" wireframe transparent opacity={0.55} side={THREE.DoubleSide} />;
+  return (
+    <group>
+      {[-1.5, 1.5].map((z) => (
+        <mesh key={z} position={[x, 0.6, z]}>
+          {post}
+          {white}
+        </mesh>
+      ))}
+      <mesh position={[x, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 3.1, 8]} />
+        {white}
+      </mesh>
+      {/* net: back, roof, sides */}
+      <mesh position={[x + depth, 0.6, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[3, 1.2, 15, 6]} />
+        {net}
+      </mesh>
+      <mesh position={[x + depth / 2, 1.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.8, 3, 4, 15]} />
+        {net}
+      </mesh>
+      {[-1.5, 1.5].map((z) => (
+        <mesh key={z} position={[x + depth / 2, 0.6, z]}>
+          <planeGeometry args={[0.8, 1.2, 4, 6]} />
+          {net}
+        </mesh>
+      ))}
     </group>
   );
 }
 
 function FootballPitch() {
+  const L = PITCH.length;
+  const W = PITCH.width;
+  const lw = 0.08;
+  const stripes = 8;
   return (
-    <group position={[0, 0, 20.5]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[16, 10]} />
-        <meshStandardMaterial color="#2f6b32" roughness={0.9} />
+    <group position={[PITCH.x, 0, PITCH.z]}>
+      {/* apron and mown stripes */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} receiveShadow>
+        <planeGeometry args={[L + 2.4, W + 2.4]} />
+        <meshStandardMaterial color="#2e5e2a" roughness={0.95} />
+      </mesh>
+      {Array.from({ length: stripes }, (_, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[-L / 2 + (i + 0.5) * (L / stripes), 0.02, 0]} receiveShadow>
+          <planeGeometry args={[L / stripes, W]} />
+          <meshStandardMaterial color={i % 2 ? "#3f8a3c" : "#357a33"} roughness={0.9} />
+        </mesh>
+      ))}
+      {/* touchlines, goal lines, halfway */}
+      <PitchLine x={0} z={-W / 2} w={L} d={lw} />
+      <PitchLine x={0} z={W / 2} w={L} d={lw} />
+      <PitchLine x={-L / 2} z={0} w={lw} d={W} />
+      <PitchLine x={L / 2} z={0} w={lw} d={W} />
+      <PitchLine x={0} z={0} w={lw} d={W} />
+      {/* centre circle and spot */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+        <ringGeometry args={[1.42, 1.5, 48]} />
+        <meshBasicMaterial color={LINE} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
-        <planeGeometry args={[0.12, 10]} />
-        <meshBasicMaterial color="#FDFBF7" />
+        <circleGeometry args={[0.1, 16]} />
+        <meshBasicMaterial color={LINE} />
       </mesh>
-      <mesh position={[0, 0.7, -5.1]}>
-        <boxGeometry args={[3.2, 1.4, 0.12]} />
-        <meshStandardMaterial color="#FDFBF7" />
-      </mesh>
-      <mesh position={[0, 0.7, 5.1]}>
-        <boxGeometry args={[3.2, 1.4, 0.12]} />
-        <meshStandardMaterial color="#FDFBF7" />
-      </mesh>
-      <Footballers />
+      {/* penalty areas, goal areas and spots */}
+      {([-1, 1] as const).map((side) => {
+        const gx = (side * L) / 2;
+        return (
+          <group key={side}>
+            <PitchLine x={gx - side * 2.4} z={0} w={lw} d={5.2} />
+            <PitchLine x={gx - side * 1.2} z={-2.6} w={2.4} d={lw} />
+            <PitchLine x={gx - side * 1.2} z={2.6} w={2.4} d={lw} />
+            <PitchLine x={gx - side * 0.9} z={0} w={lw} d={3.6} />
+            <PitchLine x={gx - side * 0.45} z={-1.8} w={0.9} d={lw} />
+            <PitchLine x={gx - side * 0.45} z={1.8} w={0.9} d={lw} />
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[gx - side * 1.9, 0.03, 0]}>
+              <circleGeometry args={[0.08, 12]} />
+              <meshBasicMaterial color={LINE} />
+            </mesh>
+            <Goal side={side} />
+          </group>
+        );
+      })}
+      {/* corner flags */}
+      {[
+        [-L / 2, -W / 2],
+        [L / 2, -W / 2],
+        [-L / 2, W / 2],
+        [L / 2, W / 2],
+      ].map(([x, z], i) => (
+        <group key={i} position={[x, 0, z]}>
+          <mesh position={[0, 0.5, 0]}>
+            <cylinderGeometry args={[0.02, 0.02, 1, 6]} />
+            <meshStandardMaterial color="#FDFBF7" />
+          </mesh>
+          <mesh position={[0.14, 0.88, 0]}>
+            <planeGeometry args={[0.28, 0.2]} />
+            <meshStandardMaterial color={i % 2 ? "#BEF264" : "#FB7185"} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
@@ -516,7 +799,7 @@ export default function CampScene({ progress }: { progress: ProgressRef }) {
       <SkyLights progress={progress} />
       <Ground progress={progress} />
       <Forest />
-      <TentRing />
+      <Tents />
       <Bonfire progress={progress} />
       <MovieScreen progress={progress} />
       <KaraokeStage progress={progress} />
