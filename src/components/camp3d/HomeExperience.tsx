@@ -227,8 +227,8 @@ export default function HomeExperience() {
           </div>
 
           <div className="pt-12">
-            <a href="/join" className="inline-block px-12 py-6 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-3xl poster-border poster-shadow hover:-translate-y-1 transition-transform">
-              JOIN THE GAMES →
+            <a href="/register" className="inline-block px-12 py-6 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-3xl poster-border poster-shadow hover:-translate-y-1 transition-transform">
+              REGISTER FOR CAMP →
             </a>
           </div>
         </div>

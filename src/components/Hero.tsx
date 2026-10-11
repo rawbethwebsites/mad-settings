@@ -154,12 +154,12 @@ export default function Hero({ night = false }: { night?: boolean }) {
         </p>
 
         <div className="mt-10 flex flex-col md:flex-row gap-4 justify-center items-center">
-          <a href="/join" className="hero-btn group relative px-8 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow transition-all hover:-translate-y-1 hover:-translate-x-1 active:translate-y-0 active:translate-x-0">
-            JOIN THE GAMES
+          <a href="/register" className="hero-btn group relative px-8 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow transition-all hover:-translate-y-1 hover:-translate-x-1 active:translate-y-0 active:translate-x-0">
+            REGISTER FOR CAMP
             <span className="inline-block transition-transform group-hover:translate-x-2 ml-2">→</span>
           </a>
-          <a href="#program" className="hero-btn px-8 py-4 bg-brand-cream text-brand-black font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow transition-all hover:-translate-y-1 hover:-translate-x-1 active:translate-y-0 active:translate-x-0">
-            VIEW PROGRAM
+          <a href="/join" className="hero-btn px-8 py-4 bg-brand-cream text-brand-black font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow transition-all hover:-translate-y-1 hover:-translate-x-1 active:translate-y-0 active:translate-x-0">
+            PLAY GAMES
           </a>
         </div>
 

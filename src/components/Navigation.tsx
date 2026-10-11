@@ -16,9 +16,9 @@ export default function Navigation({ night = false }: { night?: boolean }) {
   }, []);
 
   const links = [
-    { name: 'PROGRAM', href: '#program' },
-    { name: 'GAMES', href: '#games' },
-    { name: 'THE NIGHT', href: '#bonfire' },
+    { name: 'PROGRAM', href: '/#program' },
+    { name: 'GAMES', href: '/#games' },
+    { name: 'REGISTER', href: '/register' },
     { name: 'JOIN', href: '/join' },
   ];
 
@@ -39,8 +39,8 @@ export default function Navigation({ night = false }: { night?: boolean }) {
               {link.name}
             </a>
           ))}
-          <a href="/join" className="bg-brand-purple text-brand-cream px-4 py-2 poster-border poster-shadow hover:translate-x-1 hover:-translate-y-1 transition-transform min-h-11 inline-flex items-center">
-            JOIN NOW
+          <a href="/register" className="bg-brand-purple text-brand-cream px-4 py-2 poster-border poster-shadow hover:translate-x-1 hover:-translate-y-1 transition-transform min-h-11 inline-flex items-center">
+            REGISTER
           </a>
         </div>
 
@@ -58,8 +58,8 @@ export default function Navigation({ night = false }: { night?: boolean }) {
               {link.name}
             </a>
           ))}
-          <a href="/join" className="bg-brand-purple text-brand-cream p-4 text-center poster-border poster-shadow">
-            JOIN THE GAMES
+          <a href="/register" className="bg-brand-purple text-brand-cream p-4 text-center poster-border poster-shadow">
+            REGISTER FOR CAMP
           </a>
         </div>
       )}
