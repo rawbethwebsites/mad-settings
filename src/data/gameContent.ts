@@ -98,3 +98,18 @@ export const VAULT_CODE = '7391'
 
 // Points for cracking the vault
 export const VAULT_CRACK_POINTS = 50
+// DON'T SAY THE SAME THING — two teammates shout an answer at the same time.
+// Each game climbs a 10-step ladder: lots of possible answers first, then fewer,
+// ending on Coin Side (a straight 50/50).
+export const SAME_EASY = [
+  'Colour', 'Animal', 'Sport', 'Country', 'Superhero', 'Fruit',
+  'Car Brand', 'Afrobeats Artist', 'Naija Food', 'Footballer',
+]
+export const SAME_MEDIUM = [
+  'Planet', 'Ocean', 'Continent', 'Day of the Week', 'Month', 'Season',
+]
+export const SAME_HARD = [
+  'Direction', 'Traffic Light Colour', 'Rock, Paper or Scissors', 'Primary Colour',
+]
+export const SAME_FINAL = 'Coin Side'
+export const SAME_POINTS_PER_STEP = 5
