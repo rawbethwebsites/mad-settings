@@ -64,7 +64,7 @@ export default function SearchGame() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream p-4 md:p-6">
+    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -119,9 +119,9 @@ export default function SearchGame() {
             placeholder="Enter the code word..."
             maxLength={20}
             disabled={feedback === 'correct'}
-            className={`flex-1 px-4 py-4 border-4 border-brand-black font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none transition-colors ${
+            className={`flex-1 px-4 py-4 border-4 border-brand-black text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none transition-colors ${
               feedback === 'correct' ? 'bg-brand-acid' :
-              feedback === 'wrong' ? 'bg-brand-coral/30' : 'focus:bg-brand-acid/20'
+              feedback === 'wrong' ? 'bg-brand-coral/30' : 'bg-white focus:bg-brand-acid/20'
             }`}
           />
           <button

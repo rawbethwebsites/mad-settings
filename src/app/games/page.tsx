@@ -40,7 +40,7 @@ export default function GamesHub() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream p-6">
+    <main className="min-h-screen bg-brand-cream text-brand-black p-6">
       <div className="max-w-4xl mx-auto">
         {/* Scorecard Header */}
         <div className="mb-8 p-6 poster-border poster-shadow bg-brand-black text-brand-cream">

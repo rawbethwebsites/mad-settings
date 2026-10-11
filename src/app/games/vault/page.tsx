@@ -137,7 +137,7 @@ export default function VaultGame() {
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               placeholder="_ _ _ _"
               maxLength={4}
-              className="w-full px-4 py-6 border-4 border-brand-cream font-display font-black text-5xl uppercase text-center tracking-[0.3em] text-brand-cream bg-transparent focus:outline-none focus:bg-brand-cream/10"
+              className="w-full px-4 py-6 border-4 border-brand-cream font-display font-black text-5xl uppercase text-center tracking-[0.3em] text-brand-cream placeholder:text-brand-cream/40 bg-transparent focus:outline-none focus:bg-brand-cream/10"
             />
             <button
               onClick={handleSubmit}
