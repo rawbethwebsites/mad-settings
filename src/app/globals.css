@@ -262,3 +262,92 @@ body.camp-night {
   background: #6D28D9;
   border-radius: 10px;
 }
+/* Camper speech bubbles */
+.camp-talk-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.camp-talk-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  will-change: transform;
+}
+
+.camp-talk {
+  position: absolute;
+  left: 0;
+  bottom: 14px;
+  width: max-content;
+  max-width: min(260px, 70vw);
+  transform: translateX(calc(-50% + var(--shift, 0px)));
+  transform-origin: calc(50% - var(--shift, 0px)) 100%;
+  padding: 10px 14px 12px;
+  background: #FDFBF7;
+  color: #0A0A0A;
+  border: 3px solid #0A0A0A;
+  box-shadow: 4px 4px 0 #0A0A0A;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 600;
+  animation: camp-talk-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.camp-talk::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - var(--shift, 0px));
+  bottom: -11px;
+  width: 16px;
+  height: 16px;
+  background: inherit;
+  border-right: 3px solid #0A0A0A;
+  border-bottom: 3px solid #0A0A0A;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.camp-talk p {
+  margin: 0;
+}
+
+.camp-talk-tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  border: 2px solid #0A0A0A;
+}
+
+.camp-talk-mad .camp-talk-tag { background: #BEF264; }
+.camp-talk-tip .camp-talk-tag { background: #22D3EE; }
+.camp-talk-tbn { background: #6D28D9; color: #FDFBF7; }
+.camp-talk-tbn .camp-talk-tag { background: #FDFBF7; color: #0A0A0A; }
+
+.camp-talk-cta {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  pointer-events: auto;
+}
+
+@keyframes camp-talk-pop {
+  0% { opacity: 0; transform: translateX(calc(-50% + var(--shift, 0px))) translateY(8px) scale(0.6); }
+  100% { opacity: 1; transform: translateX(calc(-50% + var(--shift, 0px))) translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .camp-talk { animation: none; }
+}

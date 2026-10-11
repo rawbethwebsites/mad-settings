@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import CampScene from "./CampScene";
+import { TalkBubble } from "./CampTalk";
 
 export default function CampWorld() {
   const progress = useRef(0);
@@ -43,17 +44,20 @@ export default function CampWorld() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
-    <div className="camp-world" aria-hidden="true">
-      <Canvas
-        dpr={isMobile ? 1 : [1, 1.6]}
-        gl={{ antialias: !isMobile, alpha: false, powerPreference: "high-performance" }}
-        camera={{ position: [0, 5.6, 26], fov: 50, near: 0.1, far: 120 }}
-        onCreated={({ gl }) => {
-          gl.setClearColor("#1b1430");
-        }}
-      >
-        <CampScene progress={progress} />
-      </Canvas>
-    </div>
+    <>
+      <div className="camp-world" aria-hidden="true">
+        <Canvas
+          dpr={isMobile ? 1 : [1, 1.6]}
+          gl={{ antialias: !isMobile, alpha: false, powerPreference: "high-performance" }}
+          camera={{ position: [0, 5.6, 26], fov: 50, near: 0.1, far: 120 }}
+          onCreated={({ gl }) => {
+            gl.setClearColor("#1b1430");
+          }}
+        >
+          <CampScene progress={progress} />
+        </Canvas>
+      </div>
+      <TalkBubble />
+    </>
   );
 }

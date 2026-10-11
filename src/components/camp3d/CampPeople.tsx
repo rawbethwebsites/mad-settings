@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Vec3 } from "@/data/campWorld";
+import { registerTalker } from "./CampTalk";
 
 /**
  * Low-poly campers. Built in real-world metres (≈1.8m tall) and scaled down to
@@ -99,6 +100,13 @@ function Person({
   const skin = mat(look.skin, 0.6);
   const hair = mat(look.hairColor ?? "#120c08", 0.95);
   const shoe = mat(SHOE);
+  const talkId = useId();
+
+  useEffect(() => {
+    const { root, head } = rig.current;
+    if (!root || !head) return;
+    return registerTalker(talkId, { root, head });
+  }, [talkId]);
 
   useFrame(({ clock }) => {
     const r = rig.current;

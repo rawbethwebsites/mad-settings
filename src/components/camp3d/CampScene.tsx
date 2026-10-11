@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { sampleCamp, TENT_COLORS, type Vec3 } from "@/data/campWorld";
 import CampPeople, { Dj, Footballers, KaraokeCrowd } from "./CampPeople";
+import { TalkDirector } from "./CampTalk";
 
 type ProgressRef = React.MutableRefObject<number>;
 
@@ -346,6 +347,72 @@ function Moon() {
   );
 }
 
+const CLOUD_PUFF = new THREE.IcosahedronGeometry(1, 1);
+const CLOUD_MAT = new THREE.MeshStandardMaterial({ color: "#3a3157", emissive: "#1b1430", roughness: 1, flatShading: true });
+const CLOUD_NIGHT = new THREE.Color("#4a3f6e");
+const CLOUD_DAWN = new THREE.Color("#ffd6e4");
+const CLOUD_DAY = new THREE.Color("#fdfbf7");
+const GLOW_NIGHT = new THREE.Color("#2a2147");
+const GLOW_DAY = new THREE.Color("#8a6f8f");
+
+function buildClouds() {
+  let seed = 7;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  return Array.from({ length: 13 }, (_, i) => {
+    const angle = (i / 13) * Math.PI * 2 + rand() * 0.3;
+    const radius = 23 + rand() * 11;
+    const puffs = Array.from({ length: 4 + Math.floor(rand() * 3) }, (_, j) => {
+      const big = j === 0 ? 1.35 : 0.75 + rand() * 0.55;
+      return {
+        pos: [(j - 2) * 1.25 + rand() * 0.6, rand() * 0.5 + (j === 0 ? 0.4 : 0), (rand() - 0.5) * 1.2] as Vec3,
+        scale: [big * 1.5, big * 0.95, big * 1.15] as Vec3,
+      };
+    });
+    return {
+      pos: [Math.cos(angle) * radius, 7 + rand() * 4.5, Math.sin(angle) * radius] as Vec3,
+      rot: -angle + Math.PI / 2,
+      size: 1.5 + rand() * 1.1,
+      bob: rand() * Math.PI * 2,
+      puffs,
+    };
+  });
+}
+
+const CLOUDS = buildClouds();
+
+/** Low-poly clouds drifting over the treeline: moonlit at night, candy-pink at dawn. */
+function Clouds({ progress }: { progress: ProgressRef }) {
+  const group = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }, delta) => {
+    const t = progress.current;
+    const rise = smoothstep(0.7, 0.86, t);
+    const noon = smoothstep(0.86, 1, t);
+    CLOUD_MAT.color.copy(CLOUD_NIGHT).lerp(CLOUD_DAWN, rise).lerp(CLOUD_DAY, noon);
+    CLOUD_MAT.emissive.copy(GLOW_NIGHT).lerp(GLOW_DAY, rise * (1 - noon * 0.6));
+    if (!group.current) return;
+    group.current.rotation.y += delta * 0.006;
+    group.current.children.forEach((cloud, i) => {
+      cloud.position.y = CLOUDS[i].pos[1] + Math.sin(clock.elapsedTime * 0.15 + CLOUDS[i].bob) * 0.35;
+    });
+  });
+
+  return (
+    <group ref={group}>
+      {CLOUDS.map((c, i) => (
+        <group key={i} position={c.pos} rotation={[0, c.rot, 0]} scale={c.size}>
+          {c.puffs.map((p, j) => (
+            <mesh key={j} geometry={CLOUD_PUFF} material={CLOUD_MAT} position={p.pos} scale={p.scale} />
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
@@ -369,7 +436,9 @@ export default function CampScene({ progress }: { progress: ProgressRef }) {
       <FootballPitch />
       <Stars />
       <Moon />
+      <Clouds progress={progress} />
       <CampPeople />
+      <TalkDirector />
     </>
   );
 }
