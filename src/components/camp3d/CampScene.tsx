@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { sampleCamp, TENT_COLORS, type Vec3 } from "@/data/campWorld";
+import CampPeople, { Dj, Footballers, KaraokeCrowd } from "./CampPeople";
 
 type ProgressRef = React.MutableRefObject<number>;
 
@@ -249,16 +250,17 @@ function KaraokeStage({ progress }: { progress: ProgressRef }) {
         <boxGeometry args={[4.2, 0.24, 3.1]} />
         <meshStandardMaterial color="#2a1248" />
       </mesh>
-      <mesh position={[0, 1.1, -0.2]}>
-        <cylinderGeometry args={[0.05, 0.05, 1.8, 8]} />
+      <mesh position={[0, 0.84, -0.2]}>
+        <cylinderGeometry args={[0.04, 0.04, 1.2, 8]} />
         <meshStandardMaterial color="#FDFBF7" metalness={0.4} roughness={0.3} />
       </mesh>
-      <mesh position={[0, 2.05, -0.05]} rotation={[0.5, 0, 0]}>
-        <sphereGeometry args={[0.12, 10, 10]} />
+      <mesh position={[0, 1.48, -0.12]} rotation={[0.5, 0, 0]}>
+        <sphereGeometry args={[0.08, 10, 10]} />
         <meshStandardMaterial color="#0A0A0A" />
       </mesh>
       <pointLight ref={left} position={[-1.4, 2.2, 0.6]} color="#6D28D9" intensity={0.4} distance={8} />
       <pointLight ref={right} position={[1.4, 2.2, 0.6]} color="#22D3EE" intensity={0.4} distance={8} />
+      <KaraokeCrowd />
     </group>
   );
 }
@@ -266,11 +268,11 @@ function KaraokeStage({ progress }: { progress: ProgressRef }) {
 function DjBooth() {
   return (
     <group position={[-10.2, 0, 5.4]} rotation={[0, 0.6, 0]}>
-      <mesh position={[0, 0.7, 0]}>
-        <boxGeometry args={[2.4, 1.2, 1.1]} />
+      <mesh position={[0, 0.46, 0]}>
+        <boxGeometry args={[2.4, 0.92, 1.1]} />
         <meshStandardMaterial color="#1a1028" />
       </mesh>
-      <mesh position={[0, 1.36, 0.2]}>
+      <mesh position={[0, 0.98, 0.1]}>
         <boxGeometry args={[1.6, 0.12, 0.7]} />
         <meshStandardMaterial color="#0A0A0A" emissive="#6D28D9" emissiveIntensity={0.4} />
       </mesh>
@@ -282,6 +284,7 @@ function DjBooth() {
         <boxGeometry args={[0.7, 1.6, 0.7]} />
         <meshStandardMaterial color="#111" />
       </mesh>
+      <Dj />
     </group>
   );
 }
@@ -305,6 +308,7 @@ function FootballPitch() {
         <boxGeometry args={[3.2, 1.4, 0.12]} />
         <meshStandardMaterial color="#FDFBF7" />
       </mesh>
+      <Footballers />
     </group>
   );
 }
@@ -342,30 +346,6 @@ function Moon() {
   );
 }
 
-function Campers() {
-  const group = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (!group.current) return;
-    const t = clock.elapsedTime * 0.18;
-    group.current.children.forEach((child, i) => {
-      const angle = t + (i / group.current!.children.length) * Math.PI * 2;
-      child.position.set(Math.cos(angle) * 4.6, 0.55, Math.sin(angle) * 4.6);
-      child.rotation.y = -angle + Math.PI / 2;
-    });
-  });
-  const colors = ["#6D28D9", "#BEF264", "#FB7185", "#22D3EE", "#FDFBF7", "#FB7185"];
-  return (
-    <group ref={group}>
-      {colors.map((color, i) => (
-        <mesh key={i} castShadow>
-          <capsuleGeometry args={[0.18, 0.55, 4, 8]} />
-          <meshStandardMaterial color={color} roughness={0.5} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
@@ -389,7 +369,7 @@ export default function CampScene({ progress }: { progress: ProgressRef }) {
       <FootballPitch />
       <Stars />
       <Moon />
-      <Campers />
+      <CampPeople />
     </>
   );
 }
