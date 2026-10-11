@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Menu, X } from 'lucide-react';
 
-export default function Navigation() {
+export default function Navigation({ night = false }: { night?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -18,14 +18,14 @@ export default function Navigation() {
   const links = [
     { name: 'PROGRAM', href: '#program' },
     { name: 'GAMES', href: '#games' },
-    { name: 'THE NIGHT', href: '#the-night' },
-    { name: 'JOIN', href: '#join' },
+    { name: 'THE NIGHT', href: '#bonfire' },
+    { name: 'JOIN', href: '/join' },
   ];
 
   return (
     <nav className={cn(
       "fixed top-0 left-0 w-full z-50 transition-all duration-300 px-6 py-4",
-      isScrolled ? "bg-brand-black/80 backdrop-blur-md text-brand-cream py-3" : "bg-transparent text-brand-black"
+      isScrolled || night ? "bg-brand-black/80 backdrop-blur-md text-brand-cream py-3" : "bg-transparent text-brand-black"
     )}>
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="font-display font-black text-2xl tracking-tighter">
@@ -39,13 +39,13 @@ export default function Navigation() {
               {link.name}
             </a>
           ))}
-          <a href="#join" className="bg-brand-purple text-brand-cream px-4 py-2 poster-border poster-shadow hover:translate-x-1 hover:-translate-y-1 transition-transform">
+          <a href="/join" className="bg-brand-purple text-brand-cream px-4 py-2 poster-border poster-shadow hover:translate-x-1 hover:-translate-y-1 transition-transform min-h-11 inline-flex items-center">
             JOIN NOW
           </a>
         </div>
 
         {/* Mobile Toggle */}
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+        <button className="md:hidden min-h-11 min-w-11 inline-flex items-center justify-center" onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? "Close menu" : "Open menu"}>
           {isOpen ? <X /> : <Menu />}
         </button>
       </div>
@@ -58,7 +58,7 @@ export default function Navigation() {
               {link.name}
             </a>
           ))}
-          <a href="#join" className="bg-brand-purple text-brand-cream p-4 text-center poster-border poster-shadow">
+          <a href="/join" className="bg-brand-purple text-brand-cream p-4 text-center poster-border poster-shadow">
             JOIN THE GAMES
           </a>
         </div>

@@ -60,9 +60,10 @@ export default function GamesSection() {
   return (
     <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {games.map((game) => (
-        <div
+        <a
           key={game.id}
-          className="game-card group relative p-8 poster-border poster-shadow bg-brand-cream transition-all hover:-translate-y-2 hover:-translate-x-2 cursor-pointer overflow-hidden"
+          href="/join"
+          className="game-card group relative p-8 poster-border poster-shadow bg-brand-cream text-brand-black transition-all hover:-translate-y-2 hover:-translate-x-2 overflow-hidden block"
         >
           <div className="game-number absolute top-0 right-0 font-display font-black text-8xl opacity-10 group-hover:opacity-20 transition-opacity leading-none">
             {game.number}
@@ -82,7 +83,7 @@ export default function GamesSection() {
               Enter Game
             </div>
           </div>
-        </div>
+        </a>
       ))}
 
       <div className="game-cta-block md:col-span-2 mt-12 text-center">
@@ -90,7 +91,7 @@ export default function GamesSection() {
           <div className="font-display font-black text-4xl md:text-6xl uppercase italic mb-6">
             READY? <br /> SCAN. JOIN. PLAY.
           </div>
-          <a href="#join" className="inline-block px-10 py-5 bg-brand-cream text-brand-purple font-display font-black uppercase tracking-tighter text-2xl poster-border poster-shadow hover:-translate-y-1 transition-transform">
+          <a href="/join" id="join" className="inline-block px-10 py-5 bg-brand-cream text-brand-purple font-display font-black uppercase tracking-tighter text-2xl poster-border poster-shadow hover:-translate-y-1 transition-transform">
             ENTER GAME ROOM →
           </a>
         </div>

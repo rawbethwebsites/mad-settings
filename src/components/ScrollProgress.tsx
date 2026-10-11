@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-
-const STAGES = ['ARRIVE', 'PLAY', 'SING', 'FIRE', 'CHILL', 'MORNING', 'GO HOME'];
+import { NIGHT_STAGES } from '@/data/campWorld';
 
 export default function ScrollProgress() {
   const [activeStage, setActiveStage] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPercent = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
-      const stage = Math.min(Math.floor(scrollPercent * STAGES.length), STAGES.length - 1);
+      const scrollPercent = window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const stage = Math.min(Math.floor(scrollPercent * NIGHT_STAGES.length), NIGHT_STAGES.length - 1);
       setActiveStage(stage);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -20,32 +18,60 @@ export default function ScrollProgress() {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed right-6 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col gap-4 font-display font-bold text-[10px] tracking-widest uppercase"
-    >
-      {STAGES.map((stage, i) => (
-        <div key={stage} className="flex items-center gap-3 group cursor-pointer">
-          <div className={cn(
-            "w-2 h-2 rounded-full transition-all duration-500",
-            i === activeStage
-              ? "bg-brand-purple scale-[2.2]"
-              : i < activeStage
-                ? "bg-brand-purple/40"
-                : "bg-brand-black/20 group-hover:bg-brand-black/50"
-          )} />
-          <span className={cn(
-            "transition-all duration-500",
-            i === activeStage
-              ? "text-brand-purple font-black scale-125"
-              : i < activeStage
-                ? "text-brand-purple/40"
-                : "text-brand-black/40"
-          )}>
-            {stage}
-          </span>
-        </div>
-      ))}
-    </div>
+    <>
+      <nav
+        aria-label="Camp night stages"
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col gap-3 font-display font-bold text-[10px] tracking-widest uppercase"
+      >
+        {NIGHT_STAGES.map((stage, i) => (
+          <a
+            key={stage.id}
+            href={stage.href}
+            className="flex items-center gap-3 group min-h-11"
+          >
+            <span
+              className={cn(
+                "w-2.5 h-2.5 rounded-full transition-all duration-500",
+                i === activeStage
+                  ? "bg-brand-acid scale-[1.8]"
+                  : i < activeStage
+                    ? "bg-brand-purple/70"
+                    : "bg-brand-cream/30 group-hover:bg-brand-cream/70"
+              )}
+            />
+            <span
+              className={cn(
+                "transition-all duration-500",
+                i === activeStage
+                  ? "text-brand-acid font-black"
+                  : i < activeStage
+                    ? "text-brand-cream/70"
+                    : "text-brand-cream/40 group-hover:text-brand-cream"
+              )}
+            >
+              {stage.label}
+            </span>
+          </a>
+        ))}
+      </nav>
+
+      <nav
+        aria-label="Jump the night"
+        className="night-rail md:hidden"
+      >
+        {NIGHT_STAGES.map((stage, i) => (
+          <a
+            key={stage.id}
+            href={stage.href}
+            className={cn(
+              "night-rail-chip",
+              i === activeStage && "night-rail-chip-active"
+            )}
+          >
+            {stage.label}
+          </a>
+        ))}
+      </nav>
+    </>
   );
 }

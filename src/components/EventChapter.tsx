@@ -16,9 +16,10 @@ interface ChapterProps {
   bgColor?: string;
   textColor?: string;
   className?: string;
+  overlay?: boolean;
 }
 
-export default function EventChapter({ id, time, headline, subheadline, children, bgColor = 'bg-brand-cream', textColor = 'text-brand-black', className }: ChapterProps) {
+export default function EventChapter({ id, time, headline, subheadline, children, bgColor = 'bg-brand-cream', textColor = 'text-brand-black', className, overlay = false }: ChapterProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -108,7 +109,8 @@ export default function EventChapter({ id, time, headline, subheadline, children
       ref={sectionRef}
       className={cn(
         "relative min-h-screen w-full py-24 px-6 flex flex-col justify-center transition-colors duration-700 overflow-hidden",
-        bgColor, textColor, className
+        overlay ? "chapter-overlay text-brand-cream" : cn(bgColor, textColor),
+        className
       )}
     >
       <div className="max-w-5xl mx-auto w-full relative z-10">

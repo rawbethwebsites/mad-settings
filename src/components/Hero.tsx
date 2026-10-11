@@ -6,7 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function Hero() {
+export default function Hero({ night = false }: { night?: boolean }) {
   const containerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -111,9 +111,9 @@ export default function Hero() {
   }, []);
 
   return (
-    <section ref={containerRef} className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-brand-cream">
+    <section ref={containerRef} className={`relative h-screen w-full flex items-center justify-center overflow-hidden ${night ? "bg-transparent" : "bg-brand-cream"}`}>
       {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className={`absolute inset-0 pointer-events-none ${night ? "opacity-20" : ""}`}>
         <div className="hero-bg-shape absolute top-[15%] left-[8%] w-32 h-32 bg-brand-purple/10 rounded-full blur-3xl animate-float-slow" />
         <div className="hero-bg-shape absolute bottom-[20%] right-[8%] w-64 h-64 bg-brand-acid/20 rounded-full blur-3xl animate-float-medium" />
         <div className="hero-bg-shape absolute top-[30%] right-[25%] w-20 h-20 border-4 border-brand-black rotate-12 animate-float-fast" />
@@ -134,27 +134,27 @@ export default function Hero() {
 
       <div className="relative z-10 text-center px-6">
         <div className="hero-title flex flex-col items-center font-display font-black leading-none uppercase italic">
-          <span className="text-7xl md:text-9xl text-brand-black">MAD</span>
-          <span className="text-7xl md:text-9xl text-brand-purple -mt-4 md:-mt-8">SETT</span>
-          <span className="text-7xl md:text-9xl text-brand-black -mt-4 md:-mt-8">INGS</span>
+          <span className={`text-7xl md:text-9xl ${night ? "text-brand-cream" : "text-brand-black"}`}>MAD</span>
+          <span className={`text-7xl md:text-9xl -mt-4 md:-mt-8 ${night ? "text-brand-acid" : "text-brand-purple"}`}>SETT</span>
+          <span className={`text-7xl md:text-9xl -mt-4 md:-mt-8 ${night ? "text-brand-cream" : "text-brand-black"}`}>INGS</span>
         </div>
 
-        <div className="hero-subtitle mt-6 font-display font-bold tracking-widest text-sm md:text-lg uppercase text-brand-black/60">
+        <div className={`hero-subtitle mt-6 font-display font-bold tracking-widest text-sm md:text-lg uppercase ${night ? "text-brand-cream/70" : "text-brand-black/60"}`}>
           POP-UP • BONFIRE • SLEEPOVER
         </div>
 
-        <h2 className="hero-headline mt-12 font-display font-black text-4xl md:text-6xl uppercase leading-tight max-w-2xl mx-auto">
+        <h2 className={`hero-headline mt-12 font-display font-black text-4xl md:text-6xl uppercase leading-tight max-w-2xl mx-auto ${night ? "text-brand-cream" : ""}`}>
           ONE NIGHT.<br />
-          <span className="text-brand-purple">ZERO CHILL.</span>
+          <span className={night ? "text-brand-acid" : "text-brand-purple"}>ZERO CHILL.</span>
         </h2>
 
-        <p className="hero-copy mt-6 font-body text-lg md:text-xl text-brand-black/70 max-w-md mx-auto">
+        <p className={`hero-copy mt-6 font-body text-lg md:text-xl max-w-md mx-auto ${night ? "text-brand-cream/80" : "text-brand-black/70"}`}>
           Come for the vibe.<br />
           Stay for the games.
         </p>
 
         <div className="mt-10 flex flex-col md:flex-row gap-4 justify-center items-center">
-          <a href="#join" className="hero-btn group relative px-8 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow transition-all hover:-translate-y-1 hover:-translate-x-1 active:translate-y-0 active:translate-x-0">
+          <a href="/join" className="hero-btn group relative px-8 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow transition-all hover:-translate-y-1 hover:-translate-x-1 active:translate-y-0 active:translate-x-0">
             JOIN THE GAMES
             <span className="inline-block transition-transform group-hover:translate-x-2 ml-2">→</span>
           </a>
@@ -163,7 +163,7 @@ export default function Hero() {
           </a>
         </div>
 
-        <div className="scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 font-display font-bold text-xs uppercase tracking-widest text-brand-black/40 animate-bounce-arrow">
+        <div className={`scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 font-display font-bold text-xs uppercase tracking-widest animate-bounce-arrow ${night ? "text-brand-cream/50" : "text-brand-black/40"}`}>
           SCROLL TO ENTER
           <span className="text-lg">↓</span>
         </div>
