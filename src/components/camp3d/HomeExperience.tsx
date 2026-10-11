@@ -5,6 +5,7 @@ import Navigation from "@/components/Navigation";
 import ScrollProgress from "@/components/ScrollProgress";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
 import FloatingCTA from "@/components/FloatingCTA";
+import AutoScroll from "@/components/AutoScroll";
 import Hero from "@/components/Hero";
 import EventChapter from "@/components/EventChapter";
 import GamesSection from "@/components/GamesSection";
@@ -27,6 +28,7 @@ export default function HomeExperience() {
       <ScrollProgress />
       <ScrollProgressBar />
       <FloatingCTA />
+      <AutoScroll />
 
       <Hero night />
 
