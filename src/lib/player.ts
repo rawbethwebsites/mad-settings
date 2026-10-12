@@ -6,14 +6,8 @@ export interface Player {
   avatar: string;
   roomCode: string;
   joinedAt: number;
-  scores: {
-    bingo: number;
-    search: number;
-    puzzles: number;
-    vault: number;
-    same: number;
-    chess: number;
-  };
+  // One slot per game id; games added later simply start at 0
+  scores: Record<string, number>;
   vaultPieces: string[]; // code pieces collected from other games
   badges: string[]; // achievement badges
 }
@@ -59,7 +53,7 @@ export function updatePlayer(updates: Partial<Player>): Player | null {
   return updated;
 }
 
-export function addScore(game: keyof Player['scores'], points: number): Player | null {
+export function addScore(game: string, points: number): Player | null {
   const player = getPlayer();
   if (!player) return null;
   // Players saved before a game existed have no slot for it yet

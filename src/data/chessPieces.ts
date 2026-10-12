@@ -14,8 +14,11 @@ export const CAMP_PIECES: Record<PieceSymbol, CampPiece> = {
   r: { emoji: '⛺', name: 'Tent', role: 'Rook', blurb: 'Sturdy. Moves in straight lines, up/down and across.' },
   b: { emoji: '🔦', name: 'Flashlight', role: 'Bishop', blurb: 'Beams down the diagonals, as far as it can see.' },
   n: { emoji: '🦊', name: 'Fox', role: 'Knight', blurb: 'Sneaks over anything in an L-shaped jump.' },
-  p: { emoji: '🪵', name: 'Log', role: 'Pawn', blurb: 'Steps forward, captures sideways. Reach the far end to level up.' },
+  p: { emoji: '🌲', name: 'Pine', role: 'Pawn', blurb: 'Steps forward, captures sideways. Reach the far end to level up.' },
 };
+
+// Standard chess letters, shown on each piece so the camp icons are never a guess
+export const PIECE_LETTER: Record<PieceSymbol, string> = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
 export const SIDES: Record<Color, { name: string; chip: string }> = {
   w: { name: 'DAY CAMPERS', chip: 'bg-brand-acid text-brand-black' },
@@ -33,4 +36,4 @@ export const LEVELS: { id: ChessLevel; label: string; blurb: string; win: number
 ];
 
 export const DRAW_POINTS = 20;
-export const TWO_PLAYER_WIN_POINTS = 50;
+export const ONLINE_WIN_POINTS = 50;
