@@ -6,12 +6,29 @@ import { getPlayer, getTotalScore, clearPlayer, Player } from '@/lib/player';
 import { VAULT_PIECES } from '@/data/gameContent';
 
 const GAMES = [
-  { id: 'bingo', name: 'SMART BINGO', emoji: '🎯', tagline: 'Classic. Upgraded.', path: '/games/bingo', color: 'bg-brand-purple text-brand-cream' },
-  { id: 'search', name: 'ULTIMATE SEARCH', emoji: '🔍', tagline: 'Find it. Scan it.', path: '/games/search', color: 'bg-brand-acid text-brand-black' },
-  { id: 'puzzles', name: 'PUZZLE RUSH', emoji: '🧩', tagline: 'Think fast.', path: '/games/puzzles', color: 'bg-brand-coral text-brand-black' },
-  { id: 'vault', name: 'THE VAULT', emoji: '🔐', tagline: 'Crack the code.', path: '/games/vault', color: 'bg-brand-black text-brand-cream' },
-  { id: 'same', name: "DON'T SAY IT", emoji: '🤐', tagline: "2v2. Don't say the same thing.", path: '/games/same', color: 'bg-brand-cyan text-brand-black' },
-  { id: 'chess', name: 'CAMP CHESS', emoji: '♟️', tagline: 'Campfire vs. the night. 1P or 2P.', path: '/games/chess', color: 'bg-brand-coral text-brand-black' },
+  // Camp games
+  { id: 'bingo', group: 'camp', name: 'SMART BINGO', emoji: '🎯', tagline: 'Classic. Upgraded.', path: '/games/bingo', color: 'bg-brand-purple text-brand-cream' },
+  { id: 'search', group: 'camp', name: 'ULTIMATE SEARCH', emoji: '🔍', tagline: 'Find it. Scan it.', path: '/games/search', color: 'bg-brand-acid text-brand-black' },
+  { id: 'puzzles', group: 'camp', name: 'PUZZLE RUSH', emoji: '🧩', tagline: 'Think fast.', path: '/games/puzzles', color: 'bg-brand-coral text-brand-black' },
+  { id: 'vault', group: 'camp', name: 'THE VAULT', emoji: '🔐', tagline: 'Crack the code.', path: '/games/vault', color: 'bg-brand-black text-brand-cream' },
+  { id: 'same', group: 'camp', name: "DON'T SAY IT", emoji: '🤐', tagline: "2v2. Don't say the same thing.", path: '/games/same', color: 'bg-brand-cyan text-brand-black' },
+  { id: 'chess', group: 'camp', name: 'CAMP CHESS', emoji: '♟️', tagline: 'Campfire vs. the night. Play a camper online.', path: '/games/chess', color: 'bg-brand-coral text-brand-black' },
+  // Arcade
+  { id: 'ayo', group: 'arcade', name: 'AYO', emoji: '🌰', tagline: 'Sow seeds. Capture pits.', path: '/games/ayo', color: 'bg-brand-acid text-brand-black' },
+  { id: 'whot', group: 'arcade', name: 'WHOT!', emoji: '🃏', tagline: 'Nigeria\'s favourite card game.', path: '/games/whot', color: 'bg-brand-purple text-brand-cream' },
+  { id: 'ocho', group: 'arcade', name: 'OCHO!', emoji: '🎴', tagline: 'Match it. Call OCHO!', path: '/games/ocho', color: 'bg-brand-coral text-brand-black' },
+  { id: 'tenten', group: 'arcade', name: 'TEN TEN', emoji: '👆', tagline: 'Point. Catch. Escape.', path: '/games/tenten', color: 'bg-brand-cyan text-brand-black' },
+  { id: 'trivia', group: 'arcade', name: 'NAIJA TRIVIA', emoji: '🇳🇬', tagline: 'How well do you know Naija?', path: '/games/trivia', color: 'bg-brand-black text-brand-cream' },
+  { id: 'chopchop', group: 'arcade', name: 'CHOP CHOP', emoji: '🍢', tagline: 'Match-3 with Naija snacks.', path: '/games/chopchop', color: 'bg-brand-acid text-brand-black' },
+  { id: 'minesweeper', group: 'arcade', name: 'MINESWEEPER', emoji: '💣', tagline: 'Clear the field.', path: '/games/minesweeper', color: 'bg-brand-cyan text-brand-black' },
+  { id: 'connect4', group: 'arcade', name: 'CONNECT 4', emoji: '🔴', tagline: 'Four in a row.', path: '/games/connect4', color: 'bg-brand-coral text-brand-black' },
+  { id: 'tictactoe', group: 'arcade', name: 'ENDLESS TIC TAC TOE', emoji: '⭕', tagline: 'Only 3 pieces. Oldest vanishes.', path: '/games/tictactoe', color: 'bg-brand-purple text-brand-cream' },
+  { id: 'dots', group: 'arcade', name: 'DOTS & BOXES', emoji: '🔲', tagline: 'Draw lines. Steal boxes.', path: '/games/dots', color: 'bg-brand-acid text-brand-black' },
+];
+
+const GROUPS = [
+  { id: 'camp', title: 'CAMP GAMES' },
+  { id: 'arcade', title: 'NAIJA ARCADE' },
 ];
 
 export default function GamesHub() {
@@ -63,11 +80,11 @@ export default function GamesHub() {
           </div>
 
           {/* Individual scores */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-6">
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-6">
             {GAMES.map(g => (
               <div key={g.id} className="text-center p-2 border-2 border-brand-cream/20">
                 <div className="text-lg">{g.emoji}</div>
-                <div className="font-display font-black text-xl">{player.scores[g.id as keyof typeof player.scores] ?? 0}</div>
+                <div className="font-display font-black text-xl">{player.scores[g.id] ?? 0}</div>
               </div>
             ))}
           </div>
@@ -105,27 +122,32 @@ export default function GamesHub() {
         </div>
 
         {/* Game Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {GAMES.map(g => (
-            <button
-              key={g.id}
-              onClick={() => router.push(g.path)}
-              className={`group relative p-8 poster-border poster-shadow ${g.color} text-left hover:-translate-y-2 hover:-translate-x-2 transition-all overflow-hidden`}
-            >
-              <div className="absolute top-0 right-0 text-7xl opacity-20 group-hover:opacity-30 transition-opacity">
-                {g.emoji}
-              </div>
-              <div className="relative z-10">
-                <div className="text-5xl mb-4">{g.emoji}</div>
-                <h2 className="font-display font-black text-3xl uppercase italic mb-1">{g.name}</h2>
-                <p className="font-body text-lg opacity-80">{g.tagline}</p>
-                <div className="mt-4 inline-block px-4 py-2 bg-brand-cream text-brand-black font-display font-bold text-xs uppercase tracking-widest group-hover:bg-brand-acid transition-colors">
-                  PLAY →
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+        {GROUPS.map(group => (
+          <section key={group.id} className="mb-8">
+            <h2 className="font-display font-black text-xl uppercase tracking-widest mb-4">{group.title}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {GAMES.filter(g => g.group === group.id).map(g => (
+                <button
+                  key={g.id}
+                  onClick={() => router.push(g.path)}
+                  className={`group relative p-8 poster-border poster-shadow ${g.color} text-left hover:-translate-y-2 hover:-translate-x-2 transition-all overflow-hidden`}
+                >
+                  <div className="absolute top-0 right-0 text-7xl opacity-20 group-hover:opacity-30 transition-opacity">
+                    {g.emoji}
+                  </div>
+                  <div className="relative z-10">
+                    <div className="text-5xl mb-4">{g.emoji}</div>
+                    <h3 className="font-display font-black text-3xl uppercase italic mb-1">{g.name}</h3>
+                    <p className="font-body text-lg opacity-80">{g.tagline}</p>
+                    <div className="mt-4 inline-block px-4 py-2 bg-brand-cream text-brand-black font-display font-bold text-xs uppercase tracking-widest group-hover:bg-brand-acid transition-colors">
+                      PLAY →
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
 
         {/* Leave button */}
         <button
