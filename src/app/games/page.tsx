@@ -11,6 +11,7 @@ const GAMES = [
   { id: 'puzzles', name: 'PUZZLE RUSH', emoji: '🧩', tagline: 'Think fast.', path: '/games/puzzles', color: 'bg-brand-coral text-brand-black' },
   { id: 'vault', name: 'THE VAULT', emoji: '🔐', tagline: 'Crack the code.', path: '/games/vault', color: 'bg-brand-black text-brand-cream' },
   { id: 'same', name: "DON'T SAY IT", emoji: '🤐', tagline: "2v2. Don't say the same thing.", path: '/games/same', color: 'bg-brand-cyan text-brand-black' },
+  { id: 'chess', name: 'CAMP CHESS', emoji: '♟️', tagline: 'Campfire vs. the night. 1P or 2P.', path: '/games/chess', color: 'bg-brand-coral text-brand-black' },
 ];
 
 export default function GamesHub() {
@@ -62,7 +63,7 @@ export default function GamesHub() {
           </div>
 
           {/* Individual scores */}
-          <div className="grid grid-cols-5 gap-2 mt-6">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-6">
             {GAMES.map(g => (
               <div key={g.id} className="text-center p-2 border-2 border-brand-cream/20">
                 <div className="text-lg">{g.emoji}</div>

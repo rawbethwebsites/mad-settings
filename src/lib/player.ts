@@ -12,6 +12,7 @@ export interface Player {
     puzzles: number;
     vault: number;
     same: number;
+    chess: number;
   };
   vaultPieces: string[]; // code pieces collected from other games
   badges: string[]; // achievement badges
@@ -31,7 +32,7 @@ export function createPlayer(name: string, avatar: string, roomCode: string): Pl
     avatar,
     roomCode: roomCode.toUpperCase(),
     joinedAt: Date.now(),
-    scores: { bingo: 0, search: 0, puzzles: 0, vault: 0, same: 0 },
+    scores: { bingo: 0, search: 0, puzzles: 0, vault: 0, same: 0, chess: 0 },
     vaultPieces: [],
     badges: [],
   };
