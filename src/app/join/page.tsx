@@ -24,12 +24,9 @@ function JoinForm() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const saved = getPlayer();
-      if (saved && !saved.roomCode) {
+      if (saved) {
         setName(saved.name);
         setAvatar(saved.avatar);
-      } else if (saved?.roomCode) {
-        router.push(`/room/${saved.roomCode}`);
-        return;
       }
       const urlCode = new URLSearchParams(window.location.search).get('code');
       if (urlCode) setRoomCode(urlCode.toUpperCase().slice(0, 4));
