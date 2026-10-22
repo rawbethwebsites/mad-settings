@@ -69,6 +69,15 @@ export const join = mutation({
     const row = { name: cleanName(args.name), avatar: cleanAvatar(args.avatar), lastSeen: Date.now() };
     const existing = await memberOf(ctx.db, room._id, playerId);
     if (existing?.kicked) throw new Error("The host removed you from this room.");
+    // One name per camper in a room, ignoring case and spaces
+    const key = (n: string) => n.toLowerCase().replace(/\s+/g, "");
+    const others = await ctx.db
+      .query("roomPlayers")
+      .withIndex("by_room", (q) => q.eq("roomId", room._id))
+      .collect();
+    if (others.some((r) => r.playerId !== playerId && !r.kicked && key(r.name) === key(row.name))) {
+      throw new Error(`Someone in this room is already called ${row.name}. Pick another name.`);
+    }
     if (existing) await ctx.db.patch(existing._id, row);
     else {
       await ctx.db.insert("roomPlayers", {
