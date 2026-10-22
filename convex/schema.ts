@@ -103,6 +103,8 @@ export default defineSchema({
     status: v.union(v.literal("waiting"), v.literal("playing"), v.literal("finished"), v.literal("cancelled")),
     state: v.optional(v.any()),
     round: v.number(),
+    turnDeadline: v.optional(v.number()),
+    moveNo: v.optional(v.number()),
     result: v.optional(v.object({ winners: v.array(v.number()), reason: v.string() })),
     createdAt: v.number(),
     updatedAt: v.number(),

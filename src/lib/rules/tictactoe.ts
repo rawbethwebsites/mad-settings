@@ -35,6 +35,7 @@ export function winner(cells: (P | null)[]): { p: P; line: number[] } | null {
 export const tictactoe: Rules<TttMatch, { cell: number }, TttMatch> = {
   min: 2,
   max: 2,
+  turnSeconds: 20,
   points: { win: 40, draw: 0 },
   init: () => ({ ...fresh(), turn: 0 }),
   act(s, seat, a) {

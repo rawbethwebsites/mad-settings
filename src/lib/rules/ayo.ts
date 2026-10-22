@@ -129,6 +129,7 @@ export function aiPit(s: State): number {
 export const ayo: Rules<State, { pit: number }, State> = {
   min: 2,
   max: 2,
+  turnSeconds: 30,
   points: { win: 80, draw: 30 },
   init: names => fresh([names[0] ?? 'Player 1', names[1] ?? 'Player 2']),
   act(s, seat, a) {

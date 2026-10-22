@@ -54,6 +54,7 @@ export const boxCount = (s: DotsState, o: Owner) => s.box.flat().filter(b => b =
 export const dots: Rules<DotsState, Line, DotsState> = {
   min: 2,
   max: 2,
+  turnSeconds: 25,
   points: { win: 70, draw: 25 },
   init: fresh,
   act(s, seat, line) {
