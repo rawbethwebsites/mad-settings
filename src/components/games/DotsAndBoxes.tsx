@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
   N,
@@ -14,6 +15,16 @@ import {
 } from '@/lib/rules/dots';
 import type { OnlineProps } from '@/lib/rules/types';
 import { DotsBoard } from '@/components/boards/DotsBoard';
+
+function useLineSound(s: DotsState) {
+  const lines = [...s.h.flat(), ...s.v.flat()].filter(Boolean).length;
+  const boxes = s.box.flat().filter(Boolean).length;
+  const previous = useRef({ lines, boxes });
+  useEffect(() => {
+    if (lines > previous.current.lines) playSound(boxes > previous.current.boxes ? 'capture' : 'place');
+    previous.current = { lines, boxes };
+  }, [lines, boxes]);
+}
 
 const boxesOf = (s: DotsState, l: Line): [number, number][] => {
   const out: [number, number][] = [];
@@ -106,6 +117,7 @@ function Grid({
 
 export default function DotsAndBoxes({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<DotsState>(fresh);
+  useLineSound(s);
   const [points, setPoints] = useState(0);
 
   const you = boxCount(s, 1);
@@ -149,7 +161,7 @@ export default function DotsAndBoxes({ award }: { award: (n: number) => void }) 
         <div className={`p-3 poster-border ${s.turn === 2 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>COMPUTER · {cpu}</div>
       </div>
 
-      <DotsBoard s={s} marks={['Y','C']} enabled={s.turn===1 && !over} onTap={tap} />
+      <div data-sfx="none"><DotsBoard s={s} marks={['Y','C']} enabled={s.turn===1 && !over} onTap={tap} /></div>
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Finish a box to take another turn.</p>
 
       {over && (
@@ -169,6 +181,7 @@ export default function DotsAndBoxes({ award }: { award: (n: number) => void }) 
 
 // Online: seat 0 owns boxes 1 ("Y"), seat 1 owns boxes 2. Your mark is always Y.
 export function DotsOnline({ view, seat, names, act }: OnlineProps<DotsState, Line>) {
+  useLineSound(view);
   const [err, setErr] = useState('');
   const mine = boxCount(view, 1);
   const theirs = boxCount(view, 2);
@@ -208,7 +221,7 @@ export function DotsOnline({ view, seat, names, act }: OnlineProps<DotsState, Li
         <div className={`p-3 poster-border ${!yourTurn && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{opp ?? 'THEM'} · {theirBoxes}</div>
       </div>
 
-      <DotsBoard s={shown} marks={['Y','T']} enabled={yourTurn} onTap={tap} />
+      <div data-sfx="none"><DotsBoard s={shown} marks={['Y','T']} enabled={yourTurn} onTap={tap} /></div>
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Finish a box to take another turn.</p>
 
       {err && (

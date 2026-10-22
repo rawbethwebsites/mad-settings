@@ -1,10 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import { fresh, place, winner, type P, type TttMatch, type TttState } from '@/lib/rules/tictactoe';
 import type { OnlineProps } from '@/lib/rules/types';
 import { TicTacToeBoard } from '@/components/boards/TicTacToeBoard';
+
+function usePlacementSound(cells: TttState['cells']) {
+  const previous = useRef(cells);
+  useEffect(() => {
+    // A fourth piece removes an old one: detect additions, not piece count.
+    if (cells.some((cell, i) => cell !== null && previous.current[i] === null)) playSound('place');
+    previous.current = cells;
+  }, [cells]);
+}
 
 function aiMove(s: TttState): number {
   const empty = s.cells.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
@@ -20,6 +30,7 @@ export default function EndlessTicTacToe({ award }: { award: (n: number) => void
   const [turn, setTurn] = useState<P>('X');
   const [win, setWin] = useState<{ p: P; line: number[] } | null>(null);
   const [points, setPoints] = useState(0);
+  usePlacementSound(s.cells);
 
   const after = (next: TttState, mover: P) => {
     const w = winner(next.cells);
@@ -61,7 +72,7 @@ export default function EndlessTicTacToe({ award }: { award: (n: number) => void
       <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${turn === 'X' && !win ? 'bg-brand-acid' : 'bg-white'}`}>
         {win ? 'GAME OVER' : turn === 'X' ? 'YOUR TURN' : 'COMPUTER IS THINKING…'}
       </div>
-      <TicTacToeBoard cells={s.cells} queue={s.queue} active={turn} win={win} onTap={tap} enabled={turn === 'X' && !win} />
+      <div data-sfx="none"><TicTacToeBoard cells={s.cells} queue={s.queue} active={turn} win={win} onTap={tap} enabled={turn === 'X' && !win} /></div>
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Faded piece = disappears on the next move.</p>
       {win && (
         <Result
@@ -116,6 +127,7 @@ function Board({
 // Online: seat 0 plays X (always your colour = X on your screen as "you").
 export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch, { cell: number }>) {
   const [err, setErr] = useState('');
+  usePlacementSound(view.cells);
   const win = winner(view.cells);
   const yourTurn = seat !== null && !win && view.turn === seat;
   const active: P | null = view.turn === 0 ? 'X' : 'O';
@@ -147,14 +159,14 @@ export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch
       <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`} aria-live="polite">
         {win ? 'GAME OVER' : yourTurn ? 'YOUR TURN' : `${opp ?? 'THEY'} IS PLAYING…`}
       </div>
-      <TicTacToeBoard
+      <div data-sfx="none"><TicTacToeBoard
         cells={view.cells}
         queue={view.queue}
         active={yourTurn ? active : null}
         win={win}
         onTap={tap}
         enabled={yourTurn}
-      />
+      /></div>
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Faded piece = disappears on the next move.</p>
       {err && (
         <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">

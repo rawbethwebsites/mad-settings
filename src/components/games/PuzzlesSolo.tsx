@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
+import { play } from '@/lib/sfx';
+import { useCountdownSounds, useResultSound } from '@/lib/useGameSounds';
 import { useRouter } from 'next/navigation';
 import { getPlayer, addScore, addBadge, addVaultPiece, Player } from '@/lib/player';
 import { WORD_SCRAMBLES, PATTERN_QUESTIONS } from '@/data/gameContent';
@@ -18,45 +20,20 @@ export default function PuzzlesGame() {
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'wrong'>('none');
   const [timer, setTimer] = useState(30);
   const [solvedCount, setSolvedCount] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-
-  const startTimer = () => {
-    stopTimer();
-    setTimer(30);
-    timerRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (prev <= 1) {
-          stopTimer();
-          handleTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleTimeout = () => {
-    // Move to next puzzle on timeout
-    nextPuzzle();
-  };
+  const answered = feedback === 'correct';
+  useCountdownSounds(mounted && phase !== 'done' && !answered ? timer : null, puzzleIdx);
+  useResultSound(phase === 'done' ? (score >= 30 ? 'win' : 'lose') : null);
 
   useEffect(() => {
     const p = getPlayer();
     if (!p) { router.push('/join'); return; }
     // Defer state updates to avoid synchronous setState in effect
-    setTimeout(() => {
+    const startup = setTimeout(() => {
       setPlayer(p);
       setMounted(true);
-      startTimer();
     }, 0);
-    return () => stopTimer();
+    return () => clearTimeout(startup);
   }, [router]);
-
-  if (!mounted || !player) return null;
 
   const currentScramble = WORD_SCRAMBLES[puzzleIdx];
   const currentPattern = PATTERN_QUESTIONS[puzzleIdx - WORD_SCRAMBLES.length];
@@ -67,14 +44,13 @@ export default function PuzzlesGame() {
     const nextIdx = puzzleIdx + 1;
     if (nextIdx < WORD_SCRAMBLES.length) {
       setPuzzleIdx(nextIdx);
-      startTimer();
+      setTimer(30);
     } else if (nextIdx < WORD_SCRAMBLES.length + PATTERN_QUESTIONS.length) {
       setPuzzleIdx(nextIdx);
       setPhase('pattern');
-      startTimer();
+      setTimer(30);
     } else {
       setPhase('done');
-      stopTimer();
       // Award vault piece if score >= 30
       if (score >= 30) {
         addVaultPiece('9');
@@ -84,37 +60,63 @@ export default function PuzzlesGame() {
     }
   };
 
+  // Read the latest puzzle and score when the existing timer expires.
+  const expire = useEffectEvent(() => {
+    play('error');
+    nextPuzzle();
+  });
+  const advance = useEffectEvent(() => nextPuzzle());
+  useEffect(() => {
+    if (feedback !== 'correct' || phase === 'done') return;
+    const timeout = setTimeout(() => advance(), phase === 'scramble' ? 1200 : 1500);
+    return () => clearTimeout(timeout);
+  }, [feedback, phase, puzzleIdx]);
+  useEffect(() => {
+    if (!mounted || phase === 'done' || answered) return;
+    const timeout = setTimeout(() => {
+      if (timer <= 1) expire();
+      else setTimer(t => t - 1);
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [mounted, phase, timer, puzzleIdx, answered]);
+
   const handleSubmit = () => {
+    if (feedback === 'correct') return;
     if (!answer.trim() && phase === 'scramble') return;
 
     if (phase === 'scramble') {
       if (answer.trim().toUpperCase() === currentScramble.answer) {
+        play('capture');
         const points = Math.max(5, timer); // more points for faster answers
         setScore(prev => prev + points);
         setSolvedCount(prev => prev + 1);
         setFeedback('correct');
         addScore('puzzles', points);
-        setTimeout(() => nextPuzzle(), 1200);
       } else {
+        play('error');
         setFeedback('wrong');
-        setTimeout(() => setFeedback('none'), 800);
+        setTimeout(() => setFeedback(f => f === 'wrong' ? 'none' : f), 800);
       }
     }
   };
 
   const handlePatternAnswer = (idx: number) => {
+    if (feedback === 'correct') return;
     if (idx === currentPattern.oddOneOut) {
+      play('capture');
       const points = Math.max(5, timer);
       setScore(prev => prev + points);
       setSolvedCount(prev => prev + 1);
       setFeedback('correct');
       addScore('puzzles', points);
-      setTimeout(() => nextPuzzle(), 1500);
     } else {
+      play('error');
       setFeedback('wrong');
-      setTimeout(() => setFeedback('none'), 800);
+      setTimeout(() => setFeedback(f => f === 'wrong' ? 'none' : f), 800);
     }
   };
+
+  if (!mounted || !player) return null;
 
   return (
     <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
@@ -180,6 +182,7 @@ export default function PuzzlesGame() {
                 className="flex-1 px-4 py-4 border-4 border-brand-black bg-white text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
               />
               <button
+                data-sfx="none"
                 onClick={handleSubmit}
                 disabled={!answer.trim() || feedback === 'correct'}
                 className="px-6 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase poster-border hover:-translate-y-1 transition-transform disabled:opacity-30"
@@ -202,6 +205,7 @@ export default function PuzzlesGame() {
             <div className="grid grid-cols-2 gap-4 mt-6">
               {currentPattern.options.map((opt, i) => (
                 <button
+                  data-sfx="none"
                   key={i}
                   onClick={() => handlePatternAnswer(i)}
                   disabled={feedback === 'correct'}

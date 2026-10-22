@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Label, Panel, Result } from '@/components/arcade/ui';
 import { CardChoice, CardGameTable } from '@/components/cards/Table';
 import { COLOUR, KIND_LABEL, OchoBack, OchoFront } from '@/components/cards/OchoCard';
@@ -29,7 +30,18 @@ function OchoTable({ view, seat, names, busy, picking, error, onPlay, onDraw, on
   onDraw: () => void; onChoose: (color: Color) => void; onCancel: () => void;
 }) {
   const myTurn = seat !== null && seat === view.turn && view.winner === null;
-  return <>
+  const previous = useRef(view);
+  useEffect(() => {
+    const before = previous.current;
+    // Counts detect identical cards, skips and reverses even without a new
+    // top face or turn. A play with forced pickups emits only one flip.
+    const played = view.handCounts.some((n, p) => n < before.handCounts[p]);
+    const drawn = view.handCounts.some((n, p) => n > before.handCounts[p]);
+    if (played) playSound('flip');
+    else if (drawn) playSound('card');
+    previous.current = view;
+  }, [view]);
+  return <div data-sfx="none">
     <CardGameTable game="ocho" names={names} seat={seat} counts={view.handCounts}
       turn={view.turn} winner={view.winner} marketCount={view.marketCount}
       topKey={`${view.top.color}-${view.top.kind}-${view.top.n}`} topFace={<OchoFront card={view.top} />}
@@ -39,10 +51,10 @@ function OchoTable({ view, seat, names, busy, picking, error, onPlay, onDraw, on
         id: `${c.color}-${c.kind}-${c.n}`, label: `${c.color ?? 'wild'} ${c.kind === 'num' ? c.n : KIND_LABEL[c.kind]}`,
         front: <OchoFront card={c} />, playable: myTurn && viewCanPlay(view, c),
       }))} />
-    {picking !== null && <CardChoice title="Choose a colour" onCancel={onCancel}
+    {picking !== null && <CardChoice title="Choose a colour" onCancel={() => { playSound('tap'); onCancel(); }}
       options={COLORS.map(color => ({ value: color, label: color, color: COLOUR[color] }))}
       onChoose={color => onChoose(color as Color)} />}
-  </>;
+  </div>;
 }
 
 export default function Ocho({ award }: { award: (n: number) => void }) {
@@ -91,7 +103,7 @@ export default function Ocho({ award }: { award: (n: number) => void }) {
             <Btn key={n} variant={opponents === n ? 'primary' : 'light'} onClick={() => setOpponents(n)}>{n}</Btn>
           ))}
         </div>
-        <Btn className="w-full" onClick={() => setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)]))}>DEAL →</Btn>
+        <Btn data-sfx="none" className="w-full" onClick={() => { setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)])); playSound('card'); }}>DEAL →</Btn>
       </Panel>
     );
   }

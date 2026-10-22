@@ -1,7 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
   COLS, ROWS, drop, emptyBoard, findWin, type Board, type C4Match, type Cell,
@@ -9,6 +10,15 @@ import {
 import type { OnlineProps } from '@/lib/rules/types';
 
 const Connect4Board3D = dynamic(() => import('./connect4-3d/Connect4Board3D'), { ssr: false });
+
+function useDropSound(board: Board) {
+  const discs = board.flat().filter(Boolean).length;
+  const previous = useRef(discs);
+  useEffect(() => {
+    if (discs > previous.current) playSound('drop');
+    previous.current = discs;
+  }, [discs]);
+}
 
 function heuristic(board: Board, me: Cell): number {
   const opp: Cell = me === 1 ? 2 : 1;
@@ -77,6 +87,7 @@ function aiColumn(board: Board): number {
 
 export default function Connect4({ award }: { award: (n: number) => void }) {
   const [board, setBoard] = useState<Board>(emptyBoard());
+  useDropSound(board);
   const [turn, setTurn] = useState<1 | 2>(1);
   const [over, setOver] = useState<{ winner: Cell; cells: [number, number][]; points: number } | null>(null);
 
@@ -123,7 +134,7 @@ export default function Connect4({ award }: { award: (n: number) => void }) {
         {over ? 'GAME OVER' : turn === 1 ? 'YOUR TURN · DROP A DISC' : 'COMPUTER IS THINKING…'}
       </div>
 
-      <Connect4Board3D board={board} winCells={over?.cells ?? []} enabled={turn === 1 && !over} onDrop={play} />
+      <div data-sfx="none"><Connect4Board3D board={board} winCells={over?.cells ?? []} enabled={turn === 1 && !over} onDrop={play} /></div>
 
       <div className="flex justify-between mt-3 font-display font-bold text-xs uppercase">
         <span><span className="inline-block w-3 h-3 rounded-full bg-brand-coral mr-1 align-middle" />YOU</span>
@@ -145,6 +156,7 @@ export default function Connect4({ award }: { award: (n: number) => void }) {
 }
 
 export function Connect4Online({ view, seat, names, act }: OnlineProps<C4Match, { col: number }>) {
+  useDropSound(view.board);
   const win = findWin(view.board);
   const full = view.board[0].every(v => v !== 0);
   const over = !!win || full;
@@ -170,7 +182,7 @@ export function Connect4Online({ view, seat, names, act }: OnlineProps<C4Match, 
         {over ? 'GAME OVER' : yourTurn ? 'YOUR TURN · DROP A DISC' : `${opp ?? 'THEY'} IS PLAYING…`}
       </div>
 
-      <Connect4Board3D board={view.board} winCells={win?.cells ?? []} enabled={yourTurn} onDrop={tapCol} />
+      <div data-sfx="none"><Connect4Board3D board={view.board} winCells={win?.cells ?? []} enabled={yourTurn} onDrop={tapCol} /></div>
 
       <div className="flex justify-between mt-3 font-display font-bold text-xs uppercase">
         <span>

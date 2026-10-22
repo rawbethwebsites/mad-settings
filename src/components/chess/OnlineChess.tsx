@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from 'convex/react';
 import { readableErrors } from '@/lib/readableErrors';
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
@@ -10,6 +10,8 @@ import { addScore, type Player } from '@/lib/player';
 import { claimAward, getChessPlayerId } from '@/lib/chessOnline';
 import { DRAW_POINTS, ONLINE_WIN_POINTS, SIDES } from '@/data/chessPieces';
 import ChessBoard, { PlayerStrip, capturedBy } from './ChessBoard';
+import { play } from '@/lib/sfx';
+import { useResultSound, useTurnSound } from '@/lib/useGameSounds';
 
 const btn = 'font-display font-black uppercase poster-border';
 
@@ -52,6 +54,17 @@ function Online({ player }: { player: Player }) {
 
   const online = useQuery(api.chess.online, { playerId });
   const incoming = useQuery(api.chess.incoming, { playerId });
+  const heardInvites = useRef(new Set<string>());
+  useEffect(() => {
+    let fresh = false;
+    for (const invite of incoming ?? []) {
+      if (!heardInvites.current.has(invite.id)) {
+        heardInvites.current.add(invite.id);
+        fresh = true;
+      }
+    }
+    if (fresh) play('invite');
+  }, [incoming]);
   const outgoing = useQuery(api.chess.outgoing, { playerId });
   const active = useQuery(api.chess.activeGame, { playerId });
 
@@ -258,6 +271,20 @@ function Game({
   const [error, setError] = useState<string | null>(null);
 
   const chess = useMemo(() => replay(game?.moves ?? []), [game?.moves]);
+  const previousMove = useRef<{ round: number; count: number } | null>(null);
+  useEffect(() => {
+    if (!game) return;
+    const old = previousMove.current;
+    previousMove.current = { round: game.round, count: game.moves.length };
+    if (!old || old.round !== game.round || game.moves.length <= old.count) return;
+    const moves = chess.history({ verbose: true });
+    play(moves[moves.length - 1]?.captured ? 'capture' : 'place');
+  }, [game, chess]);
+  const roundKey = game ? `${game.code}:${game.round}` : code;
+  useTurnSound(game?.status === 'playing' && game.you === chess.turn(), roundKey);
+  useResultSound(game?.status === 'finished' && game.result && game.you
+    ? game.result.winner === 'draw' ? 'draw' : game.result.winner === game.you ? 'win' : 'lose'
+    : null, roundKey);
 
   // Points once per finished game
   const finishedKey = game && game.status === 'finished' ? `${game.code}:${game.round}` : null;

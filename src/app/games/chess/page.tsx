@@ -16,6 +16,9 @@ import {
 } from '@/data/chessPieces';
 import ChessBoard, { PlayerStrip, capturedBy } from '@/components/chess/ChessBoard';
 import OnlineChess from '@/components/chess/OnlineChess';
+import SoundToggle, { buttonTap } from '@/components/arcade/SoundControls';
+import { play } from '@/lib/sfx';
+import { useResultSound } from '@/lib/useGameSounds';
 
 type Mode = 'ai' | 'online';
 type Phase = 'setup' | 'play';
@@ -73,6 +76,7 @@ export default function CampChess() {
   const [thinking, setThinking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [showLegend, setShowLegend] = useState(false);
+  useResultSound(result ? (result.winner === null ? 'draw' : result.winner === human ? 'win' : 'lose') : null);
 
   useEffect(() => {
     const p = getPlayer();
@@ -94,7 +98,8 @@ export default function CampChess() {
     const timer = window.setTimeout(() => {
       const move = chooseMove(game.fen(), level);
       if (move) {
-        game.move(move);
+        const moved = game.move(move);
+        play(moved.captured ? 'capture' : 'place');
         setTick(t => t + 1);
         settle();
       }
@@ -159,7 +164,8 @@ export default function CampChess() {
 
   const playMove = (from: Square, to: Square, promotion?: PieceSymbol) => {
     try {
-      game.move({ from, to, promotion });
+      const moved = game.move({ from, to, promotion });
+      play(moved.captured ? 'capture' : 'place');
     } catch {
       return;
     }
@@ -203,18 +209,18 @@ export default function CampChess() {
   const inCheck = game.inCheck();
 
   return (
-    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
+    <main onClick={buttonTap} className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
       <div className="max-w-xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center gap-2 mb-6">
           <button
             onClick={() => (phase === 'play' && mode === 'online' ? setPhase('setup') : router.push('/games'))}
             className="font-display font-bold text-sm uppercase hover:text-brand-purple"
           >
             ← BACK
           </button>
-          <h1 className="font-display font-black text-2xl md:text-3xl uppercase italic">♟️ CAMP CHESS</h1>
-          <div className="font-display font-black text-xl">{player.avatar}</div>
+          <h1 className="font-display font-black text-xl sm:text-2xl md:text-3xl uppercase italic">♟️ CAMP CHESS</h1>
+          <SoundToggle />
         </div>
 
         {/* Setup */}

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Btn, Panel, Result } from '@/components/arcade/ui';
 import { TRIVIA, type TriviaQuestion } from '@/data/triviaQuestions';
+import { play } from '@/lib/sfx';
+import { useCountdownSounds } from '@/lib/useGameSounds';
 
 const COUNT = 10;
 const SECONDS = 15;
@@ -24,10 +26,12 @@ export default function Trivia({ award }: { award: (n: number) => void }) {
   const q = set[i];
   const done = i >= COUNT;
   const locked = chosen !== null;
+  useCountdownSounds(started && !done && !locked ? left : null, `${round}:${i}`);
 
   const answer = (idx: number | null) => {
-    if (locked) return;
+    if (locked || done) return;
     const ok = idx === q.answer;
+    play(ok ? 'capture' : 'error');
     setChosen(idx ?? -1);
     if (ok) {
       const nextStreak = streak + 1;
@@ -113,7 +117,7 @@ export default function Trivia({ award }: { award: (n: number) => void }) {
                   ? 'bg-brand-coral'
                   : 'bg-white opacity-50';
             return (
-              <button key={o} onClick={() => answer(idx)} disabled={locked}
+              <button data-sfx="none" key={o} onClick={() => answer(idx)} disabled={locked}
                 className={`w-full text-left px-4 py-3 poster-border font-display font-bold ${style}`}>
                 {o}
               </button>

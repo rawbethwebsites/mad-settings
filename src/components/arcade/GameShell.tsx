@@ -9,7 +9,10 @@ import { addScore, getPlayer, type Player } from '@/lib/player';
 import { camperId, stripServerError } from '@/lib/camper';
 import { RULES } from '@/lib/rules';
 import type { OnlineProps } from '@/lib/rules/types';
+import { useResultSound, useTurnSound } from '@/lib/useGameSounds';
 import { Btn } from './ui';
+import SoundToggle, { buttonTap } from './SoundControls';
+import TurnCountdown from './TurnCountdown';
 
 export interface ShellApi {
   player: Player;
@@ -90,16 +93,19 @@ export default function GameShell({
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
+    <main onClick={buttonTap} className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
       <div className="max-w-xl mx-auto">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center gap-2 mb-4">
           <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
             ← BACK
           </button>
-          <h1 className="font-display font-black text-2xl md:text-3xl uppercase italic">
+          <h1 className="font-display font-black text-xl sm:text-2xl md:text-3xl uppercase italic min-w-0">
             {emoji} {title}
           </h1>
-          <div className="font-display font-black text-xl">{player.avatar}</div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="font-display font-black text-xl hidden sm:inline">{player.avatar}</span>
+            <SoundToggle />
+          </div>
         </div>
 
         {/* Room bar: where your points are going */}
@@ -298,6 +304,8 @@ interface MatchData {
   seats: { name: string; avatar: string; online: boolean }[];
   waitingFor: string[];
   turn: number | null;
+  turnDeadline: number | null;
+  serverNow: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   view: any;
   result: { winners: number[]; reason: string } | null;
@@ -401,6 +409,9 @@ function LiveMatch({
   const winners = match.result?.winners ?? [];
   const draw = finished && winners.length === 0;
   const iWon = finished && match.seat !== null && winners.includes(match.seat);
+  const roundKey = `${match.id}:${match.round}`;
+  useTurnSound(!finished && match.seat !== null && match.turn === match.seat, roundKey);
+  useResultSound(finished && match.seat !== null ? (draw ? 'draw' : iWon ? 'win' : 'lose') : null, roundKey);
 
   // Points were awarded on the server by matches.act — no local award here
   const myPoints = finished ? (draw ? match.points.draw : iWon ? match.points.win : 0) : 0;
@@ -432,6 +443,18 @@ function LiveMatch({
           </div>
         ))}
       </div>
+
+      {match.status === 'playing' && match.turn !== null && match.turnDeadline !== null && (
+        <TurnCountdown
+          key={`${roundKey}:${match.turnDeadline}`}
+          deadline={match.turnDeadline}
+          serverNow={match.serverNow}
+          duration={RULES[match.game]?.turnSeconds ?? 30}
+          label={match.turn === match.seat ? 'Your move' : `${names[match.turn]}'s move`}
+          round={`${roundKey}:${match.turnDeadline}`}
+          seat={match.turn}
+        />
+      )}
 
       {/* The game itself */}
       {match.status === 'playing' && match.view !== null && (
@@ -475,6 +498,7 @@ function LiveMatch({
           <h2 className="font-display font-black text-3xl uppercase italic mb-2">
             {draw ? 'DRAW' : iWon ? 'YOU WIN!' : `${winners.map(w => names[w]).join(' & ')} WIN${winners.length > 1 ? '' : 'S'}`}
           </h2>
+          {/ran out of time/i.test(match.result.reason) && <p className="font-display font-black uppercase mb-2">Ran out of time</p>}
           <p className="font-body text-lg mb-2">{match.result.reason}</p>
           {myPoints > 0 && <p className="font-display font-black text-xl">+{myPoints} PTS ON THE BOARD</p>}
           <div className="flex gap-3 mt-4">

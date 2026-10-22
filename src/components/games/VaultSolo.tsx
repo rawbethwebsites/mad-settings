@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getPlayer, addScore, addBadge, Player } from '@/lib/player';
 import { VAULT_PIECES, VAULT_CODE, VAULT_CRACK_POINTS } from '@/data/gameContent';
+import { play } from '@/lib/sfx';
+import { useResultSound } from '@/lib/useGameSounds';
 
 export default function VaultGame() {
   const router = useRouter();
@@ -12,6 +14,7 @@ export default function VaultGame() {
   const [codeInput, setCodeInput] = useState('');
   const [cracked, setCracked] = useState(false);
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'wrong'>('none');
+  useResultSound(cracked ? 'win' : null);
 
   useEffect(() => {
     const p = getPlayer();
@@ -29,6 +32,7 @@ export default function VaultGame() {
   const allPiecesCollected = collectedPieces.length === VAULT_PIECES.length;
 
   const handleSubmit = () => {
+    if (cracked) return;
     if (codeInput.trim() === VAULT_CODE) {
       setCracked(true);
       setFeedback('correct');
@@ -36,6 +40,7 @@ export default function VaultGame() {
       addBadge('🔐');
       setPlayer(getPlayer());
     } else {
+      play('error');
       setFeedback('wrong');
       setTimeout(() => setFeedback('none'), 1000);
     }
@@ -143,6 +148,7 @@ export default function VaultGame() {
               className="w-full px-4 py-6 border-4 border-brand-cream font-display font-black text-5xl uppercase text-center tracking-[0.3em] text-brand-cream placeholder:text-brand-cream/40 bg-transparent focus:outline-none focus:bg-brand-cream/10"
             />
             <button
+              data-sfx="none"
               onClick={handleSubmit}
               disabled={codeInput.length !== 4}
               className="w-full mt-4 py-4 bg-brand-acid text-brand-black font-display font-black uppercase text-xl poster-border hover:-translate-y-1 transition-transform disabled:opacity-30"

@@ -1,0 +1,230 @@
+{
+  "base": "http://127.0.0.1:3041",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "checks": [
+    {
+      "name": "vs-computer human and AI placements",
+      "passed": true,
+      "evidence": [
+        "place",
+        "place"
+      ]
+    },
+    {
+      "name": "generic restart taps once",
+      "passed": true,
+      "evidence": [
+        "place",
+        "place",
+        "tap"
+      ]
+    },
+    {
+      "name": "mute suppresses human and AI audio scheduling",
+      "passed": true,
+      "evidence": {
+        "before": [
+          3,
+          3
+        ],
+        "after": [
+          3,
+          3
+        ]
+      }
+    },
+    {
+      "name": "mute persists across reload",
+      "passed": true,
+      "evidence": "mad-settings-muted=1; unmute button visible"
+    },
+    {
+      "name": "invite toast sounds once",
+      "passed": true,
+      "evidence": [
+        "invite"
+      ]
+    },
+    {
+      "name": "server-offset countdown despite guest clock +5 minutes",
+      "passed": true,
+      "evidence": [
+        20,
+        20
+      ]
+    },
+    {
+      "name": "active-player copy",
+      "passed": true,
+      "evidence": {
+        "Ada": "20\n\nYour move \u00b7 20s",
+        "Tobi": "20\n\nAda's move \u00b7 20s"
+      }
+    },
+    {
+      "name": "real server timeout after idle 21 seconds",
+      "passed": true,
+      "evidence": {
+        "elapsed": 22.93,
+        "match": "m972kx6h2hcpxebhwczaksbx5x8gs6v1",
+        "status": "finished",
+        "result": {
+          "reason": "Ada ran out of time.",
+          "winners": [
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ada final-five and result sound deduplication",
+      "passed": true,
+      "evidence": [
+        "tap",
+        "tap",
+        "tap",
+        "turn",
+        "tick",
+        "tick",
+        "urgent",
+        "tick",
+        "tick",
+        "lose"
+      ]
+    },
+    {
+      "name": "Tobi final-five and result sound deduplication",
+      "passed": true,
+      "evidence": [
+        "invite",
+        "tap",
+        "tick",
+        "tick",
+        "urgent",
+        "tick",
+        "tick",
+        "win"
+      ]
+    },
+    {
+      "name": "reduced-motion suppresses vibration",
+      "passed": true,
+      "evidence": {
+        "Ada": [
+          35,
+          [
+            40,
+            60,
+            40
+          ]
+        ],
+        "Tobi": []
+      }
+    },
+    {
+      "name": "phone layout and runtime",
+      "passed": true,
+      "evidence": "375x812; no horizontal overflow or page errors"
+    }
+  ],
+  "sound_events": {
+    "solo-tictactoe": [
+      {
+        "sound": "place",
+        "at": 2.634
+      },
+      {
+        "sound": "place",
+        "at": 3.125
+      },
+      {
+        "sound": "tap",
+        "at": 3.633
+      },
+      {
+        "sound": "tap",
+        "at": 5.467
+      }
+    ],
+    "online-Ada": [
+      {
+        "sound": "tap",
+        "at": 10.481
+      },
+      {
+        "sound": "tap",
+        "at": 10.513
+      },
+      {
+        "sound": "tap",
+        "at": 10.556
+      },
+      {
+        "sound": "turn",
+        "at": 11.5
+      },
+      {
+        "sound": "tick",
+        "at": 26.489
+      },
+      {
+        "sound": "tick",
+        "at": 27.489
+      },
+      {
+        "sound": "urgent",
+        "at": 28.489
+      },
+      {
+        "sound": "tick",
+        "at": 29.492
+      },
+      {
+        "sound": "tick",
+        "at": 30.489
+      },
+      {
+        "sound": "lose",
+        "at": 32.016
+      }
+    ],
+    "online-Tobi": [
+      {
+        "sound": "invite",
+        "at": 10.857
+      },
+      {
+        "sound": "tap",
+        "at": 11.181
+      },
+      {
+        "sound": "tick",
+        "at": 26.487
+      },
+      {
+        "sound": "tick",
+        "at": 27.483
+      },
+      {
+        "sound": "urgent",
+        "at": 28.487
+      },
+      {
+        "sound": "tick",
+        "at": 29.49
+      },
+      {
+        "sound": "tick",
+        "at": 30.487
+      },
+      {
+        "sound": "win",
+        "at": 32.013
+      }
+    ]
+  },
+  "test_room_closed": true
+}

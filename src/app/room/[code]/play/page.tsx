@@ -7,6 +7,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { camperId } from '@/lib/camper';
 import { BingoPlayer, TriviaPlayer } from '@/components/room/rounds';
+import SoundToggle, { buttonTap } from '@/components/arcade/SoundControls';
 
 // The live group round the host started (Trivia or Bingo)
 export default function RoomPlayPage() {
@@ -16,12 +17,13 @@ export default function RoomPlayPage() {
   const room = useQuery(api.rooms.get, playerId ? { code, playerId } : 'skip');
 
   return (
-    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
+    <main onClick={buttonTap} className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
       <div className="max-w-xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <Link href={`/room/${code}`} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
             ← ROOM {code}
           </Link>
+          <SoundToggle />
         </div>
         {room?.round?.game === 'trivia' && <TriviaPlayer roundId={room.round.id} />}
         {room?.round?.game === 'bingo' && <BingoPlayer roundId={room.round.id} />}

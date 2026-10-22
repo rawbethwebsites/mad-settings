@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Label, Panel, Result } from '@/components/arcade/ui';
 import { CardChoice, CardGameTable } from '@/components/cards/Table';
 import { ShapeIcon, WhotBack, WhotFront } from '@/components/cards/WhotCard';
@@ -26,7 +27,18 @@ function WhotTable({ view, seat, names, busy, picking, error, onPlay, onDraw, on
   onDraw: () => void; onChoose: (shape: Shape) => void; onCancel: () => void;
 }) {
   const myTurn = seat !== null && seat === view.turn && view.winner === null;
-  return <>
+  const previous = useRef(view);
+  useEffect(() => {
+    const before = previous.current;
+    // Counts catch duplicate WHOT faces and extra turns; forced pickups belong
+    // to the same play event, so flip takes precedence over card.
+    const played = view.handCounts.some((n, p) => n < before.handCounts[p]);
+    const drawn = view.handCounts.some((n, p) => n > before.handCounts[p]);
+    if (played) playSound('flip');
+    else if (drawn) playSound('card');
+    previous.current = view;
+  }, [view]);
+  return <div data-sfx="none">
     <CardGameTable game="whot" names={names} seat={seat} counts={view.handCounts}
       turn={view.turn} winner={view.winner} marketCount={view.marketCount}
       topKey={`${view.top.shape}-${view.top.n}`} topFace={<WhotFront card={view.top} />}
@@ -36,10 +48,10 @@ function WhotTable({ view, seat, names, busy, picking, error, onPlay, onDraw, on
         id: `${c.shape}-${c.n}`, label: `${c.shape} ${c.n}`, front: <WhotFront card={c} />,
         playable: myTurn && (c.shape === 'whot' || (view.want ? c.shape === view.want : c.shape === view.top.shape || c.n === view.top.n)),
       }))} />
-    {picking !== null && <CardChoice title="Choose a shape" onCancel={onCancel}
+    {picking !== null && <CardChoice title="Choose a shape" onCancel={() => { playSound('tap'); onCancel(); }}
       options={SHAPES.map(shape => ({ value: shape, label: shape, icon: <ShapeIcon shape={shape} size={22} /> }))}
       onChoose={shape => onChoose(shape as Shape)} />}
-  </>;
+  </div>;
 }
 
 export default function Whot({ award }: { award: (n: number) => void }) {
@@ -90,7 +102,7 @@ export default function Whot({ award }: { award: (n: number) => void }) {
             <Btn key={n} variant={opponents === n ? 'primary' : 'light'} onClick={() => setOpponents(n)}>{n}</Btn>
           ))}
         </div>
-        <Btn className="w-full" onClick={() => setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)]))}>DEAL →</Btn>
+        <Btn data-sfx="none" className="w-full" onClick={() => { setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)])); playSound('card'); }}>DEAL →</Btn>
       </Panel>
     );
   }

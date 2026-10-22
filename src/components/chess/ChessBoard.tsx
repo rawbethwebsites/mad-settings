@@ -89,7 +89,7 @@ export default function ChessBoard({
   onPromote,
 }: BoardProps) {
   return (
-    <ChessBoardBoard
+    <div data-sfx="none"><ChessBoardBoard
       chess={chess}
       flipped={flipped}
       selected={selected}
@@ -98,6 +98,6 @@ export default function ChessBoard({
       onSquare={onSquare}
       promo={promo}
       onPromote={onPromote}
-    />
+    /></div>
   );
 }

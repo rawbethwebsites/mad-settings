@@ -1,4 +1,5 @@
 import React from 'react';
+import { play } from '@/lib/sfx';
 import type { OnlineProps } from '@/lib/rules/types';
 import type { SameAction } from '@/lib/rules/same';
 
@@ -18,10 +19,11 @@ export function SameOnline({ view, seat, names, act }: OnlineProps<SameView, Sam
   const [err, setErr] = React.useState<string | null>(null);
 
   const send = async () => {
-    if (!word.trim()) { setErr('Type a word'); return; }
+    if (busy) return;
+    if (!word.trim()) { play('error'); setErr('Type a word'); return; }
     setErr(null);
     setBusy(true);
-    try { await act({ word }); setWord(''); } catch(e){ setErr(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); }
+    try { await act({ word }); play('place'); setWord(''); } catch(e){ play('error'); setErr(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); }
   };
 
   const prompt = view?.prompt ?? '...';
@@ -43,7 +45,7 @@ export function SameOnline({ view, seat, names, act }: OnlineProps<SameView, Sam
       {!finished && (
         <div className="p-6 poster-border poster-shadow bg-white text-center">
           <input value={word} onChange={e=>setWord(e.target.value)} placeholder="Type one word…" className="w-full p-3 border-2 border-black font-body text-lg mb-3" />
-          <button onClick={send} disabled={busy || !word.trim()} className="w-full py-4 poster-border bg-brand-purple text-brand-cream font-display font-black text-xl uppercase disabled:opacity-50">Submit</button>
+          <button data-sfx="none" onClick={send} disabled={busy || !word.trim()} className="w-full py-4 poster-border bg-brand-purple text-brand-cream font-display font-black text-xl uppercase disabled:opacity-50">Submit</button>
           {err && <div className="mt-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">{err}</div>}
           <div className="mt-3 text-sm font-body">
             {myWord ? `You wrote: ${myWord}` : 'Waiting…'}

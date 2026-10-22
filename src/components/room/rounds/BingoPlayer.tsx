@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import { getChessPlayerId } from '@/lib/chessOnline';
 import { Leaderboard, roundError } from './TriviaPlayer';
 import { BingoBoard } from '@/components/boards/BingoBoard';
+import { play } from '@/lib/sfx';
+import { useResultSound } from '@/lib/useGameSounds';
 
 const btn = 'font-display font-black uppercase poster-border';
 
@@ -25,6 +27,15 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
   const data = useQuery(api.rounds.get, { roundId, playerId });
   const enter = useMutation(api.rounds.enter);
   const claim = useMutation(api.rounds.claim);
+  const calledCount = data?.game === 'bingo' ? data.called.length : null;
+  const previousCall = useRef<{ roundId: string; count: number } | null>(null);
+  useEffect(() => {
+    if (calledCount === null) return;
+    const old = previousCall.current;
+    previousCall.current = { roundId, count: calledCount };
+    if (old?.roundId === roundId && calledCount > old.count) play('card');
+  }, [roundId, calledCount]);
+  useResultSound(data?.game === 'bingo' ? (data.me.score > 0 ? 'win' : data.status === 'ended' ? 'lose' : null) : null, roundId);
 
   useEffect(() => {
     enter({ roundId, playerId }).catch(() => {});
@@ -79,7 +90,8 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
   const toggle = (cell: number) => {
     if (!data.card) return;
     const word = data.card[cell];
-    if (word !== 'FREE' && !data.called.includes(word)) return; // only mark called words
+    if (word === 'FREE' || !data.called.includes(word)) return; // only mark called words
+    play('place');
     setMarked((prev) => {
       const next = new Set(prev);
       if (next.has(cell)) {
@@ -130,7 +142,7 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
           Dealing your card…
         </div>
       ) : (
-        <BingoBoard
+        <div data-sfx="none"><BingoBoard
           grid={data.card}
           marked={marked}
           called={new Set(data.called)}
@@ -138,7 +150,7 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
           won={false}
           winLine={winnableLine ?? null}
           onToggle={(i) => toggle(i)}
-        />
+        /></div>
       )}
 
       {error && (

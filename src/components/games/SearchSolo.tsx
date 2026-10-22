@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getPlayer, addScore, addBadge, addVaultPiece, Player } from '@/lib/player';
 import { SEARCH_CLUES } from '@/data/gameContent';
+import { play } from '@/lib/sfx';
+import { useResultSound } from '@/lib/useGameSounds';
 
 export default function SearchGame() {
   const router = useRouter();
@@ -14,6 +16,8 @@ export default function SearchGame() {
   const [solved, setSolved] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'wrong'>('none');
   const [score, setScore] = useState(0);
+  const done = currentIdx === SEARCH_CLUES.length - 1 && solved.size === SEARCH_CLUES.length;
+  useResultSound(done ? 'win' : null);
 
   useEffect(() => {
     const p = getPlayer();
@@ -30,9 +34,10 @@ export default function SearchGame() {
   const currentClue = SEARCH_CLUES[currentIdx];
 
   const handleSubmit = () => {
-    if (!answer.trim()) return;
+    if (!answer.trim() || feedback === 'correct') return;
 
     if (answer.trim().toUpperCase() === currentClue.answer) {
+      if (solved.size + 1 < SEARCH_CLUES.length) play('capture');
       setFeedback('correct');
       const newSolved = new Set(solved).add(currentClue.id);
       setSolved(newSolved);
@@ -53,6 +58,7 @@ export default function SearchGame() {
         }
       }, 1500);
     } else {
+      play('error');
       setFeedback('wrong');
       setTimeout(() => setFeedback('none'), 1000);
     }
@@ -128,6 +134,7 @@ export default function SearchGame() {
             }`}
           />
           <button
+            data-sfx="none"
             onClick={handleSubmit}
             disabled={!answer.trim() || feedback === 'correct'}
             className="px-6 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase poster-border poster-shadow hover:-translate-y-1 transition-transform disabled:opacity-30"

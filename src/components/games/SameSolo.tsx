@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getPlayer, addScore, addBadge, Player } from '@/lib/player';
 import { SAME_EASY, SAME_MEDIUM, SAME_HARD, SAME_FINAL, SAME_POINTS_PER_STEP } from '@/data/gameContent';
+import { play } from '@/lib/sfx';
+import { useCountdownSounds, useResultSound } from '@/lib/useGameSounds';
 
 type Phase = 'setup' | 'ready' | 'countdown' | 'judge' | 'out' | 'cleared' | 'done';
 
@@ -23,7 +25,19 @@ export default function DontSayTheSameThing() {
   const [step, setStep] = useState(0);
   const [results, setResults] = useState<number[]>([]);
   const [count, setCount] = useState(3);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const best = Math.max(...results, 0);
+  const winners = teams.filter((_, i) => results[i] === best);
+  useCountdownSounds(phase === 'countdown' ? count : null, `${turn}:${step}`);
+  useResultSound(phase === 'cleared' ? 'win' : phase === 'out' ? 'lose' : phase === 'done' ? (winners.length > 1 ? 'draw' : 'win') : null, `${turn}:${phase}`);
+
+  useEffect(() => {
+    if (phase !== 'countdown') return;
+    const timeout = setTimeout(() => {
+      if (count <= 1) { setCount(0); setPhase('judge'); }
+      else setCount(c => c - 1);
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, [phase, count]);
 
   useEffect(() => {
     const p = getPlayer();
@@ -34,7 +48,6 @@ export default function DontSayTheSameThing() {
     }, 0);
     return () => {
       window.clearTimeout(timer);
-      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [router]);
 
@@ -52,16 +65,6 @@ export default function DontSayTheSameThing() {
   const sayIt = () => {
     setCount(3);
     setPhase('countdown');
-    timerRef.current = setInterval(() => {
-      setCount(prev => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          setPhase('judge');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 800);
   };
 
   const endTurn = (reached: number) => {
@@ -78,7 +81,7 @@ export default function DontSayTheSameThing() {
   const different = () => {
     const reached = step + 1;
     if (reached === ladder.length) endTurn(reached);
-    else { setStep(reached); setPhase('ready'); }
+    else { play('capture'); setStep(reached); setPhase('ready'); }
   };
 
   const nextTurn = () => {
@@ -87,9 +90,6 @@ export default function DontSayTheSameThing() {
     setStep(0);
     setPhase('ready');
   };
-
-  const best = Math.max(...results, 0);
-  const winners = teams.filter((_, i) => results[i] === best);
 
   return (
     <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
@@ -185,6 +185,7 @@ export default function DontSayTheSameThing() {
 
             {phase === 'ready' && (
               <button
+                data-sfx="none"
                 onClick={sayIt}
                 className="w-full py-5 bg-brand-purple text-brand-cream font-display font-black uppercase text-2xl poster-border poster-shadow hover:-translate-y-1 transition-transform"
               >
@@ -194,12 +195,14 @@ export default function DontSayTheSameThing() {
             {phase === 'judge' && (
               <div className="grid grid-cols-2 gap-3">
                 <button
+                  data-sfx="none"
                   onClick={different}
                   className="py-5 bg-brand-acid text-brand-black font-display font-black uppercase text-xl poster-border poster-shadow hover:-translate-y-1 transition-transform"
                 >
                   ✓ DIFFERENT
                 </button>
                 <button
+                  data-sfx="none"
                   onClick={() => endTurn(step)}
                   className="py-5 bg-brand-coral text-brand-black font-display font-black uppercase text-xl poster-border poster-shadow hover:-translate-y-1 transition-transform"
                 >

@@ -7,22 +7,41 @@ export type Sfx =
 
 const MUTE_KEY = 'mad-settings-muted';
 let ctx: AudioContext | null = null;
+let output: GainNode | null = null;
+let unlocked = false;
+let fallbackMuted = false;
 
 export function isMuted() {
-  try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; }
+  try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return fallbackMuted; }
 }
 
 export function setMuted(m: boolean) {
+  fallbackMuted = m;
   try { localStorage.setItem(MUTE_KEY, m ? '1' : '0'); } catch {}
+  // Silence even a fanfare that has already been scheduled.
+  if (ctx && output) output.gain.setValueAtTime(m ? 0 : 1, ctx.currentTime);
+  if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent('mad:mute', { detail: m }));
+}
+
+/** Call from a pointer/key gesture, never from a timer or a query effect. */
+export function unlockAudio() {
+  unlocked = true;
+  if (!isMuted()) {
+    try { audio(); } catch {}
+  }
 }
 
 function audio() {
   if (typeof window === 'undefined') return null;
+  if (!unlocked && !navigator.userActivation?.hasBeenActive) return null;
   if (!ctx) {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
+    output = ctx.createGain();
+    output.gain.value = isMuted() ? 0 : 1;
+    output.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   return ctx;
@@ -40,7 +59,7 @@ function tone(freq: number, start: number, dur: number, type: OscillatorType = '
   gain.gain.setValueAtTime(0.0001, t);
   gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  osc.connect(gain).connect(a.destination);
+  osc.connect(gain).connect(output!);
   osc.start(t);
   osc.stop(t + dur + 0.02);
 }
@@ -59,7 +78,7 @@ function noise(start: number, dur: number, vol = 0.12, highpass = 1200) {
   filter.frequency.value = highpass;
   gain.gain.value = vol;
   src.buffer = buf;
-  src.connect(filter).connect(gain).connect(a.destination);
+  src.connect(filter).connect(gain).connect(output!);
   src.start(t);
 }
 
@@ -81,11 +100,17 @@ const SOUNDS: Record<Sfx, () => void> = {
 
 export function play(s: Sfx) {
   if (typeof window === 'undefined' || isMuted()) return;
-  try { SOUNDS[s](); } catch {}
+  try {
+    if (!audio()) return;
+    if (process.env.NODE_ENV === 'development') console.debug('[mad:sfx]', s);
+    SOUNDS[s]();
+  } catch {}
 }
 
 /** Short buzz on phones that support it (pairs with win / turn / urgent) */
 export function buzz(ms: number | number[] = 30) {
-  if (isMuted()) return;
-  try { navigator.vibrate?.(ms); } catch {}
+  if (typeof window === 'undefined' || isMuted()) return;
+  try {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) navigator.vibrate?.(ms);
+  } catch {}
 }

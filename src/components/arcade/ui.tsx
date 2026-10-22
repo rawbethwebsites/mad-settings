@@ -1,4 +1,7 @@
+'use client';
+
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useResultSound } from '@/lib/useGameSounds';
 
 const VARIANTS = {
   primary: 'bg-brand-purple text-brand-cream',
@@ -46,6 +49,7 @@ export function Result({
   tone: 'win' | 'lose' | 'draw';
   onAgain: () => void;
 }) {
+  useResultSound(tone);
   const bg = tone === 'win' ? 'bg-brand-acid' : tone === 'lose' ? 'bg-brand-coral' : 'bg-brand-cyan';
   return (
     <div className={`mt-6 p-8 poster-border poster-shadow text-center text-brand-black ${bg}`}>

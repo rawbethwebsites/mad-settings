@@ -6,6 +6,8 @@ import { getPlayer, addScore, addBadge, addVaultPiece } from '@/lib/player';
 import { BINGO_WORDS } from '@/data/gameContent';
 import { Player } from '@/lib/player';
 import { BingoBoard } from '@/components/boards/BingoBoard';
+import { play } from '@/lib/sfx';
+import { useResultSound } from '@/lib/useGameSounds';
 
 function shuffleArray<T>(arr: T[]): T[] {
   const shuffled = [...arr];
@@ -27,17 +29,21 @@ export default function BingoGame() {
   const [won, setWon] = useState(false);
   const [winLine, setWinLine] = useState<number[] | null>(null);
   const [score, setScore] = useState(0);
+  useResultSound(won ? 'win' : null);
 
   useEffect(() => {
     const p = getPlayer();
     if (!p) { router.push('/join'); return; }
-    setPlayer(p);
-    // Generate 5x5 grid (25 words, center is FREE)
-    const words = shuffleArray(BINGO_WORDS).slice(0, 25);
-    words[12] = 'FREE';
-    setGrid(words);
-    setMarked(new Set([12])); // center is free
-    setMounted(true);
+    const startup = setTimeout(() => {
+      setPlayer(p);
+      // Generate 5x5 grid (25 words, center is FREE)
+      const words = shuffleArray(BINGO_WORDS).slice(0, 25);
+      words[12] = 'FREE';
+      setGrid(words);
+      setMarked(new Set([12])); // center is free
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(startup);
   }, [router]);
 
   if (!mounted || !player) return null;
@@ -45,6 +51,7 @@ export default function BingoGame() {
   const callNext = () => {
     const available = grid.filter((w, i) => w !== 'FREE' && !called.has(w) && !marked.has(i));
     if (available.length === 0) return;
+    play('card');
     const word = available[Math.floor(Math.random() * available.length)];
     setCalled(prev => new Set(prev).add(word));
     setCurrentCall(word);
@@ -60,7 +67,7 @@ export default function BingoGame() {
       newMarked.add(index);
     }
     setMarked(newMarked);
-    checkWin(newMarked);
+    if (!checkWin(newMarked)) play('place');
   };
 
   const checkWin = (marks: Set<number>) => {
@@ -81,15 +88,24 @@ export default function BingoGame() {
           addBadge('🎯');
           setPlayer(getPlayer());
         }
-        return;
+        return true;
       }
     }
+    return false;
   };
 
   return (
     <div>
+        <button
+          data-sfx="none"
+          onClick={callNext}
+          disabled={won || called.size >= 24}
+          className="w-full mb-4 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase poster-border disabled:opacity-40"
+        >
+          CALL NEXT WORD →
+        </button>
         {/* Bingo Grid */}
-        <BingoBoard
+        <div data-sfx="none"><BingoBoard
           grid={grid}
           marked={marked}
           called={called}
@@ -97,7 +113,7 @@ export default function BingoGame() {
           won={won}
           winLine={winLine}
           onToggle={toggleMark}
-        />
+        /></div>
 
         {/* Win overlay */}
         {won && (

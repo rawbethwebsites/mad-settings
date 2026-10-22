@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
   WIN_AT,
@@ -17,11 +18,22 @@ import dynamic from 'next/dynamic';
 
 const AyoBoard3D = dynamic(() => import('./ayo3d/AyoBoard3D'), { ssr: false });
 
+function useSowSound(s: State) {
+  const collected = s.store[0] + s.store[1];
+  const moves = s.moves;
+  const previous = useRef({ moves, collected });
+  useEffect(() => {
+    if (moves > previous.current.moves) playSound(collected > previous.current.collected ? 'capture' : 'place');
+    previous.current = { moves, collected };
+  }, [moves, collected]);
+}
+
 // Ayo (Oware rules). Pits 0-5 are yours (left to right), 6-11 are the computer's.
 // Seeds are sown counter-clockwise, so on screen the computer's row runs right to left.
 
 export default function Ayo({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<State>(() => fresh(['You', 'Computer']));
+  useSowSound(s);
   const [points, setPoints] = useState(0);
   const [webglOk] = useState(true);
 
@@ -80,7 +92,7 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
         <div className={`p-3 poster-border ${s.turn === 1 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{s.names[1]} · {s.store[1]}</div>
       </div>
 
-      <div className="p-3 poster-border poster-shadow bg-amber-200">
+      <div data-sfx="none" className="p-3 poster-border poster-shadow bg-amber-200">
         <Suspense fallback={<div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>}>
           {webglOk ? (
             <AyoBoard3D
@@ -131,6 +143,7 @@ export function AyoOnline({ view, seat, names, act }: {
   const [err, setErr] = useState('');
 
   const s = view;
+  useSowSound(s);
   const over = finished(s);
   const mine = seat ?? 0;
   const turn = s.turn;
@@ -177,7 +190,7 @@ export function AyoOnline({ view, seat, names, act }: {
         <div className={`p-3 poster-border ${!over && turn === otherSeat ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{otherName} · {s.store[otherSeat]}</div>
       </div>
 
-      <div className="p-3 poster-border poster-shadow bg-amber-200">
+      <div data-sfx="none" className="p-3 poster-border poster-shadow bg-amber-200">
         <Suspense fallback={<div className="grid grid-cols-6 gap-2">{top.map(i => pit(i, false))}</div>}>
           <AyoBoard3D
             pits={s.pits}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { play } from '@/lib/sfx';
 import type { OnlineProps } from '@/lib/rules/types';
 
 type RaceView = {
@@ -18,11 +19,16 @@ export function RaceOnline({ view, seat, names, act }: OnlineProps<RaceView, Rac
   const scores = view?.scores ?? [];
 
   const [scoreInput, setScoreInput] = React.useState<string>('');
+  const [busy, setBusy] = React.useState(false);
 
   const submit = async () => {
     const n = parseInt(scoreInput, 10);
-    if (isNaN(n) || n < 0 || n > 1000) return;
-    await act({ score: n });
+    if (busy) return;
+    if (isNaN(n) || n < 0 || n > 1000) { play('error'); return; }
+    setBusy(true);
+    try { await act({ score: n }); play('place'); }
+    catch { play('error'); }
+    finally { setBusy(false); }
   };
 
   const myIdx = seat ?? 0;
@@ -45,7 +51,7 @@ export function RaceOnline({ view, seat, names, act }: OnlineProps<RaceView, Rac
       {!myFinished && !allDone && (
         <div className="p-6 poster-border poster-shadow bg-white text-center">
           <input value={scoreInput} onChange={e=>setScoreInput(e.target.value)} placeholder="Score 0-1000" className="w-full p-3 border-2 border-black font-body text-lg mb-3" />
-          <button onClick={submit} disabled={!scoreInput} className="w-full py-4 poster-border bg-brand-purple text-brand-cream font-display font-black text-xl uppercase">Submit Score</button>
+          <button data-sfx="none" onClick={submit} disabled={!scoreInput || busy} className="w-full py-4 poster-border bg-brand-purple text-brand-cream font-display font-black text-xl uppercase">Submit Score</button>
         </div>
       )}
       {allDone && (

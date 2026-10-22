@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { getPlayer, updatePlayer } from '@/lib/player';
 import { camperId, stripServerError } from '@/lib/camper';
+import { play } from '@/lib/sfx';
+import { buttonTap } from '@/components/arcade/SoundControls';
 
 const btn = 'font-display font-black uppercase poster-border px-4 py-2 text-sm';
 
@@ -56,6 +58,18 @@ export default function RoomLayer() {
     api.matches.invites,
     inRoom ? { code: code as string, playerId: playerId as string } : 'skip',
   );
+  const heardInvites = useRef(new Set<string>());
+  useEffect(() => {
+    let fresh = false;
+    for (const invite of invites ?? []) {
+      if (!heardInvites.current.has(invite.id)) {
+        heardInvites.current.add(invite.id);
+        fresh = true;
+      }
+    }
+    // A reactive rerender (or StrictMode effect replay) must not ring again.
+    if (fresh) play('invite');
+  }, [invites]);
 
   const dropRoom = () => {
     updatePlayer({ roomCode: '' });
@@ -171,7 +185,7 @@ export default function RoomLayer() {
   if (!showGone && toasts.length === 0 && !error) return null;
 
   return (
-    <div className="fixed bottom-4 inset-x-4 sm:left-auto sm:max-w-sm z-50 space-y-3">
+    <div onClick={buttonTap} className="fixed bottom-4 inset-x-4 sm:left-auto sm:max-w-sm z-50 space-y-3">
       {error && (
         <div role="alert" className="p-4 poster-border poster-shadow bg-brand-coral text-brand-black">
           <div className="flex items-start justify-between gap-3">
