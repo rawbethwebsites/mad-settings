@@ -72,7 +72,8 @@ export default function RoomLayer() {
         .then(status => {
           if (status === 'kicked' || status === 'closed' || status === 'missing') {
             dropRoom();
-            setGone(status);
+            // Codes from before rooms existed are unknown to the server: forget them quietly
+            if (status !== 'missing') setGone(status);
           }
         })
         .catch(() => {});
@@ -158,7 +159,15 @@ export default function RoomLayer() {
     setDismissed(d => [...d, key].slice(-20));
   };
 
-  if (gone === null && toasts.length === 0 && !error) return null;
+  // Kicked/closed notice auto-hides; never shown over the homepage
+  useEffect(() => {
+    if (!gone) return;
+    const t = window.setTimeout(() => setGone(null), 8000);
+    return () => window.clearTimeout(t);
+  }, [gone]);
+
+  const showGone = gone !== null && isGamesPage;
+  if (!showGone && toasts.length === 0 && !error) return null;
 
   return (
     <div className="fixed bottom-4 inset-x-4 sm:left-auto sm:max-w-sm z-50 space-y-3">
@@ -170,11 +179,14 @@ export default function RoomLayer() {
           </div>
         </div>
       )}
-      {gone && (
+      {showGone && (
         <div className="p-4 poster-border poster-shadow bg-brand-coral text-brand-black">
-          <p className="font-display font-black uppercase">
-            {gone === 'kicked' ? 'THE HOST REMOVED YOU' : 'THAT ROOM IS GONE'}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="font-display font-black uppercase">
+              {gone === 'kicked' ? 'THE HOST REMOVED YOU' : 'THE HOST CLOSED THE ROOM'}
+            </p>
+            <button onClick={() => setGone(null)} aria-label="Dismiss" className="font-display font-black">✕</button>
+          </div>
           <button onClick={() => router.push('/join')} className={`${btn} bg-brand-black text-brand-cream w-full mt-3`}>
             JOIN ANOTHER →
           </button>
