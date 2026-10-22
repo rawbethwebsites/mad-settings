@@ -5,7 +5,7 @@ import { v, ConvexError } from "convex/values";
 import { RULES } from "../src/lib/rules";
 import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
 
-const INVITE_MS = 3 * 60 * 1000;
+const INVITE_MS = 15 * 60 * 1000;
 
 function rulesFor(game: string) {
   const rules = RULES[game];
