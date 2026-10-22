@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ConvexProvider, ConvexReactClient, useMutation, useQuery } from 'convex/react';
+import { readableErrors } from '@/lib/readableErrors';
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -20,7 +21,7 @@ function replay(moves: string[]) {
 
 export default function OnlineChess({ player }: { player: Player }) {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  const client = useMemo(() => (url ? new ConvexReactClient(url) : null), [url]);
+  const client = useMemo(() => (url ? readableErrors(new ConvexReactClient(url)) : null), [url]);
 
   if (!client) {
     return (

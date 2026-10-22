@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { Chess } from "chess.js";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -19,12 +19,12 @@ function randomCode() {
 
 function cleanName(name: string) {
   const n = name.trim().slice(0, 24);
-  if (n.length < 1) throw new Error("Enter your name.");
+  if (n.length < 1) throw new ConvexError("Enter your name.");
   return n;
 }
 
 function cleanId(id: string) {
-  if (id.length < 8 || id.length > 64) throw new Error("Invalid player.");
+  if (id.length < 8 || id.length > 64) throw new ConvexError("Invalid player.");
   return id;
 }
 
@@ -64,7 +64,7 @@ async function uniqueCode(db: DatabaseWriter) {
       return candidate;
     }
   }
-  throw new Error("Could not start a game. Try again.");
+  throw new ConvexError("Could not start a game. Try again.");
 }
 
 /* ---------- presence ---------- */
@@ -130,9 +130,9 @@ export const invite = mutation({
     const me = { id: playerId, name: cleanName(args.name), avatar: args.avatar.slice(0, 8) };
 
     const target = await ctx.db.get(args.toId);
-    if (!target || target.lastSeen < Date.now() - ONLINE_MS) throw new Error("That camper just went offline.");
-    if (target.busy) throw new Error("That camper is already in a game.");
-    if (target.playerId === playerId) throw new Error("You can't invite yourself.");
+    if (!target || target.lastSeen < Date.now() - ONLINE_MS) throw new ConvexError("That camper just went offline.");
+    if (target.busy) throw new ConvexError("That camper is already in a game.");
+    if (target.playerId === playerId) throw new ConvexError("You can't invite yourself.");
 
     // One open invite at a time
     const mine = await ctx.db
@@ -211,12 +211,12 @@ export const accept = mutation({
   handler: async (ctx, args) => {
     const playerId = cleanId(args.playerId);
     const inv = await ctx.db.get(args.inviteId);
-    if (!inv || inv.toPlayerId !== playerId) throw new Error("That invite is gone.");
+    if (!inv || inv.toPlayerId !== playerId) throw new ConvexError("That invite is gone.");
     if (inv.status !== "pending" || inv.createdAt < Date.now() - INVITE_MS) {
-      throw new Error("That invite has expired.");
+      throw new ConvexError("That invite has expired.");
     }
     const game = await byCode(ctx.db, inv.code);
-    if (!game || game.status !== "waiting") throw new Error("That game is no longer available.");
+    if (!game || game.status !== "waiting") throw new ConvexError("That game is no longer available.");
 
     const guest = { id: playerId, name: cleanName(args.name), avatar: args.avatar.slice(0, 8) };
     await ctx.db.patch(game._id, {
@@ -304,14 +304,14 @@ export const move = mutation({
   },
   handler: async (ctx, args) => {
     const game = await byCode(ctx.db, args.code);
-    if (!game) throw new Error("No game with that code.");
-    if (game.status !== "playing") throw new Error("This game is not in progress.");
+    if (!game) throw new ConvexError("No game with that code.");
+    if (game.status !== "playing") throw new ConvexError("This game is not in progress.");
 
     const seat = seatOf(game, args.playerId);
-    if (!seat) throw new Error("You are not in this game.");
+    if (!seat) throw new ConvexError("You are not in this game.");
 
     const chess = replay(game.moves);
-    if (chess.turn() !== seat) throw new Error("It is not your turn.");
+    if (chess.turn() !== seat) throw new ConvexError("It is not your turn.");
 
     let played;
     try {
@@ -321,7 +321,7 @@ export const move = mutation({
         promotion: args.promotion as "q" | "r" | "b" | "n" | undefined,
       });
     } catch {
-      throw new Error("That move is not allowed.");
+      throw new ConvexError("That move is not allowed.");
     }
 
     const patch: Partial<Doc<"chessGames">> = {
@@ -345,10 +345,10 @@ export const resign = mutation({
   args: { code: v.string(), playerId: v.string() },
   handler: async (ctx, args) => {
     const game = await byCode(ctx.db, args.code);
-    if (!game) throw new Error("No game with that code.");
+    if (!game) throw new ConvexError("No game with that code.");
     if (game.status !== "playing") return null;
     const seat = seatOf(game, args.playerId);
-    if (!seat) throw new Error("You are not in this game.");
+    if (!seat) throw new ConvexError("You are not in this game.");
     await ctx.db.patch(game._id, {
       status: "finished",
       result: { winner: seat === "w" ? "b" : "w", reason: "Resigned." },
@@ -363,9 +363,9 @@ export const rematch = mutation({
   args: { code: v.string(), playerId: v.string() },
   handler: async (ctx, args) => {
     const game = await byCode(ctx.db, args.code);
-    if (!game) throw new Error("No game with that code.");
+    if (!game) throw new ConvexError("No game with that code.");
     if (game.status !== "finished") return null;
-    if (!seatOf(game, args.playerId)) throw new Error("You are not in this game.");
+    if (!seatOf(game, args.playerId)) throw new ConvexError("You are not in this game.");
     await ctx.db.patch(game._id, {
       round: game.round + 1,
       status: "playing",
