@@ -15,7 +15,8 @@ export default function CampWorld() {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
     if (!gl) {
-      setSupported(false);
+      // Defer state update to avoid synchronous setState in effect
+      setTimeout(() => setSupported(false), 0);
       return () => document.body.classList.remove("camp-night");
     }
 
