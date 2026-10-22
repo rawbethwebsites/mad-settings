@@ -43,6 +43,14 @@ export default function RoomPage() {
     router.push('/join');
   };
 
+  // A dead room: forget the saved code and go straight back to Join, no dead-end screen
+  const dead = room === null || (room !== undefined && room.status !== 'open');
+  useEffect(() => {
+    if (!dead) return;
+    if (getPlayer()?.roomCode?.toUpperCase() === code.toUpperCase()) updatePlayer({ roomCode: '' });
+    router.replace('/join');
+  }, [dead, code, router]);
+
   if (room === undefined) {
     return (
       <main className="min-h-screen bg-brand-cream text-brand-black p-6 flex items-center justify-center">
