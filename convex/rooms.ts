@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import {
   addPoints,
   cleanAvatar,
@@ -34,7 +34,7 @@ export const create = mutation({
       const existing = await roomByCode(ctx.db, candidate);
       if (!existing || existing.status === "closed") code = candidate;
     }
-    if (!code) throw new Error("Could not make a room. Try again.");
+    if (!code) throw new ConvexError("Could not make a room. Try again.");
     const now = Date.now();
     const roomId = await ctx.db.insert("rooms", {
       code,
@@ -64,11 +64,20 @@ export const join = mutation({
   handler: async (ctx, args) => {
     const playerId = cleanId(args.playerId);
     const room = await roomByCode(ctx.db, args.code);
-    if (!room) throw new Error("No room with that code. Check it with your host.");
-    if (room.status !== "open") throw new Error("That room is closed.");
+    if (!room) throw new ConvexError("No room with that code. Check it with your host.");
+    if (room.status !== "open") throw new ConvexError("That room is closed.");
     const row = { name: cleanName(args.name), avatar: cleanAvatar(args.avatar), lastSeen: Date.now() };
     const existing = await memberOf(ctx.db, room._id, playerId);
-    if (existing?.kicked) throw new Error("The host removed you from this room.");
+    if (existing?.kicked) throw new ConvexError("The host removed you from this room.");
+    // One name per camper in a room, ignoring case and spaces
+    const key = (n: string) => n.toLowerCase().replace(/\s+/g, "");
+    const others = await ctx.db
+      .query("roomPlayers")
+      .withIndex("by_room", (q) => q.eq("roomId", room._id))
+      .collect();
+    if (others.some((r) => r.playerId !== playerId && !r.kicked && key(r.name) === key(row.name))) {
+      throw new ConvexError(`Someone in this room is already called ${row.name}. Pick another name.`);
+    }
     if (existing) await ctx.db.patch(existing._id, row);
     else {
       await ctx.db.insert("roomPlayers", {
@@ -119,8 +128,8 @@ export const kick = mutation({
   handler: async (ctx, args) => {
     const { room } = await requireHost(ctx.db, args.code, args.playerId);
     const target = await ctx.db.get(args.target);
-    if (!target || target.roomId !== room._id) throw new Error("That camper is not in this room.");
-    if (target.isHost) throw new Error("You can't remove the host.");
+    if (!target || target.roomId !== room._id) throw new ConvexError("That camper is not in this room.");
+    if (target.isHost) throw new ConvexError("You can't remove the host.");
     await ctx.db.patch(target._id, { kicked: true });
     await forfeitAll(ctx.db, room._id, target.playerId);
     return null;
@@ -149,7 +158,7 @@ export const close = mutation({
 export const award = mutation({
   args: { code: v.string(), playerId: v.string(), game: v.string(), points: v.number() },
   handler: async (ctx, args) => {
-    if (!SOLO_GAMES.has(args.game)) throw new Error("Unknown game.");
+    if (!SOLO_GAMES.has(args.game)) throw new ConvexError("Unknown game.");
     const points = Math.min(MAX_SOLO_POINTS, Math.max(0, Math.round(args.points)));
     const { me } = await requireMember(ctx.db, args.code, args.playerId);
     await addPoints(ctx.db, me, args.game, points);

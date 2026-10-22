@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import type { DatabaseReader } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { TRIVIA } from "../src/data/triviaQuestions";
 import { BINGO_WORDS } from "../src/data/gameContent";
 import { addPoints, memberOf, requireHost, roomByCode } from "./roomLib";
@@ -27,18 +27,18 @@ function shuffled<T>(list: T[]): T[] {
 
 async function loadRound(db: DatabaseReader, roundId: Id<"rounds">) {
   const round = await db.get(roundId);
-  if (!round) throw new Error("That round is gone.");
+  if (!round) throw new ConvexError("That round is gone.");
   return round;
 }
 
 function requireLive(round: Doc<"rounds">) {
-  if (round.status !== "live") throw new Error("That round has ended.");
+  if (round.status !== "live") throw new ConvexError("That round has ended.");
 }
 
 function triviaIndex(round: Doc<"rounds">, q: number) {
-  if (round.game !== "trivia") throw new Error("That only works in trivia.");
+  if (round.game !== "trivia") throw new ConvexError("That only works in trivia.");
   const index = round.items[q];
-  if (typeof index !== "number") throw new Error("No question here.");
+  if (typeof index !== "number") throw new ConvexError("No question here.");
   return index;
 }
 
@@ -85,7 +85,7 @@ export const enter = mutation({
   handler: async (ctx, args) => {
     const round = await loadRound(ctx.db, args.roundId);
     const me = await memberOf(ctx.db, round.roomId, args.playerId);
-    if (!me || me.kicked) throw new Error("Join the room first.");
+    if (!me || me.kicked) throw new ConvexError("Join the room first.");
     const existing = await myEntry(ctx.db, args.roundId, args.playerId);
     if (existing) return existing._id;
     const card =
@@ -113,14 +113,14 @@ export const answer = mutation({
   handler: async (ctx, args) => {
     const round = await loadRound(ctx.db, args.roundId);
     requireLive(round);
-    if (round.phase !== "question") throw new Error("Wait for the next question.");
-    if (args.q !== round.step) throw new Error("That question is over.");
+    if (round.phase !== "question") throw new ConvexError("Wait for the next question.");
+    if (args.q !== round.step) throw new ConvexError("That question is over.");
     triviaIndex(round, args.q);
-    if (Date.now() - round.stepStartedAt > QUESTION_MS + GRACE_MS) throw new Error("Too slow — time's up.");
-    if (args.choice < 0 || args.choice > 3) throw new Error("Pick an answer.");
+    if (Date.now() - round.stepStartedAt > QUESTION_MS + GRACE_MS) throw new ConvexError("Too slow — time's up.");
+    if (args.choice < 0 || args.choice > 3) throw new ConvexError("Pick an answer.");
     const entry = await myEntry(ctx.db, args.roundId, args.playerId);
-    if (!entry) throw new Error("Join the round first.");
-    if (entry.answers.some((a) => a.q === args.q)) throw new Error("Locked in already.");
+    if (!entry) throw new ConvexError("Join the round first.");
+    if (entry.answers.some((a) => a.q === args.q)) throw new ConvexError("Locked in already.");
     await ctx.db.patch(entry._id, {
       answers: [...entry.answers, { q: args.q, choice: args.choice, ms: Date.now() - round.stepStartedAt }],
     });
@@ -135,8 +135,8 @@ export const reveal = mutation({
     requireLive(round);
     triviaIndex(round, round.step);
     const room = await ctx.db.get(round.roomId);
-    if (!room) throw new Error("That room is gone.");
-    if (room.hostId !== args.playerId) throw new Error("Only the host can do that.");
+    if (!room) throw new ConvexError("That room is gone.");
+    if (room.hostId !== args.playerId) throw new ConvexError("Only the host can do that.");
     if (round.phase !== "question") return null;
 
     const correct = TRIVIA[triviaIndex(round, round.step)].answer;
@@ -164,8 +164,8 @@ export const next = mutation({
     const round = await loadRound(ctx.db, args.roundId);
     requireLive(round);
     const room = await ctx.db.get(round.roomId);
-    if (!room) throw new Error("That room is gone.");
-    if (room.hostId !== args.playerId) throw new Error("Only the host can do that.");
+    if (!room) throw new ConvexError("That room is gone.");
+    if (room.hostId !== args.playerId) throw new ConvexError("Only the host can do that.");
 
     if (round.game === "trivia") {
       if (round.step + 1 >= round.items.length) {
@@ -178,7 +178,7 @@ export const next = mutation({
 
     // Bingo: call the next word nobody has heard yet
     const uncalled = BINGO_WORDS.filter((word) => !round.items.includes(word));
-    if (uncalled.length === 0) throw new Error("Every word has been called.");
+    if (uncalled.length === 0) throw new ConvexError("Every word has been called.");
     const word = uncalled[Math.floor(Math.random() * uncalled.length)];
     await ctx.db.patch(args.roundId, { items: [...round.items, word], step: round.step + 1, stepStartedAt: Date.now() });
     return null;
@@ -190,19 +190,19 @@ export const claim = mutation({
   handler: async (ctx, args) => {
     const round = await loadRound(ctx.db, args.roundId);
     requireLive(round);
-    if (round.game !== "bingo") throw new Error("That only works in bingo.");
+    if (round.game !== "bingo") throw new ConvexError("That only works in bingo.");
     const entry = await myEntry(ctx.db, args.roundId, args.playerId);
-    if (!entry) throw new Error("Join the round first.");
-    if (round.winners.includes(entry.name)) throw new Error("You already won this one.");
-    if (entry.card.length !== 25) throw new Error("No card dealt.");
+    if (!entry) throw new ConvexError("Join the round first.");
+    if (round.winners.includes(entry.name)) throw new ConvexError("You already won this one.");
+    if (entry.card.length !== 25) throw new ConvexError("No card dealt.");
 
     const cells = [...new Set(args.cells)].sort((a, b) => a - b);
     const line = LINES.find((l) => l.length === cells.length && l.every((c, i) => c === cells[i]));
-    if (!line) throw new Error("That's not a full line.");
+    if (!line) throw new ConvexError("That's not a full line.");
     const called = round.items.filter((i): i is string => typeof i === "string");
     for (const c of line) {
       const word = entry.card[c];
-      if (word !== FREE && !called.includes(word)) throw new Error("That word hasn't been called.");
+      if (word !== FREE && !called.includes(word)) throw new ConvexError("That word hasn't been called.");
     }
 
     const place = round.winners.length;
@@ -220,8 +220,8 @@ export const end = mutation({
   handler: async (ctx, args) => {
     const round = await loadRound(ctx.db, args.roundId);
     const room = await ctx.db.get(round.roomId);
-    if (!room) throw new Error("That room is gone.");
-    if (room.hostId !== args.playerId) throw new Error("Only the host can do that.");
+    if (!room) throw new ConvexError("That room is gone.");
+    if (room.hostId !== args.playerId) throw new ConvexError("Only the host can do that.");
     await ctx.db.patch(args.roundId, { status: "ended" });
     return null;
   },

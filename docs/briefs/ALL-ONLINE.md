@@ -1,0 +1,12 @@
+# ALL-ONLINE
+
+Owner: Chioma
+Gate: none (local only, no commits)
+GOAL  Every game has "Play Campers": the 9 single-phone games get online play against other campers in the room.
+CONTEXT  Work ONLY in /Users/mac/Documents/PROJECTS/mad-settings-all-online (worktree, branch all-online). You already did much of this (26 files changed; session stopped at 15:56 by a machine restart): check git status/diff and CONTINUE, don't redo. Read AGENTS.md. Pattern: rules in src/lib/rules/* (Rules in types.ts, registered in index.ts; server convex/matches.ts runs them: no server changes); UI exports XOnline(OnlineProps) passed to GameShell online={{render}} (see whot page, Connect4.tsx). Rule files: relative imports only, throw new Error('<camper message>').
+GAMES  TenTen (2-player, simultaneous hidden picks, points win 60); Don't Say the Same Thing (2-4, everyone types a word at once, hidden till all in, same word = lose a life, last standing wins, points win 70 draw 20); race games trivia, minesweeper, chopchop, puzzles, search, vault, bingo via one shared src/lib/rules/race.ts (state {seed, finished:(number|null)[]}, act {score} once 0..1000, outcome highest wins, points win 80 draw 30) with seeded RNG src/lib/seededRandom.ts (mulberry32) so everyone gets the same content. Pages not using GameShell get wrapped in it (keep their solo flow). Bingo: seed + wiring only, minimal visual change.
+TEST  Two browser contexts (Playwright) in the same room: a full online TenTen, Same and Trivia race. 375px screenshots of each in docs/briefs/shots/ (required: work without screenshots is not done). npx tsc --noEmit -p ., npx eslint src convex, npm run build clean.
+NEVER run pkill/killall/kill except on a PID you started yourself. No convex changes, no deps, no commits.
+DELIVER REPORT (DID / EVIDENCE / DONE WHEN ✅❌ / QUESTIONS / LESSON) saved to docs/briefs/ALL-ONLINE-REPORT.md.
+
+ROUND 2 (owner now Hermes ChatGPT): code is done and builds (see ALL-ONLINE-REPORT.md). Only the TEST step is missing. Run `npx next dev -p 3040` here, then with Playwright (npx playwright, chromium) open TWO separate browser contexts at 375x812, set each one's localStorage 'mad-settings-chess-id' to a different 16+ char id and 'mad-settings-player' (name/avatar/roomCode), create a room via /join in context A and join it in B, then play a full online TenTen, Same and Trivia race between them. Save 375px screenshots of each (both phones) to docs/briefs/shots/. Fix any bug you hit. Update ALL-ONLINE-REPORT.md.

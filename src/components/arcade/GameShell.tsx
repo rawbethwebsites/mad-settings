@@ -208,7 +208,10 @@ function OnlineArena({
 
   // Lobby: pick who to invite
   if (!matchId || !match) {
-    const others = (room?.players ?? []).filter(p => p.online && p.id !== room?.me?.id);
+    // Everyone in the room can be invited; the invite waits for them on any page
+    const others = (room?.players ?? [])
+      .filter(p => p.id !== room?.me?.id)
+      .sort((a, b) => Number(b.online) - Number(a.online));
     const maxPick = rules.max - 1;
     const minNeeded = rules.min - 1;
     const toggle = (pid: Id<'roomPlayers'>) => {
@@ -226,7 +229,7 @@ function OnlineArena({
         </p>
         {others.length === 0 ? (
           <p className="font-body text-lg text-brand-black/70">
-            Nobody else in the room is online right now. Ask a camper to open the games hub on their phone.
+            Nobody else is in the room yet. Share the room code so campers can join.
           </p>
         ) : (
           <ul className="space-y-2 mb-4">
@@ -242,7 +245,10 @@ function OnlineArena({
                     }`}
                   >
                     <span className="text-3xl">{p.avatar}</span>
-                    <span className="font-display font-black uppercase flex-1 text-left truncate">{p.name}</span>
+                    <span className="font-display font-black uppercase flex-1 text-left truncate">
+                      {p.name}
+                      {!p.online && <span className="ml-2 font-body font-normal normal-case text-xs text-brand-black/50">away · sees it when back</span>}
+                    </span>
                     <span className={`w-6 h-6 border-4 border-brand-black flex items-center justify-center font-display font-black ${on ? 'bg-brand-acid' : 'bg-white'}`}>
                       {on ? '✓' : ''}
                     </span>

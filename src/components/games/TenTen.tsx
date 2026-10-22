@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
+import React from 'react';
+import type { OnlineProps } from '@/lib/rules/types';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
@@ -149,6 +151,53 @@ export default function TenTen({ award }: { award: (n: number) => void }) {
           onAgain={reset}
         />
       )}
+    </div>
+  );
+}
+
+export function TenTenOnline({ view, seat, names, act }: OnlineProps<{
+  round: number;
+  chaser: boolean;
+  myPick: Dir | null;
+  theirPick: Dir | null;
+  reveal: { p0: Dir | null; p1: Dir | null; same: boolean } | null;
+  scores: number[];
+  winner: number | null;
+}, { dir: Dir }>) {
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const send = async (a: { dir: Dir }) => { setErr(null); setBusy(true); try { await act(a); } catch(e){ setErr(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); } };
+  const myPick = view?.myPick ?? null;
+  const theirPick = view?.theirPick ?? null;
+  const reveal = view?.reveal ?? null;
+  const scores = view?.scores ?? [0,0];
+  const winner = view?.winner ?? null;
+  const chaser = view?.chaser ?? true;
+  const round = view?.round ?? 1;
+  const canPick = seat !== null && !winner && myPick === null && !reveal;
+  const ICONS: Record<Dir, string> = {up:'👆',down:'👇',left:'👈',right:'👉'};
+  const Icon = (d: Dir | null)=> d ? ICONS[d] : '';
+  const DIRS: Dir[] = ['up','down','left','right'];
+  return (
+    <div>
+      <div className={`p-3 poster-border text-center font-display font-black uppercase mb-4 ${canPick?'bg-brand-acid':'bg-white'}`}>ROUND {round} · {chaser?'CHASE — MATCH THEM':'ESCAPE — DIFFER'}</div>
+      <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
+        <div className="p-3 poster-border bg-brand-acid">YOU · {scores[seat ?? 0] ?? 0}</div>
+        <div className="p-3 poster-border bg-brand-purple text-brand-cream">{names[seat===0?1:0]} · {scores[seat===0?1:0] ?? 0}</div>
+      </div>
+      <div className="p-6 poster-border poster-shadow bg-white text-center">
+        <div className="font-display font-black text-5xl mb-4">TEN TEN!</div>
+        {reveal ? (
+          <div>
+            <div className="flex justify-center gap-8 text-5xl mb-3"><div><div className="font-display font-bold text-xs uppercase">YOU</div>{Icon(myPick)}</div><div><div className="font-display font-bold text-xs uppercase">THEM</div>{Icon(theirPick)}</div></div>
+            <div className="font-display font-black text-2xl uppercase">{winner===seat ? 'YOU WIN ROUND' : 'THEY WIN ROUND'}</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">{DIRS.map(d=><button key={d} onClick={()=>send({dir:d})} disabled={!canPick||busy} className="py-6 text-5xl poster-border bg-brand-cream hover:bg-brand-acid disabled:opacity-50">{Icon(d)}</button>)}</div>
+        )}
+      </div>
+      {err && <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">{err}</div>}
+      {winner!==null && <div className={`mt-6 p-8 poster-border poster-shadow text-center ${winner===seat?'bg-brand-acid':'bg-brand-coral'}`}><div className="text-6xl mb-3">{winner===seat?'🏆':'🤖'}</div><h2 className="font-display font-black text-3xl uppercase italic mb-2">{winner===seat?'YOU WIN!':'YOU LOSE'}</h2></div>}
     </div>
   );
 }

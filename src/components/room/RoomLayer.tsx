@@ -100,7 +100,8 @@ export default function RoomLayer() {
   // Build toasts during render from reactive query data → no cascading sets
   const isGamesPage = pathname.startsWith('/games') || pathname.startsWith('/room');
   const toasts: Toast[] = [];
-  if (isGamesPage) {
+  // Invites reach a camper on any page, homepage included
+  {
     for (const i of invites ?? []) {
       const key = `inv:${i.id}`;
       if (dismissed.includes(key)) continue;

@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 
@@ -12,12 +13,12 @@ export function randomCode() {
 
 export function cleanName(name: string) {
   const n = name.trim().slice(0, 24);
-  if (n.length < 1) throw new Error("Enter your name.");
+  if (n.length < 1) throw new ConvexError("Enter your name.");
   return n;
 }
 
 export function cleanId(id: string) {
-  if (id.length < 8 || id.length > 64) throw new Error("Invalid player.");
+  if (id.length < 8 || id.length > 64) throw new ConvexError("Invalid player.");
   return id;
 }
 
@@ -41,16 +42,16 @@ export async function memberOf(db: DatabaseReader, roomId: Doc<"rooms">["_id"], 
 // The room and your seat in it, or a readable error
 export async function requireMember(db: DatabaseReader, code: string, playerId: string) {
   const room = await roomByCode(db, code);
-  if (!room || room.status !== "open") throw new Error("That room is closed.");
+  if (!room || room.status !== "open") throw new ConvexError("That room is closed.");
   const me = await memberOf(db, room._id, playerId);
-  if (!me) throw new Error("Join the room first.");
-  if (me.kicked) throw new Error("The host removed you from this room.");
+  if (!me) throw new ConvexError("Join the room first.");
+  if (me.kicked) throw new ConvexError("The host removed you from this room.");
   return { room, me };
 }
 
 export async function requireHost(db: DatabaseReader, code: string, playerId: string) {
   const { room, me } = await requireMember(db, code, playerId);
-  if (room.hostId !== playerId) throw new Error("Only the host can do that.");
+  if (room.hostId !== playerId) throw new ConvexError("Only the host can do that.");
   return { room, me };
 }
 

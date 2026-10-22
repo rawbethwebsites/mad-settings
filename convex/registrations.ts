@@ -1,5 +1,5 @@
 import { mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,22 +19,22 @@ export const create = mutation({
     const phone = args.phone.replace(/[^\d+]/g, "");
     const notes = args.notes?.trim() || undefined;
 
-    if (name.length < 2 || name.length > 80) throw new Error("Enter your name.");
-    if (!EMAIL.test(email) || email.length > 120) throw new Error("Enter a valid email.");
+    if (name.length < 2 || name.length > 80) throw new ConvexError("Enter your name.");
+    if (!EMAIL.test(email) || email.length > 120) throw new ConvexError("Enter a valid email.");
     if (phone.replace(/\D/g, "").length < 10 || phone.length > 20) {
-      throw new Error("Enter a valid phone or WhatsApp number.");
+      throw new ConvexError("Enter a valid phone or WhatsApp number.");
     }
     if (!Number.isInteger(args.guests) || args.guests < 1 || args.guests > 8) {
-      throw new Error("Party size must be between 1 and 8.");
+      throw new ConvexError("Party size must be between 1 and 8.");
     }
-    if (notes && notes.length > 400) throw new Error("Notes are too long.");
+    if (notes && notes.length > 400) throw new ConvexError("Notes are too long.");
 
     const existing = await ctx.db
       .query("registrations")
       .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     if (existing) {
-      throw new Error("This email is already registered for camp.");
+      throw new ConvexError("This email is already registered for camp.");
     }
 
     const id = await ctx.db.insert("registrations", {
