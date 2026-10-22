@@ -2,125 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
+import {
+  WIN_AT,
+  type State,
+  fresh,
+  owner,
+  legalMoves,
+  step,
+  finished,
+  aiPit,
+} from '@/lib/rules/ayo';
+import type { OnlineProps } from '@/lib/rules/types';
 
 // Ayo (Oware rules). Pits 0-5 are yours (left to right), 6-11 are the computer's.
 // Seeds are sown counter-clockwise, so on screen the computer's row runs right to left.
-const WIN_AT = 25;
-const MOVE_CAP = 200;
-
-interface State {
-  pits: number[];
-  store: [number, number]; // [you, computer]
-  turn: 0 | 1;
-  moves: number;
-  last: number | null;
-  note: string;
-}
-
-const fresh = (): State => ({ pits: Array(12).fill(4), store: [0, 0], turn: 0, moves: 0, last: null, note: '' });
-
-const owner = (i: number): 0 | 1 => (i < 6 ? 0 : 1);
-const sideRange = (p: 0 | 1) => (p === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11]);
-const seedsOn = (pits: number[], p: 0 | 1) => sideRange(p).reduce((a, i) => a + pits[i], 0);
-
-// Applies a sow + capture. Returns null if the move is not allowed.
-function sow(s: State, pit: number): { pits: number[]; gain: number; last: number } | null {
-  const p = owner(pit);
-  if (s.pits[pit] === 0) return null;
-  const pits = [...s.pits];
-  let n = pits[pit];
-  pits[pit] = 0;
-  let i = pit;
-  while (n > 0) {
-    i = (i + 1) % 12;
-    if (i === pit) continue;
-    pits[i]++;
-    n--;
-  }
-  const last = i;
-  let gain = 0;
-  if (owner(last) !== p && (pits[last] === 2 || pits[last] === 3)) {
-    const grabbed = [...pits];
-    let j = last;
-    let g = 0;
-    while (owner(j) !== p && (grabbed[j] === 2 || grabbed[j] === 3)) {
-      g += grabbed[j];
-      grabbed[j] = 0;
-      j = (j + 11) % 12;
-    }
-    // Taking every opposing seed is not allowed: the sowing stands, no capture
-    if (seedsOn(grabbed, p === 0 ? 1 : 0) > 0) {
-      gain = g;
-      for (let k = 0; k < 12; k++) pits[k] = grabbed[k];
-    }
-  }
-  return { pits, gain, last };
-}
-
-function legalMoves(s: State, p: 0 | 1): number[] {
-  const mine = sideRange(p).filter(i => s.pits[i] > 0);
-  if (seedsOn(s.pits, p === 0 ? 1 : 0) > 0) return mine;
-  // Opponent has nothing: you must feed them if you can
-  const feeding = mine.filter(i => {
-    const r = sow(s, i);
-    return r && seedsOn(r.pits, p === 0 ? 1 : 0) > 0;
-  });
-  return feeding;
-}
-
-function step(s: State, pit: number): State {
-  const p = s.turn;
-  const r = sow(s, pit);
-  if (!r) return s;
-  const store: [number, number] = [...s.store] as [number, number];
-  store[p] += r.gain;
-  const next: State = {
-    pits: r.pits,
-    store,
-    turn: p === 0 ? 1 : 0,
-    moves: s.moves + 1,
-    last: r.last,
-    note: r.gain ? `${p === 0 ? 'You' : 'Computer'} captured ${r.gain}!` : '',
-  };
-  // The player to move cannot move: the other side keeps what is left
-  if (legalMoves(next, next.turn).length === 0) {
-    const other: 0 | 1 = next.turn === 0 ? 1 : 0;
-    next.store[other] += seedsOn(next.pits, other);
-    next.pits = next.pits.map((v, i) => (owner(i) === other ? 0 : v));
-    next.note = 'No more moves — remaining seeds are collected.';
-  }
-  return next;
-}
-
-function finished(s: State) {
-  return s.store[0] >= WIN_AT || s.store[1] >= WIN_AT || s.pits.every(v => v === 0) || s.moves >= MOVE_CAP;
-}
-
-function aiPit(s: State): number {
-  const moves = legalMoves(s, 1);
-  let best = -Infinity;
-  let pick: number[] = [];
-  for (const m of moves) {
-    const r = sow(s, m);
-    if (!r) continue;
-    let score = r.gain * 10;
-    // Look one reply ahead: don't leave captures on the table for the human
-    const after: State = { ...s, pits: r.pits, turn: 0 };
-    let worst = 0;
-    for (const h of legalMoves(after, 0)) {
-      const hr = sow(after, h);
-      if (hr) worst = Math.max(worst, hr.gain);
-    }
-    score -= worst * 8;
-    score += seedsOn(r.pits, 1) - seedsOn(r.pits, 0) * 0.3;
-    if (score > best) { best = score; pick = [m]; }
-    else if (score === best) pick.push(m);
-  }
-  return pick[Math.floor(Math.random() * pick.length)];
-}
 
 export default function Ayo({ award }: { award: (n: number) => void }) {
-  const [s, setS] = useState<State>(fresh);
+  const [s, setS] = useState<State>(() => fresh(['You', 'Computer']));
   const [points, setPoints] = useState(0);
 
   const over = finished(s);
@@ -152,7 +50,7 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, over]);
 
-  const reset = () => { setS(fresh()); setPoints(0); };
+  const reset = () => { setS(fresh(['You', 'Computer'])); setPoints(0); };
   const top = [11, 10, 9, 8, 7, 6];
   const bottom = [0, 1, 2, 3, 4, 5];
   const movable = s.turn === 0 && !over ? legalMoves(s, 0) : [];
@@ -174,8 +72,8 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   return (
     <div>
       <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
-        <div className={`p-3 poster-border ${s.turn === 0 && !over ? 'bg-brand-acid' : 'bg-white'}`}>YOU · {s.store[0]}</div>
-        <div className={`p-3 poster-border ${s.turn === 1 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>COMPUTER · {s.store[1]}</div>
+        <div className={`p-3 poster-border ${s.turn === 0 && !over ? 'bg-brand-acid' : 'bg-white'}`}>{s.names[0]} · {s.store[0]}</div>
+        <div className={`p-3 poster-border ${s.turn === 1 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{s.names[1]} · {s.store[1]}</div>
       </div>
 
       <div className="p-3 poster-border poster-shadow bg-amber-200">
@@ -201,6 +99,86 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
         />
       )}
       {!over && <Btn variant="light" className="w-full mt-4" onClick={reset}>RESTART</Btn>}
+    </div>
+  );
+}
+
+export function AyoOnline({ view, seat, names, act }: OnlineProps<State, { pit: number }>) {
+  const [err, setErr] = useState('');
+
+  const s = view;
+  const over = finished(s);
+  const mine = seat ?? 0; // spectator pretends to be seat 0 for layout
+  const turn = s.turn;
+  const yourTurn = seat !== null && !over && turn === seat;
+  const movable = yourTurn && seat !== null ? legalMoves(s, seat as 0 | 1) : [];
+  const watching = seat === null;
+
+  // Layout: your row is always the bottom row.
+  // Seat 0 bottom is pits 0-5 left to right; seat 1 bottom is pits 6-11 left to right.
+  const bottom = mine === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
+  // Top row is the opponent, drawn right to left so seeds flow counter-clockwise on screen.
+  const top = mine === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
+
+  const yourName = seat !== null ? (names[seat] ?? `Seat ${seat + 1}`) : 'You';
+  const otherSeat = seat === null ? 1 : seat === 0 ? 1 : 0;
+  const otherName = names[otherSeat] ?? `Seat ${otherSeat + 1}`;
+
+  const tap = async (pit: number) => {
+    setErr('');
+    try {
+      await act({ pit });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Strip a leading "Uncaught Error: " and anything after the first newline
+      let clean = msg.replace(/^Uncaught Error: /, '');
+      clean = clean.split('\n')[0];
+      setErr(clean);
+    }
+  };
+
+  const pit = (i: number, myPit: boolean) => (
+    <button
+      key={i}
+      onClick={() => { if (myPit && yourTurn && movable.includes(i)) void tap(i); }}
+      disabled={!myPit || !movable.includes(i)}
+      aria-label={`Pit ${i + 1}, ${s.pits[i]} seeds${myPit ? '' : ', opponent'}`}
+      className={`aspect-square rounded-full border-4 border-brand-black flex items-center justify-center font-display font-black text-xl md:text-2xl ${
+        s.last === i ? 'ring-4 ring-brand-purple' : ''
+      } ${myPit ? (movable.includes(i) ? 'bg-brand-acid hover:-translate-y-1 transition-transform' : 'bg-brand-acid/40') : 'bg-brand-purple/30'}`}
+    >
+      {s.pits[i]}
+    </button>
+  );
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
+        <div className={`p-3 poster-border ${!over && turn === mine ? 'bg-brand-acid' : 'bg-white'}`}>{yourName} · {s.store[mine]}</div>
+        <div className={`p-3 poster-border ${!over && turn === otherSeat ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{otherName} · {s.store[otherSeat]}</div>
+      </div>
+
+      <div className="p-3 poster-border poster-shadow bg-amber-200">
+        <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
+        <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
+      </div>
+
+      <p className="font-body text-sm text-center mt-3 min-h-5">
+        {over
+          ? ''
+          : s.note ||
+            (watching
+              ? 'Watching the room…'
+              : yourTurn
+                ? 'Your turn — pick one of your pits (bottom row).'
+                : 'Waiting for the other player…')}
+      </p>
+      {err !== '' && !over && (
+        <p className="font-body text-sm text-center text-brand-purple mt-1">{err}</p>
+      )}
+      <p className="font-body text-xs text-center text-brand-black/60">
+        Seeds go round counter-clockwise. Land your last seed in a pit that makes 2 or 3 and you capture it. First to {WIN_AT} wins.
+      </p>
     </div>
   );
 }

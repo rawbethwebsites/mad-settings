@@ -2,36 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
+import { fresh, place, winner, type P, type TttMatch, type TttState } from '@/lib/rules/tictactoe';
+import type { OnlineProps } from '@/lib/rules/types';
 
-type P = 'X' | 'O';
-interface State {
-  cells: (P | null)[];
-  queue: Record<P, number[]>; // oldest first
-}
-
-const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-const fresh = (): State => ({ cells: Array(9).fill(null), queue: { X: [], O: [] } });
-
-function place(s: State, p: P, i: number): State {
-  const cells = [...s.cells];
-  const q = [...s.queue[p], i];
-  cells[i] = p;
-  if (q.length > 3) {
-    const old = q.shift() as number;
-    cells[old] = null;
-  }
-  return { cells, queue: { ...s.queue, [p]: q } };
-}
-
-function winner(cells: (P | null)[]): { p: P; line: number[] } | null {
-  for (const line of LINES) {
-    const [a, b, c] = line;
-    if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) return { p: cells[a] as P, line };
-  }
-  return null;
-}
-
-function aiMove(s: State): number {
+function aiMove(s: TttState): number {
   const empty = s.cells.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
   for (const i of empty) if (winner(place(s, 'O', i).cells)?.p === 'O') return i;
   for (const i of empty) if (winner(place(s, 'X', i).cells)?.p === 'X') return i;
@@ -41,12 +15,12 @@ function aiMove(s: State): number {
 }
 
 export default function EndlessTicTacToe({ award }: { award: (n: number) => void }) {
-  const [s, setS] = useState<State>(fresh);
+  const [s, setS] = useState<TttState>(fresh);
   const [turn, setTurn] = useState<P>('X');
   const [win, setWin] = useState<{ p: P; line: number[] } | null>(null);
   const [points, setPoints] = useState(0);
 
-  const after = (next: State, mover: P) => {
+  const after = (next: TttState, mover: P) => {
     const w = winner(next.cells);
     if (w) {
       const pts = w.p === 'X' ? 40 : 0;
@@ -77,8 +51,6 @@ export default function EndlessTicTacToe({ award }: { award: (n: number) => void
   }, [turn, win, s]);
 
   const reset = () => { setS(fresh()); setTurn('X'); setWin(null); setPoints(0); };
-  // The piece that vanishes on the next placement for whoever is up
-  const fading = (i: number) => !win && s.queue[turn].length === 3 && s.queue[turn][0] === i;
 
   return (
     <div>
@@ -88,20 +60,7 @@ export default function EndlessTicTacToe({ award }: { award: (n: number) => void
       <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${turn === 'X' && !win ? 'bg-brand-acid' : 'bg-white'}`}>
         {win ? 'GAME OVER' : turn === 'X' ? 'YOUR TURN' : 'COMPUTER IS THINKING…'}
       </div>
-      <div className="grid grid-cols-3 gap-2 aspect-square">
-        {s.cells.map((v, i) => (
-          <button
-            key={i}
-            onClick={() => tap(i)}
-            aria-label={`Square ${i + 1}${v ? ` ${v}` : ''}`}
-            className={`poster-border font-display font-black text-6xl flex items-center justify-center ${
-              win?.line.includes(i) ? 'bg-brand-acid' : 'bg-white'
-            } ${v === 'X' ? 'text-brand-coral' : 'text-brand-purple'} ${fading(i) ? 'opacity-30' : ''}`}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
+      <Board cells={s.cells} queue={s.queue} active={turn} win={win} onTap={tap} enabled={turn === 'X' && !win} />
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Faded piece = disappears on the next move.</p>
       {win && (
         <Result
@@ -113,6 +72,94 @@ export default function EndlessTicTacToe({ award }: { award: (n: number) => void
         />
       )}
       {!win && <Btn variant="light" className="w-full mt-4" onClick={reset}>RESTART</Btn>}
+    </div>
+  );
+}
+
+function Board({
+  cells,
+  queue,
+  active,
+  win,
+  enabled,
+  onTap,
+}: {
+  cells: (P | null)[];
+  queue: Record<P, number[]>;
+  active: P | null;
+  win: { p: P; line: number[] } | null;
+  enabled: boolean;
+  onTap: (i: number) => void;
+}) {
+  // The piece that vanishes on the next placement for whoever is up
+  const fading = (i: number) => !win && active !== null && queue[active].length === 3 && queue[active][0] === i;
+  return (
+    <div className="grid grid-cols-3 gap-2 aspect-square">
+      {cells.map((v, i) => (
+        <button
+          key={i}
+          onClick={() => onTap(i)}
+          disabled={!enabled}
+          aria-label={`Square ${i + 1}${v ? ` ${v}` : ''}`}
+          className={`poster-border font-display font-black text-6xl flex items-center justify-center disabled:cursor-default ${
+            win?.line.includes(i) ? 'bg-brand-acid' : 'bg-white'
+          } ${v === 'X' ? 'text-brand-coral' : 'text-brand-purple'} ${fading(i) ? 'opacity-30' : ''}`}
+        >
+          {v}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Online: seat 0 plays X (always your colour = X on your screen as "you").
+export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch, { cell: number }>) {
+  const [err, setErr] = useState('');
+  const win = winner(view.cells);
+  const yourTurn = seat !== null && !win && view.turn === seat;
+  const active: P | null = view.turn === 0 ? 'X' : 'O';
+
+  const me = seat !== null ? names[seat] : null;
+  const opp = seat !== null ? names[seat === 0 ? 1 : 0] : null;
+
+  const tap = async (cell: number) => {
+    if (!yourTurn || view.cells[cell]) return;
+    setErr('');
+    try {
+      await act({ cell });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg.replace(/^Uncaught Error: /, '').split('\n')[0]);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-4 grid grid-cols-2 gap-2 text-center font-display font-black uppercase text-sm">
+        <div className={`p-3 poster-border ${view.turn === seat && !win ? 'bg-brand-acid' : 'bg-white'}`}>
+          {me ?? 'RED'} · <span className="text-brand-coral">X</span>
+        </div>
+        <div className={`p-3 poster-border ${seat !== null && view.turn !== seat && !win ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
+          {opp ?? 'THEM'} · <span className="text-brand-purple">O</span>
+        </div>
+      </div>
+      <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`} aria-live="polite">
+        {win ? 'GAME OVER' : yourTurn ? 'YOUR TURN' : `${opp ?? 'THEY'} IS PLAYING…`}
+      </div>
+      <Board
+        cells={view.cells}
+        queue={view.queue}
+        active={yourTurn ? active : null}
+        win={win}
+        onTap={tap}
+        enabled={yourTurn}
+      />
+      <p className="font-body text-xs text-center mt-3 text-brand-black/60">Faded piece = disappears on the next move.</p>
+      {err && (
+        <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">
+          {err}
+        </div>
+      )}
     </div>
   );
 }

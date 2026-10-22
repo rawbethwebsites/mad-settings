@@ -65,4 +65,70 @@ export default defineSchema({
   })
     .index("by_to", ["toPlayerId", "status"])
     .index("by_from", ["fromPlayerId"]),
+
+  // Camp rooms: one group of campers plus the host who runs it.
+  // `hostId` and `playerId` are secrets kept in each browser; clients only see document ids.
+  rooms: defineTable({
+    code: v.string(),
+    name: v.string(),
+    hostId: v.string(),
+    status: v.union(v.literal("open"), v.literal("closed")),
+    currentGame: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_code", ["code"]),
+
+  roomPlayers: defineTable({
+    roomId: v.id("rooms"),
+    playerId: v.string(),
+    name: v.string(),
+    avatar: v.string(),
+    isHost: v.boolean(),
+    kicked: v.boolean(),
+    lastSeen: v.number(),
+    scores: v.record(v.string(), v.number()),
+    total: v.number(),
+  })
+    .index("by_room", ["roomId"])
+    .index("by_room_player", ["roomId", "playerId"]),
+
+  // Live games between campers in a room. `state` is the full game state from
+  // src/lib/rules; clients only ever get rules.view(state, theirSeat).
+  matches: defineTable({
+    roomId: v.id("rooms"),
+    game: v.string(),
+    creatorId: v.string(),
+    seats: v.array(v.object({ playerId: v.string(), name: v.string(), avatar: v.string() })),
+    invited: v.array(v.string()),
+    status: v.union(v.literal("waiting"), v.literal("playing"), v.literal("finished"), v.literal("cancelled")),
+    state: v.optional(v.any()),
+    round: v.number(),
+    result: v.optional(v.object({ winners: v.array(v.number()), reason: v.string() })),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_room", ["roomId", "status"]),
+
+  // Host-led rounds everyone in the room plays at once (Trivia, Bingo)
+  rounds: defineTable({
+    roomId: v.id("rooms"),
+    game: v.union(v.literal("trivia"), v.literal("bingo")),
+    status: v.union(v.literal("live"), v.literal("ended")),
+    // Trivia: question indexes; Bingo: words called so far
+    items: v.array(v.union(v.number(), v.string())),
+    step: v.number(),
+    phase: v.union(v.literal("question"), v.literal("reveal")),
+    stepStartedAt: v.number(),
+    winners: v.array(v.string()),
+    createdAt: v.number(),
+  }).index("by_room", ["roomId", "status"]),
+
+  roundEntries: defineTable({
+    roundId: v.id("rounds"),
+    playerId: v.string(),
+    name: v.string(),
+    avatar: v.string(),
+    score: v.number(),
+    answers: v.array(v.object({ q: v.number(), choice: v.number(), ms: v.number() })),
+    card: v.array(v.string()),
+  }).index("by_round_player", ["roundId", "playerId"]),
 });

@@ -2,45 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
-
-const ROWS = 6;
-const COLS = 7;
-type Cell = 0 | 1 | 2;
-type Board = Cell[][];
-
-const emptyBoard = (): Board => Array.from({ length: ROWS }, () => Array<Cell>(COLS).fill(0));
-
-function drop(board: Board, col: number, p: Cell): Board | null {
-  for (let r = ROWS - 1; r >= 0; r--) {
-    if (board[r][col] === 0) {
-      const next = board.map(row => [...row]);
-      next[r][col] = p;
-      return next;
-    }
-  }
-  return null;
-}
-
-const DIRS = [[0, 1], [1, 0], [1, 1], [1, -1]];
-
-function findWin(board: Board): { p: Cell; cells: [number, number][] } | null {
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const p = board[r][c];
-      if (!p) continue;
-      for (const [dr, dc] of DIRS) {
-        const cells: [number, number][] = [[r, c]];
-        for (let k = 1; k < 4; k++) {
-          const rr = r + dr * k, cc = c + dc * k;
-          if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS || board[rr][cc] !== p) break;
-          cells.push([rr, cc]);
-        }
-        if (cells.length === 4) return { p, cells };
-      }
-    }
-  }
-  return null;
-}
+import {
+  COLS,
+  DIRS,
+  ROWS,
+  drop,
+  emptyBoard,
+  findWin,
+  type Board,
+  type C4Match,
+  type Cell,
+} from '@/lib/rules/connect4';
+import type { OnlineProps } from '@/lib/rules/types';
 
 function heuristic(board: Board, me: Cell): number {
   const opp: Cell = me === 1 ? 2 : 1;
@@ -108,6 +81,42 @@ function aiColumn(board: Board): number {
   return cols[Math.floor(Math.random() * cols.length)];
 }
 
+function BoardGrid({
+  board,
+  winCells,
+  enabled,
+  onDrop,
+}: {
+  board: Board;
+  winCells: [number, number][];
+  enabled: boolean;
+  onDrop: (col: number) => void;
+}) {
+  const isWin = (r: number, c: number) => winCells.some(([rr, cc]) => rr === r && cc === c);
+  return (
+    <div className="grid grid-cols-7 gap-1 p-2 bg-brand-black poster-shadow" role="grid" aria-label="Connect 4 board">
+      {Array.from({ length: COLS }, (_, c) => (
+        <button
+          key={c}
+          onClick={() => onDrop(c)}
+          disabled={!enabled || board[0][c] !== 0}
+          aria-label={`Drop in column ${c + 1}`}
+          className="flex flex-col gap-1 disabled:cursor-not-allowed"
+        >
+          {board.map((row, r) => (
+            <span
+              key={r}
+              className={`block aspect-square rounded-full border-2 ${
+                isWin(r, c) ? 'border-brand-acid' : 'border-brand-cream/20'
+              } ${row[c] === 1 ? 'bg-brand-coral' : row[c] === 2 ? 'bg-brand-purple' : 'bg-brand-cream/10'}`}
+            />
+          ))}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Connect4({ award }: { award: (n: number) => void }) {
   const [board, setBoard] = useState<Board>(emptyBoard);
   const [turn, setTurn] = useState<1 | 2>(1);
@@ -150,34 +159,13 @@ export default function Connect4({ award }: { award: (n: number) => void }) {
     setOver(null);
   };
 
-  const isWin = (r: number, c: number) => over?.cells.some(([rr, cc]) => rr === r && cc === c);
-
   return (
     <div>
       <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${turn === 1 && !over ? 'bg-brand-acid' : 'bg-white'}`}>
         {over ? 'GAME OVER' : turn === 1 ? 'YOUR TURN · DROP A DISC' : 'COMPUTER IS THINKING…'}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 p-2 bg-brand-black poster-shadow" role="grid" aria-label="Connect 4 board">
-        {Array.from({ length: COLS }, (_, c) => (
-          <button
-            key={c}
-            onClick={() => play(c)}
-            disabled={turn !== 1 || !!over || board[0][c] !== 0}
-            aria-label={`Drop in column ${c + 1}`}
-            className="flex flex-col gap-1 disabled:cursor-not-allowed"
-          >
-            {board.map((row, r) => (
-              <span
-                key={r}
-                className={`block aspect-square rounded-full border-2 ${
-                  isWin(r, c) ? 'border-brand-acid' : 'border-brand-cream/20'
-                } ${row[c] === 1 ? 'bg-brand-coral' : row[c] === 2 ? 'bg-brand-purple' : 'bg-brand-cream/10'}`}
-              />
-            ))}
-          </button>
-        ))}
-      </div>
+      <BoardGrid board={board} winCells={over?.cells ?? []} enabled={turn === 1 && !over} onDrop={play} />
 
       <div className="flex justify-between mt-3 font-display font-bold text-xs uppercase">
         <span><span className="inline-block w-3 h-3 rounded-full bg-brand-coral mr-1 align-middle" />YOU</span>
@@ -194,6 +182,57 @@ export default function Connect4({ award }: { award: (n: number) => void }) {
         />
       )}
       {!over && <Btn variant="light" className="w-full mt-4" onClick={reset}>RESTART</Btn>}
+    </div>
+  );
+}
+
+// Online: seat 0 drops red (1), seat 1 drops purple (2). Your colour stays put.
+export function Connect4Online({ view, seat, names, act }: OnlineProps<C4Match, { col: number }>) {
+  const [err, setErr] = useState('');
+  const win = findWin(view.board);
+  const full = view.board[0].every(v => v !== 0);
+  const over = !!win || full;
+  const yourTurn = seat !== null && !over && view.turn === seat;
+  const youIs: Cell = ((seat ?? 0) + 1) as Cell;
+
+  const tapCol = async (col: number) => {
+    if (!yourTurn) return;
+    setErr('');
+    try {
+      await act({ col });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg.replace(/^Uncaught Error: /, '').split('\n')[0]);
+    }
+  };
+
+  const me = seat !== null ? names[seat] : null;
+  const opp = seat !== null ? names[seat === 0 ? 1 : 0] : null;
+
+  return (
+    <div>
+      <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`} aria-live="polite">
+        {over ? 'GAME OVER' : yourTurn ? 'YOUR TURN · DROP A DISC' : `${opp ?? 'THEY'} IS PLAYING…`}
+      </div>
+
+      <BoardGrid board={view.board} winCells={win?.cells ?? []} enabled={yourTurn} onDrop={tapCol} />
+
+      <div className="flex justify-between mt-3 font-display font-bold text-xs uppercase">
+        <span>
+          <span className={`inline-block w-3 h-3 rounded-full mr-1 align-middle ${youIs === 1 ? 'bg-brand-coral' : 'bg-brand-purple'}`} />
+          {me ? `${me} · YOU` : 'YOU'}
+        </span>
+        <span>
+          <span className={`inline-block w-3 h-3 rounded-full mr-1 align-middle ${youIs === 1 ? 'bg-brand-purple' : 'bg-brand-coral'}`} />
+          {opp ?? 'THEM'}
+        </span>
+      </div>
+
+      {err && (
+        <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">
+          {err}
+        </div>
+      )}
     </div>
   );
 }

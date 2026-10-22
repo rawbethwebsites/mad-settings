@@ -1,11 +1,16 @@
 'use client';
 
 import GameShell from '@/components/arcade/GameShell';
-import Ayo from '@/components/games/Ayo';
+import Ayo, { AyoOnline } from '@/components/games/Ayo';
 
 export default function Page() {
   return (
-    <GameShell id="ayo" title="AYO" emoji="🌰">
+    <GameShell
+      id="ayo"
+      title="AYO"
+      emoji="🌰"
+      online={{ render: p => <AyoOnline {...p} /> }}
+    >
       {({ award }) => <Ayo award={award} />}
     </GameShell>
   );

@@ -9,7 +9,11 @@
  */
 
 import type * as chess from "../chess.js";
+import type * as matches from "../matches.js";
 import type * as registrations from "../registrations.js";
+import type * as roomLib from "../roomLib.js";
+import type * as rooms from "../rooms.js";
+import type * as rounds from "../rounds.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +23,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   chess: typeof chess;
+  matches: typeof matches;
   registrations: typeof registrations;
+  roomLib: typeof roomLib;
+  rooms: typeof rooms;
+  rounds: typeof rounds;
 }>;
 
 /**
