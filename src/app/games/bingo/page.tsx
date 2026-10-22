@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getPlayer, addScore, addBadge, addVaultPiece } from '@/lib/player';
 import { BINGO_WORDS } from '@/data/gameContent';
 import { Player } from '@/lib/player';
+import { BingoBoard } from '@/components/boards/BingoBoard';
 
 function shuffleArray<T>(arr: T[]): T[] {
   const shuffled = [...arr];
@@ -24,6 +25,7 @@ export default function BingoGame() {
   const [called, setCalled] = useState<Set<string>>(new Set());
   const [currentCall, setCurrentCall] = useState('');
   const [won, setWon] = useState(false);
+  const [winLine, setWinLine] = useState<number[] | null>(null);
   const [score, setScore] = useState(0);
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function BingoGame() {
       if (line.every(i => marks.has(i))) {
         if (!won) {
           setWon(true);
+          setWinLine(line);
           const points = 20;
           setScore(points);
           addScore('bingo', points);
@@ -95,48 +98,16 @@ export default function BingoGame() {
           <div className="font-display font-black text-xl">{player.avatar} {player.name}</div>
         </div>
 
-        {/* Called word display */}
-        <div className="mb-6 p-6 poster-border poster-shadow bg-brand-purple text-brand-cream text-center">
-          {currentCall ? (
-            <>
-              <div className="font-display font-bold text-xs uppercase tracking-widest opacity-60 mb-1">NOW CALLING</div>
-              <div className="font-display font-black text-4xl uppercase">{currentCall}</div>
-            </>
-          ) : (
-            <div className="font-display font-black text-xl uppercase opacity-60">TAP "CALL NEXT" TO START</div>
-          )}
-          <button
-            onClick={callNext}
-            disabled={won}
-            className="mt-4 px-6 py-3 bg-brand-acid text-brand-black font-display font-black uppercase poster-border hover:-translate-y-1 transition-transform disabled:opacity-30"
-          >
-            CALL NEXT →
-          </button>
-        </div>
-
         {/* Bingo Grid */}
-        <div className="grid grid-cols-5 gap-2 mb-6">
-          {grid.map((word, i) => {
-            const isMarked = marked.has(i);
-            const isCalled = called.has(word) || word === 'FREE';
-            return (
-              <button
-                key={i}
-                onClick={() => toggleMark(i)}
-                disabled={won || !isCalled}
-                className={`aspect-square flex items-center justify-center text-center font-display font-black text-xs md:text-sm uppercase p-1 border-2 transition-all ${
-                  isMarked
-                    ? 'bg-brand-purple text-brand-cream border-brand-purple scale-95'
-                    : isCalled
-                      ? 'bg-brand-acid text-brand-black border-brand-black animate-pulse'
-                      : 'bg-white text-brand-black/40 border-brand-black/20'
-                }`}
-              >
-                {word}
-              </button>
-            );
-          })}
-        </div>
+        <BingoBoard
+          grid={grid}
+          marked={marked}
+          called={called}
+          currentCall={currentCall}
+          won={won}
+          winLine={winLine}
+          onToggle={toggleMark}
+        />
 
         {/* Win overlay */}
         {won && (

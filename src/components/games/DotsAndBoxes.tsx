@@ -13,6 +13,7 @@ import {
   type Line,
 } from '@/lib/rules/dots';
 import type { OnlineProps } from '@/lib/rules/types';
+import { DotsBoard } from '@/components/boards/DotsBoard';
 
 const boxesOf = (s: DotsState, l: Line): [number, number][] => {
   const out: [number, number][] = [];
@@ -148,7 +149,7 @@ export default function DotsAndBoxes({ award }: { award: (n: number) => void }) 
         <div className={`p-3 poster-border ${s.turn === 2 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>COMPUTER · {cpu}</div>
       </div>
 
-      <Grid s={s} marks={['Y', 'C']} enabled={s.turn === 1 && !over} onTap={tap} />
+      <DotsBoard s={s} marks={['Y','C']} enabled={s.turn===1 && !over} onTap={tap} />
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Finish a box to take another turn.</p>
 
       {over && (
@@ -207,7 +208,7 @@ export function DotsOnline({ view, seat, names, act }: OnlineProps<DotsState, Li
         <div className={`p-3 poster-border ${!yourTurn && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{opp ?? 'THEM'} · {theirBoxes}</div>
       </div>
 
-      <Grid s={shown} marks={['Y', 'T']} enabled={yourTurn} onTap={tap} />
+      <DotsBoard s={shown} marks={['Y','T']} enabled={yourTurn} onTap={tap} />
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Finish a box to take another turn.</p>
 
       {err && (

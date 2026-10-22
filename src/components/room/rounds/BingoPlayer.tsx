@@ -6,6 +6,7 @@ import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import { getChessPlayerId } from '@/lib/chessOnline';
 import { Leaderboard, roundError } from './TriviaPlayer';
+import { BingoBoard } from '@/components/boards/BingoBoard';
 
 const btn = 'font-display font-black uppercase poster-border';
 
@@ -129,36 +130,15 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
           Dealing your card…
         </div>
       ) : (
-        <div className="grid grid-cols-5 gap-1">
-          {/* Column headers */}
-          {['B', 'I', 'N', 'G', 'O'].map((h) => (
-            <div key={h} className="p-1 poster-border bg-brand-purple text-brand-cream text-center font-display font-black text-lg">
-              {h}
-            </div>
-          ))}
-          {data.card.map((word, cell) => {
-            const isMarked = marked.has(cell);
-            const isCalled = word === 'FREE' || data.called.includes(word);
-            const isLatest = word === latestCalled;
-            return (
-              <button
-                key={cell}
-                type="button"
-                onClick={() => toggle(cell)}
-                disabled={!isCalled && word !== 'FREE'}
-                className={`aspect-square p-0.5 poster-border font-display font-black uppercase text-[10px] leading-tight transition-colors ${
-                  isMarked
-                    ? 'bg-brand-acid'
-                    : isCalled
-                      ? 'bg-brand-cream hover:bg-brand-acid'
-                      : 'bg-white opacity-60'
-                } ${isLatest && !isMarked ? 'ring-2 ring-brand-coral' : ''}`}
-              >
-                {word === 'FREE' ? '⭐' : word}
-              </button>
-            );
-          })}
-        </div>
+        <BingoBoard
+          grid={data.card}
+          marked={marked}
+          called={new Set(data.called)}
+          currentCall={data.called[data.called.length - 1] || ''}
+          won={false}
+          winLine={winnableLine ?? null}
+          onToggle={(i) => toggle(i)}
+        />
       )}
 
       {error && (

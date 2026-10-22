@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
   WIN_AT,
@@ -12,7 +12,10 @@ import {
   finished,
   aiPit,
 } from '@/lib/rules/ayo';
-import type { OnlineProps } from '@/lib/rules/types';
+
+import dynamic from 'next/dynamic';
+
+const AyoBoard3D = dynamic(() => import('./ayo3d/AyoBoard3D'), { ssr: false });
 
 // Ayo (Oware rules). Pits 0-5 are yours (left to right), 6-11 are the computer's.
 // Seeds are sown counter-clockwise, so on screen the computer's row runs right to left.
@@ -20,6 +23,7 @@ import type { OnlineProps } from '@/lib/rules/types';
 export default function Ayo({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<State>(() => fresh(['You', 'Computer']));
   const [points, setPoints] = useState(0);
+  const [webglOk] = useState(true);
 
   const over = finished(s);
   const verdict = s.store[0] === s.store[1] ? 'draw' : s.store[0] > s.store[1] ? 'win' : 'lose';
@@ -77,8 +81,23 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
       </div>
 
       <div className="p-3 poster-border poster-shadow bg-amber-200">
-        <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
-        <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
+        <Suspense fallback={<div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>}>
+          {webglOk ? (
+            <AyoBoard3D
+              pits={s.pits}
+              store={s.store}
+              turn={s.turn}
+              seat={0}
+              legalMoves={movable}
+              onPitSelect={tap}
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
+              <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
+            </>
+          )}
+        </Suspense>
       </div>
 
       <p className="font-body text-sm text-center mt-3 min-h-5">
@@ -103,21 +122,22 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   );
 }
 
-export function AyoOnline({ view, seat, names, act }: OnlineProps<State, { pit: number }>) {
+export function AyoOnline({ view, seat, names, act }: {
+  view: State;
+  seat: number | null;
+  names: string[];
+  act: (a: { pit: number }) => Promise<void>;
+}) {
   const [err, setErr] = useState('');
 
   const s = view;
   const over = finished(s);
-  const mine = seat ?? 0; // spectator pretends to be seat 0 for layout
+  const mine = seat ?? 0;
   const turn = s.turn;
   const yourTurn = seat !== null && !over && turn === seat;
   const movable = yourTurn && seat !== null ? legalMoves(s, seat as 0 | 1) : [];
   const watching = seat === null;
 
-  // Layout: your row is always the bottom row.
-  // Seat 0 bottom is pits 0-5 left to right; seat 1 bottom is pits 6-11 left to right.
-  const bottom = mine === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
-  // Top row is the opponent, drawn right to left so seeds flow counter-clockwise on screen.
   const top = mine === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
 
   const yourName = seat !== null ? (names[seat] ?? `Seat ${seat + 1}`) : 'You';
@@ -130,7 +150,6 @@ export function AyoOnline({ view, seat, names, act }: OnlineProps<State, { pit: 
       await act({ pit });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // Strip a leading "Uncaught Error: " and anything after the first newline
       let clean = msg.replace(/^Uncaught Error: /, '');
       clean = clean.split('\n')[0];
       setErr(clean);
@@ -159,8 +178,16 @@ export function AyoOnline({ view, seat, names, act }: OnlineProps<State, { pit: 
       </div>
 
       <div className="p-3 poster-border poster-shadow bg-amber-200">
-        <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
-        <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
+        <Suspense fallback={<div className="grid grid-cols-6 gap-2">{top.map(i => pit(i, false))}</div>}>
+          <AyoBoard3D
+            pits={s.pits}
+            store={s.store}
+            turn={s.turn}
+            seat={mine}
+            legalMoves={movable}
+            onPitSelect={(pit) => void tap(pit)}
+          />
+        </Suspense>
       </div>
 
       <p className="font-body text-sm text-center mt-3 min-h-5">

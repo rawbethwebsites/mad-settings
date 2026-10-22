@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
 import { fresh, place, winner, type P, type TttMatch, type TttState } from '@/lib/rules/tictactoe';
 import type { OnlineProps } from '@/lib/rules/types';
+import { TicTacToeBoard } from '@/components/boards/TicTacToeBoard';
 
 function aiMove(s: TttState): number {
   const empty = s.cells.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
@@ -60,7 +61,7 @@ export default function EndlessTicTacToe({ award }: { award: (n: number) => void
       <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${turn === 'X' && !win ? 'bg-brand-acid' : 'bg-white'}`}>
         {win ? 'GAME OVER' : turn === 'X' ? 'YOUR TURN' : 'COMPUTER IS THINKING…'}
       </div>
-      <Board cells={s.cells} queue={s.queue} active={turn} win={win} onTap={tap} enabled={turn === 'X' && !win} />
+      <TicTacToeBoard cells={s.cells} queue={s.queue} active={turn} win={win} onTap={tap} enabled={turn === 'X' && !win} />
       <p className="font-body text-xs text-center mt-3 text-brand-black/60">Faded piece = disappears on the next move.</p>
       {win && (
         <Result
@@ -146,7 +147,7 @@ export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch
       <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`} aria-live="polite">
         {win ? 'GAME OVER' : yourTurn ? 'YOUR TURN' : `${opp ?? 'THEY'} IS PLAYING…`}
       </div>
-      <Board
+      <TicTacToeBoard
         cells={view.cells}
         queue={view.queue}
         active={yourTurn ? active : null}
