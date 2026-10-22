@@ -17,7 +17,7 @@ const ROOM_KEY = 'mad-settings-room';
 
 export const AVATARS = [
   '🔥', '⛺', '🎸', '🎤', '⚽', '🌟', '🎯', '🧩',
-  '🎮', '🎲', '🎪', '🦊', '🦉', '🐺', '🌙', ' sun',
+  '🎮', '🎲', '🎪', '🦊', '🦉', '🐺', '🌙', '☀️',
 ];
 
 export function createPlayer(name: string, avatar: string, roomCode: string): Player {
@@ -53,12 +53,16 @@ export function updatePlayer(updates: Partial<Player>): Player | null {
   return updated;
 }
 
-export function addScore(game: string, points: number): Player | null {
+export function addScore(game: string, points: number, opts?: { room?: boolean }): Player | null {
   const player = getPlayer();
   if (!player) return null;
   // Players saved before a game existed have no slot for it yet
   player.scores[game] = (player.scores[game] ?? 0) + points;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
+  // Tell the RoomLayer so room points reach the server leaderboard
+  if (opts?.room !== false) {
+    window.dispatchEvent(new CustomEvent('mad:score', { detail: { game, points } }));
+  }
   return player;
 }
 

@@ -1,0 +1,300 @@
+import { mutation, query } from "./_generated/server";
+import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { v } from "convex/values";
+import { RULES } from "../src/lib/rules";
+import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
+
+const INVITE_MS = 3 * 60 * 1000;
+
+function rulesFor(game: string) {
+  const rules = RULES[game];
+  if (!rules) throw new Error("That game can't be played online.");
+  return rules;
+}
+
+function seatOf(match: Doc<"matches">, playerId: string) {
+  const i = match.seats.findIndex((s) => s.playerId === playerId);
+  return i < 0 ? null : i;
+}
+
+function start(match: Doc<"matches">) {
+  const rules = rulesFor(match.game);
+  return {
+    status: "playing" as const,
+    state: rules.init(match.seats.map((s) => s.name)),
+    result: undefined,
+    updatedAt: Date.now(),
+  };
+}
+
+async function load(db: DatabaseReader, matchId: Id<"matches">) {
+  const match = await db.get(matchId);
+  if (!match) throw new Error("That game is gone.");
+  return match;
+}
+
+// Someone left a live game: the others win and get the points
+async function forfeit(db: DatabaseWriter, match: Doc<"matches">, seat: number, reason: string) {
+  const rules = rulesFor(match.game);
+  const winners = match.seats.map((_, i) => i).filter((i) => i !== seat);
+  await db.patch(match._id, { status: "finished", result: { winners, reason }, updatedAt: Date.now() });
+  for (const i of winners) {
+    const row = await memberOf(db, match.roomId, match.seats[i].playerId);
+    if (row && !row.kicked) await addPoints(db, row, match.game, rules.points.win);
+  }
+}
+
+// Called when a camper leaves or is removed from the room
+export async function forfeitAll(db: DatabaseWriter, roomId: Id<"rooms">, playerId: string) {
+  const live = await db
+    .query("matches")
+    .withIndex("by_room", (q) => q.eq("roomId", roomId).eq("status", "playing"))
+    .collect();
+  for (const m of live) {
+    const seat = seatOf(m, playerId);
+    if (seat !== null) await forfeit(db, m, seat, `${m.seats[seat].name} left the room.`);
+  }
+}
+
+// Start a game and invite campers from your room
+export const create = mutation({
+  args: {
+    code: v.string(),
+    playerId: v.string(),
+    game: v.string(),
+    invite: v.array(v.id("roomPlayers")),
+  },
+  handler: async (ctx, args) => {
+    const rules = rulesFor(args.game);
+    const { room, me } = await requireMember(ctx.db, args.code, args.playerId);
+    if (args.invite.length < 1) throw new Error("Pick who to play with.");
+    if (args.invite.length > rules.max - 1) throw new Error(`Up to ${rules.max} players in this game.`);
+    const invited: string[] = [];
+    for (const id of args.invite) {
+      const row = await ctx.db.get(id);
+      if (!row || row.roomId !== room._id || row.kicked) throw new Error("That camper is not in your room.");
+      if (row.playerId === args.playerId) throw new Error("You can't invite yourself.");
+      invited.push(row.playerId);
+    }
+    // One open game per camper: cancel my older waiting ones
+    const waiting = await ctx.db
+      .query("matches")
+      .withIndex("by_room", (q) => q.eq("roomId", room._id).eq("status", "waiting"))
+      .collect();
+    for (const m of waiting) if (m.creatorId === args.playerId) await ctx.db.patch(m._id, { status: "cancelled" });
+
+    const now = Date.now();
+    return ctx.db.insert("matches", {
+      roomId: room._id,
+      game: args.game,
+      creatorId: args.playerId,
+      seats: [{ playerId: args.playerId, name: me.name, avatar: me.avatar }],
+      invited,
+      status: "waiting",
+      round: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+// Games I've been invited to and haven't joined yet
+export const invites = query({
+  args: { code: v.string(), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const room = await ctx.db
+      .query("rooms")
+      .withIndex("by_code", (q) => q.eq("code", args.code.trim().toUpperCase()))
+      .order("desc")
+      .first();
+    if (!room) return [];
+    const waiting = await ctx.db
+      .query("matches")
+      .withIndex("by_room", (q) => q.eq("roomId", room._id).eq("status", "waiting"))
+      .collect();
+    const cutoff = Date.now() - INVITE_MS;
+    return waiting
+      .filter((m) => m.createdAt > cutoff && m.invited.includes(args.playerId) && seatOf(m, args.playerId) === null)
+      .map((m) => ({ id: m._id, game: m.game, from: m.seats[0].name, fromAvatar: m.seats[0].avatar }));
+  },
+});
+
+// My latest unfinished game of this kind, so a refresh drops back in
+export const mine = query({
+  args: { code: v.string(), playerId: v.string(), game: v.string() },
+  handler: async (ctx, args) => {
+    const room = await ctx.db
+      .query("rooms")
+      .withIndex("by_code", (q) => q.eq("code", args.code.trim().toUpperCase()))
+      .order("desc")
+      .first();
+    if (!room) return null;
+    for (const status of ["playing", "waiting"] as const) {
+      const rows = await ctx.db
+        .query("matches")
+        .withIndex("by_room", (q) => q.eq("roomId", room._id).eq("status", status))
+        .order("desc")
+        .take(50);
+      const hit = rows.find((m) => m.game === args.game && seatOf(m, args.playerId) !== null);
+      if (hit) return hit._id;
+    }
+    return null;
+  },
+});
+
+export const join = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    if (match.status !== "waiting") throw new Error("That game already started.");
+    if (seatOf(match, args.playerId) !== null) return null;
+    if (!match.invited.includes(args.playerId)) throw new Error("You weren't invited to this game.");
+    const me = await memberOf(ctx.db, match.roomId, args.playerId);
+    if (!me || me.kicked) throw new Error("Join the room first.");
+    const rules = rulesFor(match.game);
+    if (match.seats.length >= rules.max) throw new Error("That game is full.");
+    const seats = [...match.seats, { playerId: args.playerId, name: me.name, avatar: me.avatar }];
+    const next = { ...match, seats };
+    // Everyone invited is in: deal and go
+    const everyone = seats.length === match.invited.length + 1;
+    await ctx.db.patch(match._id, everyone ? { seats, ...start(next) } : { seats, updatedAt: Date.now() });
+    return null;
+  },
+});
+
+export const decline = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    if (match.status !== "waiting" || !match.invited.includes(args.playerId)) return null;
+    const invited = match.invited.filter((id) => id !== args.playerId);
+    const pending = invited.filter((id) => !match.seats.some((s) => s.playerId === id)).length;
+    const rules = rulesFor(match.game);
+    if (match.seats.length + pending < rules.min) {
+      // Not enough campers left to play: call it off
+      await ctx.db.patch(match._id, { invited, status: "cancelled", updatedAt: Date.now() });
+    } else if (pending === 0) {
+      // Everyone else already joined: deal
+      await ctx.db.patch(match._id, { invited, ...start(match) });
+    } else {
+      await ctx.db.patch(match._id, { invited, updatedAt: Date.now() });
+    }
+    return null;
+  },
+});
+
+// The creator can start early once enough campers are in (card games)
+export const begin = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    if (match.creatorId !== args.playerId) throw new Error("Only whoever started the game can deal.");
+    if (match.status !== "waiting") return null;
+    if (match.seats.length < rulesFor(match.game).min) throw new Error("Wait for someone to join.");
+    await ctx.db.patch(match._id, start(match));
+    return null;
+  },
+});
+
+export const cancel = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    if (match.status === "waiting" && match.creatorId === args.playerId) {
+      await ctx.db.patch(match._id, { status: "cancelled", updatedAt: Date.now() });
+    }
+    return null;
+  },
+});
+
+export const act = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string(), action: v.any() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    if (match.status !== "playing") throw new Error("This game is not in progress.");
+    const seat = seatOf(match, args.playerId);
+    if (seat === null) throw new Error("You are not in this game.");
+    const member = await memberOf(ctx.db, match.roomId, args.playerId);
+    if (!member || member.kicked) throw new Error("You are no longer in this room.");
+    const rules = rulesFor(match.game);
+    const state = rules.act(match.state, seat, args.action ?? {});
+    const outcome = rules.outcome(state);
+    if (!outcome) {
+      await ctx.db.patch(match._id, { state, updatedAt: Date.now() });
+      return null;
+    }
+    await ctx.db.patch(match._id, { state, status: "finished", result: outcome, updatedAt: Date.now() });
+    // Points go straight onto the room leaderboard
+    const draw = outcome.winners.length === 0;
+    for (let i = 0; i < match.seats.length; i++) {
+      const points = draw ? rules.points.draw : outcome.winners.includes(i) ? rules.points.win : 0;
+      const row = await memberOf(ctx.db, match.roomId, match.seats[i].playerId);
+      if (row && !row.kicked) await addPoints(ctx.db, row, match.game, points);
+    }
+    return null;
+  },
+});
+
+// Leaving a live game hands the win to the others
+export const resign = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    const seat = seatOf(match, args.playerId);
+    if (match.status !== "playing" || seat === null) return null;
+    await forfeit(ctx.db, match, seat, `${match.seats[seat].name} left the game.`);
+    return null;
+  },
+});
+
+// Same campers, fresh game, seats rotated so someone else starts
+export const rematch = mutation({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await load(ctx.db, args.matchId);
+    if (match.status !== "finished") return null;
+    if (seatOf(match, args.playerId) === null) throw new Error("You are not in this game.");
+    const seats = [...match.seats.slice(1), match.seats[0]];
+    await ctx.db.patch(match._id, { seats, round: match.round + 1, ...start({ ...match, seats }) });
+    return null;
+  },
+});
+
+// What one camper may see: names and avatars, never secret ids or other hands
+export const get = query({
+  args: { matchId: v.id("matches"), playerId: v.string() },
+  handler: async (ctx, args) => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match) return null;
+    const rules = RULES[match.game];
+    if (!rules) return null;
+    const seat = seatOf(match, args.playerId);
+    const rows = await Promise.all(match.seats.map((s) => memberOf(ctx.db, match.roomId, s.playerId)));
+    const invitedNames: string[] = [];
+    for (const id of match.invited) {
+      if (match.seats.some((s) => s.playerId === id)) continue;
+      const row = await memberOf(ctx.db, match.roomId, id);
+      if (row) invitedNames.push(row.name);
+    }
+    return {
+      id: match._id,
+      game: match.game,
+      status: match.status,
+      round: match.round,
+      seat,
+      isCreator: match.creatorId === args.playerId,
+      min: rules.min,
+      seats: match.seats.map((s, i) => ({
+        name: s.name,
+        avatar: s.avatar,
+        online: rows[i] ? isOnline(rows[i]) : false,
+      })),
+      waitingFor: invitedNames,
+      turn: match.status === "playing" ? rules.turn(match.state) : null,
+      view: match.state === undefined ? null : rules.view(match.state, seat),
+      result: match.result ?? null,
+      points: rules.points,
+    };
+  },
+});
