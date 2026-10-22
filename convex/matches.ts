@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { RULES } from "../src/lib/rules";
 import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
 
@@ -9,7 +9,7 @@ const INVITE_MS = 3 * 60 * 1000;
 
 function rulesFor(game: string) {
   const rules = RULES[game];
-  if (!rules) throw new Error("That game can't be played online.");
+  if (!rules) throw new ConvexError("That game can't be played online.");
   return rules;
 }
 
@@ -30,7 +30,7 @@ function start(match: Doc<"matches">) {
 
 async function load(db: DatabaseReader, matchId: Id<"matches">) {
   const match = await db.get(matchId);
-  if (!match) throw new Error("That game is gone.");
+  if (!match) throw new ConvexError("That game is gone.");
   return match;
 }
 
@@ -68,13 +68,13 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const rules = rulesFor(args.game);
     const { room, me } = await requireMember(ctx.db, args.code, args.playerId);
-    if (args.invite.length < 1) throw new Error("Pick who to play with.");
-    if (args.invite.length > rules.max - 1) throw new Error(`Up to ${rules.max} players in this game.`);
+    if (args.invite.length < 1) throw new ConvexError("Pick who to play with.");
+    if (args.invite.length > rules.max - 1) throw new ConvexError(`Up to ${rules.max} players in this game.`);
     const invited: string[] = [];
     for (const id of args.invite) {
       const row = await ctx.db.get(id);
-      if (!row || row.roomId !== room._id || row.kicked) throw new Error("That camper is not in your room.");
-      if (row.playerId === args.playerId) throw new Error("You can't invite yourself.");
+      if (!row || row.roomId !== room._id || row.kicked) throw new ConvexError("That camper is not in your room.");
+      if (row.playerId === args.playerId) throw new ConvexError("You can't invite yourself.");
       invited.push(row.playerId);
     }
     // One open game per camper: cancel my older waiting ones
@@ -147,13 +147,13 @@ export const join = mutation({
   args: { matchId: v.id("matches"), playerId: v.string() },
   handler: async (ctx, args) => {
     const match = await load(ctx.db, args.matchId);
-    if (match.status !== "waiting") throw new Error("That game already started.");
+    if (match.status !== "waiting") throw new ConvexError("That game already started.");
     if (seatOf(match, args.playerId) !== null) return null;
-    if (!match.invited.includes(args.playerId)) throw new Error("You weren't invited to this game.");
+    if (!match.invited.includes(args.playerId)) throw new ConvexError("You weren't invited to this game.");
     const me = await memberOf(ctx.db, match.roomId, args.playerId);
-    if (!me || me.kicked) throw new Error("Join the room first.");
+    if (!me || me.kicked) throw new ConvexError("Join the room first.");
     const rules = rulesFor(match.game);
-    if (match.seats.length >= rules.max) throw new Error("That game is full.");
+    if (match.seats.length >= rules.max) throw new ConvexError("That game is full.");
     const seats = [...match.seats, { playerId: args.playerId, name: me.name, avatar: me.avatar }];
     const next = { ...match, seats };
     // Everyone invited is in: deal and go
@@ -189,9 +189,9 @@ export const begin = mutation({
   args: { matchId: v.id("matches"), playerId: v.string() },
   handler: async (ctx, args) => {
     const match = await load(ctx.db, args.matchId);
-    if (match.creatorId !== args.playerId) throw new Error("Only whoever started the game can deal.");
+    if (match.creatorId !== args.playerId) throw new ConvexError("Only whoever started the game can deal.");
     if (match.status !== "waiting") return null;
-    if (match.seats.length < rulesFor(match.game).min) throw new Error("Wait for someone to join.");
+    if (match.seats.length < rulesFor(match.game).min) throw new ConvexError("Wait for someone to join.");
     await ctx.db.patch(match._id, start(match));
     return null;
   },
@@ -212,13 +212,19 @@ export const act = mutation({
   args: { matchId: v.id("matches"), playerId: v.string(), action: v.any() },
   handler: async (ctx, args) => {
     const match = await load(ctx.db, args.matchId);
-    if (match.status !== "playing") throw new Error("This game is not in progress.");
+    if (match.status !== "playing") throw new ConvexError("This game is not in progress.");
     const seat = seatOf(match, args.playerId);
-    if (seat === null) throw new Error("You are not in this game.");
+    if (seat === null) throw new ConvexError("You are not in this game.");
     const member = await memberOf(ctx.db, match.roomId, args.playerId);
-    if (!member || member.kicked) throw new Error("You are no longer in this room.");
+    if (!member || member.kicked) throw new ConvexError("You are no longer in this room.");
     const rules = rulesFor(match.game);
-    const state = rules.act(match.state, seat, args.action ?? {});
+    let state;
+    try {
+      state = rules.act(match.state, seat, args.action ?? {});
+    } catch (e) {
+      // Rule errors are written for campers; ConvexError keeps them readable in production
+      throw new ConvexError(e instanceof Error ? e.message : "That move is not allowed.");
+    }
     const outcome = rules.outcome(state);
     if (!outcome) {
       await ctx.db.patch(match._id, { state, updatedAt: Date.now() });
@@ -254,7 +260,7 @@ export const rematch = mutation({
   handler: async (ctx, args) => {
     const match = await load(ctx.db, args.matchId);
     if (match.status !== "finished") return null;
-    if (seatOf(match, args.playerId) === null) throw new Error("You are not in this game.");
+    if (seatOf(match, args.playerId) === null) throw new ConvexError("You are not in this game.");
     const seats = [...match.seats.slice(1), match.seats[0]];
     await ctx.db.patch(match._id, { seats, round: match.round + 1, ...start({ ...match, seats }) });
     return null;
