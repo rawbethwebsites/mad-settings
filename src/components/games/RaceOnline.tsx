@@ -44,7 +44,7 @@ export function RaceOnline({ view, seat, names, act }: OnlineProps<RaceView, Rac
       <div className="grid gap-2 mb-4">
         {names.map((n:string,i:number)=>(
           <div key={i} className={`p-3 poster-border font-display font-black ${i===seat?'bg-brand-acid':'bg-white'}`}>
-            {n} · {finished[i] !== null ? `Score: ${finished[i]}` : 'Waiting…'}
+            {n} · {finished[i] === null ? 'Waiting…' : finished[i] === -1 ? 'Done ✓' : `Score: ${finished[i]}`}
           </div>
         ))}
       </div>

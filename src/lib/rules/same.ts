@@ -6,6 +6,7 @@ export interface SameState {
   lives: number[];
   submitted: (string | null)[];
   winner: number | null;
+  done?: boolean;
 }
 
 export interface SameAction {
@@ -37,7 +38,7 @@ export const same: Rules<SameState, SameAction, SameView> = {
     };
   },
   act(s, seat, a) {
-    if (s.winner !== null) throw new Error('Game already finished.');
+    if (s.done || s.winner !== null) throw new Error('Game already finished.');
     if (s.submitted[seat] !== null) throw new Error('You already submitted for this round.');
     const word = a.word.trim().toLowerCase().replace(/\s+/g, ' ');
     if (!word) throw new Error('Please type a word.');
@@ -59,29 +60,26 @@ export const same: Rules<SameState, SameAction, SameView> = {
         ids.forEach(i => { lives[i] = Math.max(0, lives[i] - 1); });
       }
     });
-    const alive = lives.map(v => v > 0);
-    const anyAlive = alive.some(v => v);
+    const aliveCount = lives.filter(v => v > 0).length;
     const maxLives = Math.max(...lives);
     const nextIdx = s.idx + 1;
-    let finished = false;
-    let winner: number | null = null;
-    if (!anyAlive || nextIdx >= s.prompts.length) {
-      finished = true;
-      const top = lives.map((v, i) => v === maxLives ? i : -1).filter(i => i !== -1);
-      winner = top.length === 1 ? top[0] : null;
-    }
+    // Ends when one camper (or nobody) has lives left, or the prompts run out
+    const finished = aliveCount <= 1 || nextIdx >= s.prompts.length;
+    const top = lives.map((v, i) => (v === maxLives ? i : -1)).filter(i => i !== -1);
     return {
       ...s,
       lives,
       submitted: Array(s.submitted.length).fill(null),
       idx: finished ? s.idx : nextIdx,
-      winner: finished ? winner : null,
+      winner: finished && top.length === 1 ? top[0] : null,
+      done: finished,
     };
   },
   turn: () => null,
   outcome(s) {
-    if (s.winner === null) return null;
-    return { winners: [s.winner], reason: 'Last standing' };
+    if (!s.done && s.winner === null) return null;
+    if (s.winner === null) return { winners: [], reason: 'Tied on lives.' };
+    return { winners: [s.winner], reason: 'Last one standing.' };
   },
   view(s, seat) {
     const prompt = s.prompts[s.idx] ?? '...';
@@ -92,10 +90,10 @@ export const same: Rules<SameState, SameAction, SameView> = {
       prompt,
       idx: s.idx,
       lives: s.lives,
-      myWord: hidden ? null : myWord,
+      myWord,
       others: s.submitted.map((w, i) => (i === seat || hidden) ? null : w),
       winner: s.winner,
-      finished: s.winner !== null,
+      finished: !!s.done || s.winner !== null,
     };
   },
 };

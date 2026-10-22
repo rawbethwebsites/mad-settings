@@ -179,7 +179,7 @@ export default function PuzzlesGame() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 placeholder="Your answer..."
                 disabled={feedback === 'correct'}
-                className="flex-1 px-4 py-4 border-4 border-brand-black bg-white text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
+                className="flex-1 min-w-0 px-4 py-4 border-4 border-brand-black bg-white text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none focus:bg-brand-acid/20"
               />
               <button
                 data-sfx="none"

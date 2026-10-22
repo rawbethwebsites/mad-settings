@@ -128,7 +128,7 @@ export default function SearchGame() {
             placeholder="Enter the code word..."
             maxLength={20}
             disabled={feedback === 'correct'}
-            className={`flex-1 px-4 py-4 border-4 border-brand-black text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none transition-colors ${
+            className={`flex-1 min-w-0 px-4 py-4 border-4 border-brand-black text-brand-black placeholder:text-brand-black/40 font-display font-black text-xl uppercase text-center tracking-widest focus:outline-none transition-colors ${
               feedback === 'correct' ? 'bg-brand-acid' :
               feedback === 'wrong' ? 'bg-brand-coral/30' : 'bg-white focus:bg-brand-acid/20'
             }`}

@@ -55,7 +55,8 @@ export const race: Rules<RaceState, RaceAction, RaceView> = {
     return {
       seed: s.seed,
       names: [],
-      finished: s.finished,
+      // -1 = finished, score hidden until everyone is done
+      finished: s.finished.map(v => (v === null ? null : allDone ? v : -1)),
       scores: allDone ? scores : Array(s.finished.length).fill(null),
       myScore: seat !== null ? s.finished[seat] : null,
       allDone,
