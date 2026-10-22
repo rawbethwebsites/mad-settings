@@ -140,8 +140,10 @@ export function aiTurn(s: State): State {
 export const whot: Rules<State, WhotAction, WhotView> = {
   min: 2,
   max: 4,
+  turnSeconds: 30,
   points: { win: 80, draw: 0 },
   init: names => deal(names),
+  autoMove: () => ({ type: 'draw' }),
   act(s, seat, a) {
     if (whot.outcome(s)) throw new Error('This game is over.');
     if (s.turn !== seat) throw new Error('It is not your turn.');

@@ -12,11 +12,15 @@ export interface Outcome {
 export interface Rules<S, A, V> {
   min: number;
   max: number;
+  /** Server-enforced time allowed for each turn */
+  turnSeconds?: number;
   /** Room points for each winner, and for everyone on a draw */
   points: { win: number; draw: number };
   init(names: string[]): S;
   /** Returns the next state, or throws an Error with a message a camper can read */
   act(s: S, seat: number, a: A): S;
+  /** Action to take on timeout; without one, the camper forfeits */
+  autoMove?(s: S, seat: number): A;
   turn(s: S): number | null;
   outcome(s: S): Outcome | null;
   /** What one seat may see (card games hide the other hands). null = spectator */
