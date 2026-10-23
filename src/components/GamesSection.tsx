@@ -3,9 +3,13 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { games } from '@/data/games';
+import { games, GAMES } from '@/data/games';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// Every other game, so the homepage always matches what campers can actually play
+const FEATURED = new Set(games.map(g => g.path));
+const MORE = GAMES.filter(g => !FEATURED.has(g.path));
 
 export default function GamesSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +66,7 @@ export default function GamesSection() {
       {games.map((game) => (
         <a
           key={game.id}
-          href="/join"
+          href={game.path}
           className="game-card group relative p-8 poster-border poster-shadow bg-brand-cream text-brand-black transition-all hover:-translate-y-2 hover:-translate-x-2 overflow-hidden block"
         >
           <div className="game-number absolute top-0 right-0 font-display font-black text-8xl opacity-10 group-hover:opacity-20 transition-opacity leading-none">
@@ -85,6 +89,24 @@ export default function GamesSection() {
           </div>
         </a>
       ))}
+
+      <div className="md:col-span-2" data-more-games>
+        <h3 className="font-display font-black text-2xl md:text-3xl uppercase italic mb-4">
+          Plus {MORE.length} more games
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {MORE.map(g => (
+            <a key={g.id} href={g.path} className="game-card flex items-center gap-2 min-h-14 p-3 poster-border bg-brand-cream text-brand-black hover:bg-brand-acid transition-colors">
+              <span className="text-2xl" aria-hidden="true">{g.emoji}</span>
+              <span className="font-display font-black text-sm uppercase leading-tight">{g.name}</span>
+            </a>
+          ))}
+          <a href="/casino" className="game-card col-span-2 sm:col-span-1 flex items-center gap-2 min-h-14 p-3 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e]">
+            <span className="text-2xl" aria-hidden="true">🎰</span>
+            <span className="font-display font-black text-sm uppercase leading-tight">Casino Night</span>
+          </a>
+        </div>
+      </div>
 
       <div className="game-cta-block md:col-span-2 mt-12 text-center">
         <div className="inline-block p-12 poster-border poster-shadow bg-brand-purple text-brand-cream">
