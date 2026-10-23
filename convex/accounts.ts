@@ -5,6 +5,7 @@ import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import { accountByKey, bank, charge, cleanAmount, cleanPhone, requireAccount, staffRole } from './walletLib';
 import { TENTS_TOTAL, TICKETS } from '../src/data/tickets';
+import { startingLook } from '../src/data/avatar';
 import type { DatabaseReader } from './_generated/server';
 
 const LOCK_AFTER = 5;
@@ -50,7 +51,7 @@ export function checkPassword(p: string) {
 // ── Sign up and log in ────────────────────────────────────────────────
 
 export const register = action({
-  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), password: v.string(), ticket: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string() },
+  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), password: v.string(), ticket: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string(), gender: v.optional(v.union(v.literal('male'), v.literal('female'))) },
   handler: async (ctx, args): Promise<{ playerKey: string; name: string }> => {
     const { password, ...rest } = args;
     checkPassword(password);
@@ -61,7 +62,7 @@ export const register = action({
 });
 
 export const create = internalMutation({
-  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), ticket: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string(), salt: v.string(), passwordHash: v.string(), spareKey: v.string() },
+  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), ticket: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string(), salt: v.string(), passwordHash: v.string(), spareKey: v.string(), gender: v.optional(v.union(v.literal('male'), v.literal('female'))) },
   handler: async (ctx, args) => {
     const name = args.name.trim().replace(/\s+/g, ' ').slice(0, 40);
     if (name.length < 2) throw new ConvexError('Enter your name.');
@@ -85,6 +86,7 @@ export const create = internalMutation({
     await ctx.db.insert('accounts', {
       name, phone, email, stay: ticket.stay, guests, ticket: ticket.name, ticketTotal, passwordHash: args.passwordHash, salt: args.salt,
       playerKey, status: 'pending', balance: 0, failedLogins: 0, lockedUntil: 0, createdAt: Date.now(),
+      ...(args.gender ? { gender: args.gender, look: startingLook(args.gender, name + phone) } : {}),
     });
     return { playerKey, name };
   },
@@ -164,7 +166,7 @@ export const me = query({
     return {
       bank: bankInfo,
       staff: await staffRole(ctx.db, playerKey),
-      account: { name: a.name, phone: a.phone, status: a.status, balance: a.balance, ticket: a.ticket ?? null, ticketTotal: a.ticketTotal ?? null, guests: a.guests ?? 1 },
+      account: { name: a.name, phone: a.phone, status: a.status, balance: a.balance, ticket: a.ticket ?? null, ticketTotal: a.ticketTotal ?? null, guests: a.guests ?? 1, gender: a.gender ?? null, look: a.look ?? null, shout: a.shout ?? '' },
       payments: payments.map(p => ({ id: p._id, kind: p.kind, amount: p.amount, status: p.status, note: p.note ?? null, createdAt: p.createdAt })),
       entries: entries.map(e => ({ id: e._id, amount: e.amount, label: e.label, createdAt: e.createdAt })),
       orders: orders.map(o => ({ id: o._id, item: o.item, emoji: o.emoji, price: o.price, status: o.status, createdAt: o.createdAt })),

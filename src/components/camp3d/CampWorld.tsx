@@ -4,11 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import CampScene from "./CampScene";
 import { TalkBubble } from "./CampTalk";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { setCampersOnSite } from "@/lib/campCampers";
 
 export default function CampWorld() {
   const progress = useRef(0);
   const [ready, setReady] = useState(false);
   const [supported, setSupported] = useState(true);
+  // Paid campers walk round the camp with their own look and message
+  const campers = useQuery(api.avatars.onSite, {});
+  useEffect(() => {
+    if (campers) setCampersOnSite(campers);
+  }, [campers]);
 
   useEffect(() => {
     document.body.classList.add("camp-night");

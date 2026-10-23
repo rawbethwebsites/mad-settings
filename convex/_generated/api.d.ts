@@ -9,6 +9,7 @@
  */
 
 import type * as accounts from "../accounts.js";
+import type * as avatars from "../avatars.js";
 import type * as casino from "../casino.js";
 import type * as casinoLib from "../casinoLib.js";
 import type * as chess from "../chess.js";
@@ -38,6 +39,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
+  avatars: typeof avatars;
   casino: typeof casino;
   casinoLib: typeof casinoLib;
   chess: typeof chess;

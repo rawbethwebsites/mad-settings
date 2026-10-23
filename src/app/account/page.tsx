@@ -10,6 +10,8 @@ import { camperId } from '@/lib/camper';
 import { logOutOfThisPhone, naira, serverMessage, signInOnThisPhone, uploadReceipt } from '@/lib/account';
 import { Btn } from '@/components/arcade/ui';
 import { CAMP_DATE, CAMP_START, TICKETS, type TicketId } from '@/data/tickets';
+import AvatarCard from '@/components/wallet/AvatarCard';
+import type { AvatarLook, Gender } from '@/data/avatar';
 
 const field = 'w-full p-3 border-[3px] border-brand-black bg-white font-body text-lg';
 const label = 'block font-display font-bold text-xs uppercase tracking-widest mb-1';
@@ -53,6 +55,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
   const tentsGone = tents?.left === 0;
   const [f, setF] = useState({ name: '', phone: '', password: '', email: '', guests: '1' });
   const [ticketId, setTicketId] = useState<TicketId>('attendee');
+  const [gender, setGender] = useState<Gender | null>(null);
   const ticket = TICKETS.find(t => t.id === ticketId)!;
   const people = Math.max(1, Math.min(20, Number(f.guests) || 1));
   const total = ticket.id === 'attendee' ? ticket.price * people : ticket.price;
@@ -62,10 +65,11 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (mode === 'signup' && !gender) { setError('Pick Female or Male for your camp avatar.'); return; }
     setBusy(true); setError('');
     try {
       const r = mode === 'signup'
-        ? await register({ name: f.name, phone: f.phone, password: f.password, email: f.email || undefined, ticket: ticketId, guests: people, playerKey: camperId() })
+        ? await register({ name: f.name, phone: f.phone, password: f.password, email: f.email || undefined, ticket: ticketId, guests: people, playerKey: camperId(), gender: gender ?? undefined })
         : await login({ phone: f.phone, password: f.password });
       signInOnThisPhone(r.playerKey, r.name);
       onDone(r.playerKey);
@@ -97,6 +101,18 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
         <div><label className={label} htmlFor="password">{mode === 'signup' ? 'Make a password' : 'Password'}</label><input id="password" type="password" className={field} value={f.password} onChange={set('password')} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={6} required /></div>
         {mode === 'signup' && (
           <>
+            <fieldset>
+              <legend className={label}>You are</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {(['female', 'male'] as const).map(x => (
+                  <button key={x} type="button" aria-pressed={gender === x} onClick={() => setGender(x)}
+                    className={`min-h-11 poster-border font-display font-black uppercase ${gender === x ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
+                    {x === 'female' ? 'Female' : 'Male'}
+                  </button>
+                ))}
+              </div>
+              <p className="font-body text-xs text-brand-black/60 mt-1">We make you a camp avatar. You can change its look later.</p>
+            </fieldset>
             <div><label className={label} htmlFor="email">Email (optional)</label><input id="email" type="email" className={field} value={f.email} onChange={set('email')} autoComplete="email" /></div>
             <fieldset>
               <legend className={label}>Ticket · {CAMP_DATE} from {CAMP_START}</legend>
@@ -216,6 +232,8 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
         <div className="mt-4 font-display font-bold text-xs uppercase tracking-widest opacity-60">Wallet</div>
         <div className="font-display font-black text-5xl text-brand-acid tabular-nums">{naira(a.balance)}</div>
       </Card>
+
+      <AvatarCard playerKey={playerKey} name={a.name} gender={a.gender} look={a.look as AvatarLook | null} shout={a.shout} live={a.status === 'approved'} />
 
       {a.status !== 'approved' && (
         <Card>

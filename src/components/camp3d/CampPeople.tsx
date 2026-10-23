@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { ballAt, FIRE_LOG_ANGLES, FIRE_LOG_RADIUS, PEOPLE, PITCH, type Look, type PersonSpec, type Pose } from "@/data/campLayout";
+import { ballAt, FIRE_LOG_ANGLES, FIRE_LOG_RADIUS, PITCH, type Look, type PersonSpec, type Pose } from "@/data/campLayout";
+import { campPeople } from "@/lib/campCampers";
 import { registerTalker, setTalkPicker } from "./CampTalk";
 
 /**
@@ -273,7 +274,7 @@ const viewProj = new THREE.Matrix4();
 const probe = new THREE.Sphere(new THREE.Vector3(), 1.3);
 const tmpColor = new THREE.Color();
 
-function Crowd() {
+function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
   const rig = useMemo(buildRig, []);
   const meshes = useRef<(THREE.InstancedMesh | null)[]>([]);
 
@@ -287,7 +288,7 @@ function Crowd() {
         owners.forEach((owner, k) => (slot[owner] = k));
         return { def, nodes, owners, slot, count: owners.length * nodes.length };
       }),
-    [rig],
+    [rig, PEOPLE],
   );
 
   const materials = useMemo(
@@ -296,7 +297,7 @@ function Crowd() {
   );
 
   // Head anchors for the speech bubbles.
-  const heads = useMemo(() => PEOPLE.map(() => new THREE.Object3D()), []);
+  const heads = useMemo(() => PEOPLE.map(() => new THREE.Object3D()), [PEOPLE]);
 
   useLayoutEffect(() => {
     layout.forEach(({ def, nodes, owners }, m) => {
@@ -311,10 +312,15 @@ function Crowd() {
       });
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     });
-  }, [layout]);
+  }, [layout, PEOPLE]);
 
   useEffect(() => {
-    const offs = heads.map((head, i) => registerTalker(`camper-${i}`, { head }));
+    const offs = heads.map((head, i) => {
+      const label = PEOPLE[i].label;
+      // Real campers say what they wrote on My camp
+      const line = label?.shout ? () => ({ tag: "tip" as const, text: label.shout, by: label.name }) : undefined;
+      return registerTalker(`camper-${i}`, { head, line });
+    });
     const pickable = layout
       .map((l, m) => ({ l, mesh: meshes.current[m] }))
       .filter((x): x is { l: (typeof layout)[number]; mesh: THREE.InstancedMesh } => !!x.mesh && !!x.l.def.pickable);
@@ -334,7 +340,7 @@ function Crowd() {
       offs.forEach((off) => off());
       setTalkPicker(null);
     };
-  }, [heads, layout]);
+  }, [heads, layout, PEOPLE]);
 
   const frame = useRef(0);
 
@@ -463,11 +469,14 @@ function MatchBall() {
 }
 
 export default function CampPeople() {
+  const people = useSyncExternalStore(campPeople.subscribe, campPeople.get, campPeople.server);
+  // Rebuild the instanced meshes when the mix of hair styles (and so part counts) changes
+  const key = useMemo(() => people.map((p) => p.look.hair).join(""), [people]);
   return (
     <group>
       <FireLogs />
       <MatchBall />
-      <Crowd />
+      <Crowd key={key} people={people} />
     </group>
   );
 }
