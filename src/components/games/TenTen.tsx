@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
+import React from 'react';
+import type { OnlineProps } from '@/lib/rules/types';
+import { play } from '@/lib/sfx';
+import { useCountdownSounds } from '@/lib/useGameSounds';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
@@ -26,13 +30,17 @@ export default function TenTen({ award }: { award: (n: number) => void }) {
 
   // Odd rounds you chase (match them), even rounds you escape (differ)
   const chaser = round % 2 === 1;
+  useCountdownSounds(phase === 'pick' ? left : null, round);
 
   const resolve = (pick: Dir | null) => {
+    if (phase !== 'pick') return;
     const their = DIRS[Math.floor(Math.random() * 4)];
     const same = pick !== null && pick === their;
     const youWin = pick === null ? false : chaser ? same : !same;
     const nextYou = you + (youWin ? 1 : 0);
     const nextCpu = cpu + (youWin ? 0 : 1);
+    // The shared Result owns the final round's outcome cue.
+    if (nextYou < TO_WIN && nextCpu < TO_WIN) play(youWin ? 'capture' : 'error');
     const nextStreak = youWin ? streak + 1 : 0;
     setMine(pick);
     setTheirs(their);
@@ -104,7 +112,7 @@ export default function TenTen({ award }: { award: (n: number) => void }) {
       )}
 
       {phase === 'ready' && (
-        <Btn className="w-full py-6 text-xl" onClick={go}>TEN TEN! →</Btn>
+        <Btn data-sfx="none" className="w-full py-6 text-xl" onClick={go}>TEN TEN! →</Btn>
       )}
 
       {phase === 'pick' && (
@@ -112,7 +120,7 @@ export default function TenTen({ award }: { award: (n: number) => void }) {
           <div className="font-display font-black text-6xl text-brand-purple mb-4">{Math.max(left, 0)}</div>
           <div className="grid grid-cols-2 gap-3">
             {DIRS.map(d => (
-              <button key={d} onClick={() => resolve(d)} aria-label={`Point ${d}`}
+              <button data-sfx="none" key={d} onClick={() => resolve(d)} aria-label={`Point ${d}`}
                 className="py-6 text-5xl poster-border bg-brand-cream hover:bg-brand-acid">
                 {ICON[d]}
               </button>
@@ -149,6 +157,50 @@ export default function TenTen({ award }: { award: (n: number) => void }) {
           onAgain={reset}
         />
       )}
+    </div>
+  );
+}
+
+export function TenTenOnline({ view, seat, act }: OnlineProps<{
+  round: number;
+  chaser: boolean;
+  myPick: Dir | null;
+  theirPick: Dir | null;
+  reveal: { p0: Dir | null; p1: Dir | null; same: boolean } | null;
+  scores: number[];
+  winner: number | null;
+}, { dir: Dir }>) {
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const send = async (a: { dir: Dir }) => { if (busy) return; setErr(null); setBusy(true); try { await act(a); play('place'); } catch(e){ play('error'); setErr(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); } };
+  const myPick = view?.myPick ?? null;
+  const theirPick = view?.theirPick ?? null;
+  const reveal = view?.reveal ?? null;
+  const scores = view?.scores ?? [0,0];
+  const winner = view?.winner ?? null;
+  const chaser = view?.chaser ?? true;
+  const round = view?.round ?? 1;
+  const canPick = seat !== null && !winner && myPick === null && !reveal;
+  const ICONS: Record<Dir, string> = {up:'👆',down:'👇',left:'👈',right:'👉'};
+  const Icon = (d: Dir | null)=> d ? ICONS[d] : '';
+  const DIRS: Dir[] = ['up','down','left','right'];
+  return (
+    <div>
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        Round {round} · {chaser ? 'Chase: match them' : 'Escape: differ'} · Points {scores[seat ?? 0] ?? 0}–{scores[seat === 0 ? 1 : 0] ?? 0}
+      </p>
+      <div data-online-board="tenten" className="p-4 poster-border poster-shadow bg-white text-center">
+        {reveal ? (
+          <div>
+            <div className="flex justify-center gap-8 text-5xl mb-3"><div><div className="font-display font-bold text-xs uppercase">YOU</div>{Icon(myPick)}</div><div><div className="font-display font-bold text-xs uppercase">THEM</div>{Icon(theirPick)}</div></div>
+            <div className="font-display font-black text-2xl uppercase">{winner===seat ? 'YOU WIN ROUND' : 'THEY WIN ROUND'}</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">{DIRS.map(d=><button data-sfx="none" key={d} aria-label={`Point ${d}`} onClick={()=>send({dir:d})} disabled={!canPick||busy} className="py-6 text-5xl poster-border bg-brand-cream hover:bg-brand-acid disabled:opacity-50">{Icon(d)}</button>)}</div>
+        )}
+      </div>
+      {err && <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">{err}</div>}
+      {winner!==null && <div className={`mt-6 p-8 poster-border poster-shadow text-center ${winner===seat?'bg-brand-acid':'bg-brand-coral'}`}><div className="text-6xl mb-3">{winner===seat?'🏆':'🤖'}</div><h2 className="font-display font-black text-3xl uppercase italic mb-2">{winner===seat?'YOU WIN!':'YOU LOSE'}</h2></div>}
     </div>
   );
 }

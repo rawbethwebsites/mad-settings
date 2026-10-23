@@ -5,6 +5,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import { getChessPlayerId } from '@/lib/chessOnline';
+import { useCountdownSounds, useResultSound } from '@/lib/useGameSounds';
 
 const btn = 'font-display font-black uppercase poster-border';
 export const QUESTION_MS = 20 * 1000;
@@ -49,11 +50,21 @@ export default function TriviaPlayer({ roundId }: { roundId: Id<'rounds'> }) {
     enter({ roundId, playerId }).catch(() => {});
   }, [enter, roundId, playerId]);
 
-  // Countdown clock
+  // Countdown clock, anchored to the server rather than this phone's clock.
+  const serverNow = data?.now;
   useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 200);
-    return () => window.clearInterval(t);
-  }, []);
+    if (serverNow === undefined) return;
+    const offset = serverNow - Date.now();
+    const sync = () => setNow(Date.now() + offset);
+    const first = window.setTimeout(sync, 0);
+    const t = window.setInterval(sync, 200);
+    return () => { window.clearTimeout(first); window.clearInterval(t); };
+  }, [serverNow]);
+
+  const secsLeft = data ? Math.max(0, Math.ceil((QUESTION_MS - (now - data.stepStartedAt)) / 1000)) : null;
+  useCountdownSounds(data?.game === 'trivia' && data.status === 'live' && data.phase === 'question' ? secsLeft : null, `${roundId}:${data?.step}`);
+  const final = data?.game === 'trivia' && (data.status === 'ended' || (data.phase === 'reveal' && data.step === data.total - 1));
+  useResultSound(final ? (data.me.score > 0 && data.me.score === data.leaderboard[0]?.score ? 'win' : 'lose') : null, roundId);
 
   const step = data?.step;
   const phase = data?.phase;
@@ -94,8 +105,7 @@ export default function TriviaPlayer({ roundId }: { roundId: Id<'rounds'> }) {
     );
   }
 
-  const secsLeft = Math.max(0, Math.ceil((QUESTION_MS - (now - data.stepStartedAt)) / 1000));
-  const urgent = data.phase === 'question' && secsLeft <= 5;
+  const urgent = data.phase === 'question' && secsLeft !== null && secsLeft <= 5;
   const answeredCurrent = !!data.me.myAnswer;
 
   const pick = async (choice: number) => {

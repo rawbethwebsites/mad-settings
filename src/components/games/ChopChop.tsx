@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
+import { play } from '@/lib/sfx';
 
 const N = 7;
 const MOVES = 20;
@@ -89,17 +90,19 @@ export default function ChopChop({ award }: { award: (n: number) => void }) {
 
   const tap = (r: number, c: number) => {
     if (over) return;
-    if (!sel) { setSel([r, c]); return; }
+    if (!sel) { play('tap'); setSel([r, c]); return; }
     const [sr, sc] = sel;
-    if (sr === r && sc === c) { setSel(null); return; }
-    if (Math.abs(sr - r) + Math.abs(sc - c) !== 1) { setSel([r, c]); return; }
+    if (sr === r && sc === c) { play('tap'); setSel(null); return; }
+    if (Math.abs(sr - r) + Math.abs(sc - c) !== 1) { play('tap'); setSel([r, c]); return; }
     const test = swapped(grid, sel, [r, c]);
     if (!matches(test).flat().some(Boolean)) {
+      play('error');
       setMsg('No match there — try another swap.');
       setSel(null);
       return;
     }
     const res = settle(test);
+    play('capture');
     let next = res.grid;
     let note = res.chain > 1 ? `Chain x${res.chain}! +${res.gained}` : `+${res.gained}`;
     if (!hasMove(next)) {
@@ -132,7 +135,7 @@ export default function ChopChop({ award }: { award: (n: number) => void }) {
         <div className="p-2 poster-border bg-white">MOVES {moves}</div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 p-2 poster-border poster-shadow bg-brand-black">
+      <div data-sfx="none" className="grid grid-cols-7 gap-1 p-2 poster-border poster-shadow bg-brand-black">
         {grid.map((row, r) =>
           row.map((v, c) => (
             <button

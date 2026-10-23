@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ComponentProps } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
   WIN_AT,
@@ -12,13 +13,50 @@ import {
   finished,
   aiPit,
 } from '@/lib/rules/ayo';
-import type { OnlineProps } from '@/lib/rules/types';
+
+import dynamic from 'next/dynamic';
+
+const LoadingBoardContext = createContext({ pits: Array<number>(12).fill(4), store: [0, 0] as [number, number], seat: 0 });
+
+function AyoLoading() {
+  const { pits, store, seat } = useContext(LoadingBoardContext);
+  const top = seat === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
+  const bottom = seat === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
+  return <div role="status" aria-label="Loading Ayo board" style={{ position: 'relative', aspectRatio: '8.15 / 4.95', display: 'grid', alignContent: 'center', gap: 12, padding: '6% 8%', background: 'repeating-linear-gradient(2deg,#ad713f44 0 1px,transparent 1px 7px),linear-gradient(130deg,#e6ba7e,#b27a43)' }}>
+    {[top, bottom].map((row, r) => <div key={r} style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
+      {row.map(i => <span key={i} style={{ position: 'relative', borderRadius: '50%', background: '#82502c', boxShadow: 'inset 0 3px 5px #321a16aa', textAlign: 'center', color: '#fff1d5', padding: '6px 0', fontWeight: 800 }}>
+        <span aria-hidden="true" style={{ display: 'block', height: 8, fontSize: 8, lineHeight: '8px', letterSpacing: -1, color: '#f6d8a5', overflow: 'hidden' }}>{'●'.repeat(Math.min(pits[i], 6))}</span>
+        {pits[i]}
+      </span>)}
+    </div>)}
+    {[1 - seat, seat].map((owner, side) => <span key={side} style={{ position: 'absolute', top: '28%', bottom: '28%', [side === 0 ? 'left' : 'right']: '1%', width: '6%', display: 'grid', placeItems: 'center', borderRadius: '50%', background: '#82502c', color: '#fff1d5', fontWeight: 800 }}>{store[owner]}</span>)}
+  </div>;
+}
+
+const LoadedAyoBoard = dynamic(() => import('./ayo3d/AyoBoard3D'), { ssr: false, loading: AyoLoading });
+
+function AyoBoard3D(props: ComponentProps<typeof LoadedAyoBoard>) {
+  return <LoadingBoardContext.Provider value={{ pits: props.pits, store: props.store, seat: props.seat ?? 0 }}>
+    <LoadedAyoBoard {...props} />
+  </LoadingBoardContext.Provider>;
+}
+
+function useSowSound(s: State) {
+  const collected = s.store[0] + s.store[1];
+  const moves = s.moves;
+  const previous = useRef({ moves, collected });
+  useEffect(() => {
+    if (moves > previous.current.moves) playSound(collected > previous.current.collected ? 'capture' : 'place');
+    previous.current = { moves, collected };
+  }, [moves, collected]);
+}
 
 // Ayo (Oware rules). Pits 0-5 are yours (left to right), 6-11 are the computer's.
 // Seeds are sown counter-clockwise, so on screen the computer's row runs right to left.
 
 export default function Ayo({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<State>(() => fresh(['You', 'Computer']));
+  useSowSound(s);
   const [points, setPoints] = useState(0);
 
   const over = finished(s);
@@ -51,23 +89,7 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   }, [s, over]);
 
   const reset = () => { setS(fresh(['You', 'Computer'])); setPoints(0); };
-  const top = [11, 10, 9, 8, 7, 6];
-  const bottom = [0, 1, 2, 3, 4, 5];
   const movable = s.turn === 0 && !over ? legalMoves(s, 0) : [];
-
-  const pit = (i: number, mine: boolean) => (
-    <button
-      key={i}
-      onClick={() => tap(i)}
-      disabled={!mine}
-      aria-label={`Pit ${i + 1}, ${s.pits[i]} seeds${mine ? '' : ', computer'}`}
-      className={`aspect-square rounded-full border-4 border-brand-black flex items-center justify-center font-display font-black text-xl md:text-2xl ${
-        s.last === i ? 'ring-4 ring-brand-purple' : ''
-      } ${mine ? (movable.includes(i) ? 'bg-brand-acid hover:-translate-y-1 transition-transform' : 'bg-brand-acid/40') : 'bg-brand-purple/30'}`}
-    >
-      {s.pits[i]}
-    </button>
-  );
 
   return (
     <div>
@@ -76,9 +98,15 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
         <div className={`p-3 poster-border ${s.turn === 1 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{s.names[1]} · {s.store[1]}</div>
       </div>
 
-      <div className="p-3 poster-border poster-shadow bg-amber-200">
-        <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
-        <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
+      <div data-sfx="none" className="poster-border poster-shadow bg-amber-200">
+        <AyoBoard3D
+          pits={s.pits}
+          store={s.store}
+          turn={s.turn}
+          seat={0}
+          legalMoves={movable}
+          onPitSelect={tap}
+        />
       </div>
 
       <p className="font-body text-sm text-center mt-3 min-h-5">
@@ -103,26 +131,23 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   );
 }
 
-export function AyoOnline({ view, seat, names, act }: OnlineProps<State, { pit: number }>) {
+export function AyoOnline({ view, seat, act }: {
+  view: State;
+  seat: number | null;
+  names: string[];
+  act: (a: { pit: number }) => Promise<void>;
+}) {
   const [err, setErr] = useState('');
 
   const s = view;
+  useSowSound(s);
   const over = finished(s);
-  const mine = seat ?? 0; // spectator pretends to be seat 0 for layout
+  const mine = seat ?? 0;
   const turn = s.turn;
   const yourTurn = seat !== null && !over && turn === seat;
   const movable = yourTurn && seat !== null ? legalMoves(s, seat as 0 | 1) : [];
-  const watching = seat === null;
 
-  // Layout: your row is always the bottom row.
-  // Seat 0 bottom is pits 0-5 left to right; seat 1 bottom is pits 6-11 left to right.
-  const bottom = mine === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
-  // Top row is the opponent, drawn right to left so seeds flow counter-clockwise on screen.
-  const top = mine === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
-
-  const yourName = seat !== null ? (names[seat] ?? `Seat ${seat + 1}`) : 'You';
   const otherSeat = seat === null ? 1 : seat === 0 ? 1 : 0;
-  const otherName = names[otherSeat] ?? `Seat ${otherSeat + 1}`;
 
   const tap = async (pit: number) => {
     setErr('');
@@ -130,55 +155,31 @@ export function AyoOnline({ view, seat, names, act }: OnlineProps<State, { pit: 
       await act({ pit });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // Strip a leading "Uncaught Error: " and anything after the first newline
       let clean = msg.replace(/^Uncaught Error: /, '');
       clean = clean.split('\n')[0];
       setErr(clean);
     }
   };
 
-  const pit = (i: number, myPit: boolean) => (
-    <button
-      key={i}
-      onClick={() => { if (myPit && yourTurn && movable.includes(i)) void tap(i); }}
-      disabled={!myPit || !movable.includes(i)}
-      aria-label={`Pit ${i + 1}, ${s.pits[i]} seeds${myPit ? '' : ', opponent'}`}
-      className={`aspect-square rounded-full border-4 border-brand-black flex items-center justify-center font-display font-black text-xl md:text-2xl ${
-        s.last === i ? 'ring-4 ring-brand-purple' : ''
-      } ${myPit ? (movable.includes(i) ? 'bg-brand-acid hover:-translate-y-1 transition-transform' : 'bg-brand-acid/40') : 'bg-brand-purple/30'}`}
-    >
-      {s.pits[i]}
-    </button>
-  );
-
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
-        <div className={`p-3 poster-border ${!over && turn === mine ? 'bg-brand-acid' : 'bg-white'}`}>{yourName} · {s.store[mine]}</div>
-        <div className={`p-3 poster-border ${!over && turn === otherSeat ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{otherName} · {s.store[otherSeat]}</div>
-      </div>
-
-      <div className="p-3 poster-border poster-shadow bg-amber-200">
-        <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
-        <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
-      </div>
-
-      <p className="font-body text-sm text-center mt-3 min-h-5">
-        {over
-          ? ''
-          : s.note ||
-            (watching
-              ? 'Watching the room…'
-              : yourTurn
-                ? 'Your turn — pick one of your pits (bottom row).'
-                : 'Waiting for the other player…')}
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        Seeds: you {s.store[mine]} · them {s.store[otherSeat]} · First to {WIN_AT}.
       </p>
+      <div data-online-board="ayo" data-sfx="none" className="poster-border poster-shadow bg-amber-200">
+        <AyoBoard3D
+          pits={s.pits}
+          store={s.store}
+          turn={s.turn}
+          seat={seat}
+          legalMoves={movable}
+          onPitSelect={(pit) => void tap(pit)}
+        />
+      </div>
+
       {err !== '' && !over && (
         <p className="font-body text-sm text-center text-brand-purple mt-1">{err}</p>
       )}
-      <p className="font-body text-xs text-center text-brand-black/60">
-        Seeds go round counter-clockwise. Land your last seed in a pit that makes 2 or 3 and you capture it. First to {WIN_AT} wins.
-      </p>
     </div>
   );
 }

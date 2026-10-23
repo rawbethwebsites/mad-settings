@@ -1,36 +1,60 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Label, Panel, Result } from '@/components/arcade/ui';
+import { CardChoice, CardGameTable } from '@/components/cards/Table';
+import { COLOUR, KIND_LABEL, OchoBack, OchoFront } from '@/components/cards/OchoCard';
 import type { OnlineProps } from '@/lib/rules/types';
 import {
   aiTurn,
-  BG,
   canPlay,
   COLORS,
   deal,
-  drawOne,
-  label,
+  drawOne as draw,
   play,
-  top,
-  type Card,
+  ocho,
   type Color,
   type OchoAction,
   type OchoView,
   type State,
 } from '@/lib/rules/ocho';
 
-export function Face({ c, color }: { c: Card; color?: Color }) {
-  const bg = c.color ?? color;
-  return (
-    <span
-      className={`flex items-center justify-center w-12 h-[4.5rem] border-2 border-brand-black font-display font-black text-xl ${
-        bg ? BG[bg] : 'bg-brand-black text-brand-cream'
-      }`}
-    >
-      {label(c)}
-    </span>
-  );
+const viewCanPlay = (view: OchoView, c: OchoView['hand'][number]) =>
+  c.kind === 'wild' || c.kind === 'wild4' || c.color === view.color ||
+  (c.kind === 'num' && view.top.kind === 'num' ? c.n === view.top.n : c.kind !== 'num' && c.kind === view.top.kind);
+
+function OchoTable({ view, seat, names, busy, picking, error, onPlay, onDraw, onChoose, onCancel }: {
+  view: OchoView; seat: number | null; names: string[]; busy?: boolean;
+  picking: number | null; error?: string | null; onPlay: (i: number) => void;
+  onDraw: () => void; onChoose: (color: Color) => void; onCancel: () => void;
+}) {
+  const myTurn = seat !== null && seat === view.turn && view.winner === null;
+  const previous = useRef(view);
+  useEffect(() => {
+    const before = previous.current;
+    // Counts detect identical cards, skips and reverses even without a new
+    // top face or turn. A play with forced pickups emits only one flip.
+    const played = view.handCounts.some((n, p) => n < before.handCounts[p]);
+    const drawn = view.handCounts.some((n, p) => n > before.handCounts[p]);
+    if (played) playSound('flip');
+    else if (drawn) playSound('card');
+    previous.current = view;
+  }, [view]);
+  return <div data-sfx="none">
+    <CardGameTable game="ocho" names={names} seat={seat} counts={view.handCounts}
+      turn={view.turn} winner={view.winner} marketCount={view.marketCount}
+      topKey={`${view.top.color}-${view.top.kind}-${view.top.n}`} topFace={<OchoFront card={view.top} />}
+      backFace={<OchoBack />} match={<><span style={{ width: 10, height: 10, borderRadius: '50%', background: COLOUR[view.color], border: '1px solid #ffedce' }} />{view.color} · {view.dir === 1 ? '↻' : '↺'}</>}
+      log={view.log} busy={busy} choosing={picking !== null} error={error} onPlay={onPlay} onDraw={onDraw}
+      hand={view.hand.map(c => ({
+        id: `${c.color}-${c.kind}-${c.n}`, label: `${c.color ?? 'wild'} ${c.kind === 'num' ? c.n : KIND_LABEL[c.kind]}`,
+        front: <OchoFront card={c} />, playable: myTurn && viewCanPlay(view, c),
+      }))} />
+    {picking !== null && <CardChoice title="Choose a colour" onCancel={() => { playSound('tap'); onCancel(); }}
+      options={COLORS.map(color => ({ value: color, label: color, color: COLOUR[color] }))}
+      onChoose={color => onChoose(color as Color)} />}
+  </div>;
 }
 
 export default function Ocho({ award }: { award: (n: number) => void }) {
@@ -38,6 +62,8 @@ export default function Ocho({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<State | null>(null);
   const [picking, setPicking] = useState<number | null>(null);
   const [points, setPoints] = useState(0);
+  const awardRef = useRef(award);
+  useEffect(() => { awardRef.current = award; }, [award]);
 
   const settle = (next: State) => {
     if (next.winner === null) return;
@@ -48,14 +74,17 @@ export default function Ocho({ award }: { award: (n: number) => void }) {
 
   useEffect(() => {
     if (!s || s.winner !== null || s.turn === 0) return;
-    const t = window.setTimeout(() => {
+    const t = setTimeout(() => {
       const next = aiTurn(s);
       setS(next);
-      settle(next);
+      if (next.winner !== null) {
+        const pts = next.winner === 0 ? 40 + opponents * 20 : 0;
+        awardRef.current(pts);
+        setPoints(pts);
+      }
     }, 900);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s]);
+    return () => clearTimeout(t);
+  }, [s, opponents]);
 
   if (!s) {
     return (
@@ -74,15 +103,16 @@ export default function Ocho({ award }: { award: (n: number) => void }) {
             <Btn key={n} variant={opponents === n ? 'primary' : 'light'} onClick={() => setOpponents(n)}>{n}</Btn>
           ))}
         </div>
-        <Btn className="w-full" onClick={() => setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)]))}>DEAL →</Btn>
+        <Btn data-sfx="none" className="w-full" onClick={() => { setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)])); playSound('card'); }}>DEAL →</Btn>
       </Panel>
     );
   }
 
   const myTurn = s.turn === 0 && s.winner === null;
+  const view = ocho.view(s, 0);
 
   const tap = (i: number) => {
-    if (!myTurn) return;
+    if (!myTurn || picking !== null) return;
     const c = s.hands[0][i];
     if (!canPlay(s, c)) return;
     if (!c.color) { setPicking(i); return; }
@@ -92,67 +122,23 @@ export default function Ocho({ award }: { award: (n: number) => void }) {
   };
 
   const choose = (color: Color) => {
-    if (picking === null) return;
+    if (!myTurn || picking === null) return;
     const next = play(s, 0, picking, color);
     setPicking(null);
     setS(next);
     settle(next);
   };
 
+  const drawCard = () => {
+    if (!myTurn || picking !== null) return;
+    setS(draw(s, 0));
+  };
+
   const reset = () => { setS(null); setPicking(null); setPoints(0); };
   const name = (p: number) => s.names[p];
 
   return (
-    <div>
-      <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${s.hands.length - 1}, minmax(0, 1fr))` }}>
-        {s.hands.slice(1).map((h, k) => (
-          <div key={k} className={`p-2 poster-border text-center font-display font-black uppercase text-xs ${s.turn === k + 1 && s.winner === null ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
-            {name(k + 1)}<div className="text-xl">🂠 {h.length}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-center gap-6 p-4 poster-border poster-shadow bg-brand-black mb-3">
-        <button onClick={() => myTurn && setS(drawOne(s, 0))} disabled={!myTurn} aria-label="Pick up a card"
-          className="w-16 h-24 poster-border bg-brand-purple text-brand-cream font-display font-black text-xs uppercase disabled:opacity-60 hover:-translate-y-1 transition-transform">
-          PICK UP<br />{s.market.length}
-        </button>
-        <div className="text-center">
-          <span className={`flex items-center justify-center w-16 h-24 border-4 border-brand-cream font-display font-black text-3xl ${BG[s.color]}`}>
-            {label(top(s))}
-          </span>
-          <div className="mt-1 font-display font-black text-xs uppercase text-brand-cream">{s.color}</div>
-        </div>
-      </div>
-
-      <p className="font-body text-sm text-center min-h-5 mb-3">{s.log}</p>
-
-      {picking !== null && (
-        <Panel className="mb-3">
-          <Label>CHOOSE A COLOUR</Label>
-          <div className="grid grid-cols-4 gap-2">
-            {COLORS.map(c => (
-              <button key={c} onClick={() => choose(c)} aria-label={c} className={`py-4 poster-border font-display font-black uppercase text-xs ${BG[c]}`}>{c}</button>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      <div className={`p-3 poster-border ${myTurn ? 'bg-brand-acid' : 'bg-white'}`}>
-        <div className="font-display font-black text-xs uppercase mb-2">
-          {s.winner !== null ? '' : myTurn ? 'YOUR TURN — PLAY A CARD OR PICK UP' : 'WAITING…'}
-        </div>
-        <div className="flex flex-wrap gap-1.5 justify-center">
-          {s.hands[0].map((c, i) => (
-            <button key={i} onClick={() => tap(i)} disabled={!myTurn || !canPlay(s, c)}
-              aria-label={`${c.color ?? 'wild'} ${label(c)}`}
-              className={myTurn && canPlay(s, c) ? 'hover:-translate-y-2 transition-transform' : 'opacity-50'}>
-              <Face c={c} />
-            </button>
-          ))}
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {s.winner !== null && (
         <Result
           tone={s.winner === 0 ? 'win' : 'lose'}
@@ -162,6 +148,9 @@ export default function Ocho({ award }: { award: (n: number) => void }) {
           onAgain={reset}
         />
       )}
+
+      <OchoTable view={view} seat={0} names={s.names} picking={picking}
+        onPlay={tap} onDraw={drawCard} onChoose={choose} onCancel={() => setPicking(null)} />
     </div>
   );
 }
@@ -178,7 +167,6 @@ export function OchoOnline({ view, seat, names, act }: OnlineProps<OchoView, Och
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Clear a pending colour pick when the turn moves on (render-phase adjust)
   const [lastTurn, setLastTurn] = useState(view.turn);
   if (view.turn !== lastTurn) {
     setLastTurn(view.turn);
@@ -200,84 +188,27 @@ export function OchoOnline({ view, seat, names, act }: OnlineProps<OchoView, Och
   };
 
   const tap = (i: number) => {
-    if (!myTurn || busy) return;
+    if (!myTurn || busy || picking !== null) return;
     const c = view.hand[i];
+    if (!c || !viewCanPlay(view, c)) return;
     if (!c.color) { setPicking(i); return; }
     void send({ type: 'play', idx: i });
   };
 
-  const choose = (color: Color) => {
-    if (picking === null || busy) return;
+  const chooseColor = (color: Color) => {
+    if (!myTurn || picking === null || busy) return;
     const i = picking;
     setPicking(null);
     void send({ type: 'play', idx: i, color });
   };
 
-  const others = names.map((_, p) => p).filter(p => p !== seat);
+  const drawCard = () => {
+    if (!myTurn || busy || picking !== null) return;
+    void send({ type: 'draw' });
+  };
 
-  return (
-    <div>
-      <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${Math.max(others.length, 1)}, minmax(0, 1fr))` }}>
-        {others.map(p => (
-          <div key={p} className={`p-2 poster-border text-center font-display font-black uppercase text-xs ${view.turn === p && view.winner === null ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
-            {names[p]}<div className="text-xl">🂠 {view.handCounts[p] ?? 0}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-center gap-6 p-4 poster-border poster-shadow bg-brand-black mb-3">
-        <button
-          onClick={() => { if (myTurn && !busy) void send({ type: 'draw' }); }}
-          disabled={!myTurn || busy}
-          aria-label="Pick up a card"
-          className="w-16 h-24 poster-border bg-brand-purple text-brand-cream font-display font-black text-xs uppercase disabled:opacity-60 hover:-translate-y-1 transition-transform"
-        >
-          PICK UP<br />{view.marketCount}
-        </button>
-        <div className="text-center">
-          <span className={`flex items-center justify-center w-16 h-24 border-4 border-brand-cream font-display font-black text-3xl ${BG[view.color]}`}>
-            {label(view.top)}
-          </span>
-          <div className="mt-1 font-display font-black text-xs uppercase text-brand-cream">{view.color}</div>
-        </div>
-      </div>
-
-      <p className="font-body text-sm text-center min-h-5 mb-1">{view.log}</p>
-      <p className="font-body text-sm text-center text-red-600 min-h-5 mb-3" role="alert">{err ?? ''}</p>
-
-      {picking !== null && (
-        <Panel className="mb-3">
-          <Label>CHOOSE A COLOUR</Label>
-          <div className="grid grid-cols-4 gap-2">
-            {COLORS.map(c => (
-              <button key={c} onClick={() => choose(c)} aria-label={c} className={`py-4 poster-border font-display font-black uppercase text-xs ${BG[c]}`}>{c}</button>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      <div className={`p-3 poster-border ${myTurn ? 'bg-brand-acid' : 'bg-white'}`}>
-        <div className="font-display font-black text-xs uppercase mb-2">
-          {view.winner !== null
-            ? `${names[view.winner].toUpperCase()} WINS`
-            : seat === null
-              ? 'WATCHING'
-              : myTurn
-                ? 'YOUR TURN — PLAY A CARD OR PICK UP'
-                : 'WAITING…'}
-        </div>
-        <div className="flex flex-wrap gap-1.5 justify-center">
-          {seat === null ? null : (
-            view.hand.map((c, i) => (
-              <button key={i} onClick={() => tap(i)} disabled={!myTurn || busy}
-                aria-label={`${c.color ?? 'wild'} ${label(c)}`}
-                className={`${myTurn && !busy ? 'hover:-translate-y-2 transition-transform' : 'opacity-50'}`}>
-                <Face c={c} />
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <div data-online-board="ocho" className="[&_.card-table-kicker]:hidden! [&_.card-opponent-name]:hidden! [&_.card-opponent]:border-0! [&_.card-opponent]:bg-transparent! [&_.card-opponent]:p-0! [&_.card-opponents]:mb-2! [&_.card-hand-heading_strong]:hidden! [&_.card-hand-heading]:justify-end! [&_.card-hand-tip]:hidden! [&_.card-log]:min-h-0! [&_.card-log]:my-2!">
+    <OchoTable view={view} seat={seat} names={names} busy={busy} error={err} picking={picking}
+      onPlay={tap} onDraw={drawCard} onChoose={chooseColor} onCancel={() => setPicking(null)} />
+  </div>;
 }

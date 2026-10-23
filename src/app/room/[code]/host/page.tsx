@@ -5,10 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { toDataURL } from 'qrcode';
 import { api } from '../../../../../convex/_generated/api';
-import { camperId, stripServerError } from '@/lib/camper';
+import { camperId } from '@/lib/camper';
 import { BingoHost, RoundStartButtons, TriviaHost } from '@/components/room/rounds';
 
-const btn = 'font-display font-black uppercase poster-border';
+const btn = 'min-h-11 font-display font-black uppercase poster-border';
 
 // Same list campers see on /games — the host picks what everyone plays now
 const GAMES = [
@@ -57,7 +57,7 @@ export default function HostPage() {
   if (room === undefined) {
     return (
       <main className="min-h-screen bg-brand-black text-brand-cream p-6 flex items-center justify-center">
-        <p className="font-display font-bold uppercase">Setting up the big screen…</p>
+        <p className="font-display font-bold uppercase">Loading your room…</p>
       </main>
     );
   }
@@ -68,8 +68,8 @@ export default function HostPage() {
         <div className="max-w-md w-full p-8 poster-border poster-shadow bg-brand-cream text-brand-black text-center">
           <div className="text-5xl mb-3">⛺</div>
           <h1 className="font-display font-black text-2xl uppercase mb-4">That room is gone</h1>
-          <button onClick={() => router.push('/join')} className={`${btn} px-6 py-3 bg-brand-purple text-brand-cream w-full`}>
-            JOIN ANOTHER →
+          <button onClick={() => router.push('/join?mode=host')} className={`${btn} px-6 py-3 bg-brand-purple text-brand-cream w-full`}>
+            Start a room →
           </button>
         </div>
       </main>
@@ -81,8 +81,8 @@ export default function HostPage() {
       <main className="min-h-screen bg-brand-black text-brand-cream p-6 flex items-center justify-center">
         <div className="max-w-md w-full p-8 poster-border poster-shadow bg-brand-cream text-brand-black text-center">
           <div className="text-5xl mb-3">📺</div>
-          <h1 className="font-display font-black text-2xl uppercase mb-2">Only the host runs this screen</h1>
-          <p className="font-body text-brand-black/60 mb-6">Grab the room code from whoever started the room.</p>
+          <h1 className="font-display font-black text-2xl uppercase mb-2">This screen is for the host</h1>
+
           <button onClick={() => router.push(`/room/${code}`)} className={`${btn} px-6 py-3 bg-brand-black text-brand-cream w-full`}>
             ← BACK TO ROOM
           </button>
@@ -93,23 +93,23 @@ export default function HostPage() {
 
   const run = (fn: () => Promise<unknown>) => {
     setError('');
-    fn().catch(e => setError(stripServerError(e)));
+    fn().catch(() => setError('Could not save. Tap your choice again.'));
   };
 
   return (
     <main className="min-h-screen bg-brand-black text-brand-cream p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Big code + QR */}
-        <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center p-6 md:p-8 poster-border poster-shadow bg-brand-purple mb-8">
-          <div>
+        <div className="grid min-w-0 grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-6 items-center p-6 md:p-8 poster-border poster-shadow bg-brand-purple mb-8">
+          <div className="min-w-0">
             <div className="font-display font-bold text-sm uppercase tracking-widest text-brand-acid mb-1">
-              {room.name} · CAMPERS JOIN WITH
+              {room.name} · ROOM CODE
             </div>
-            <div className="font-display font-black text-7xl md:text-9xl tracking-widest text-brand-cream leading-none">
+            <div className="font-display font-black text-5xl sm:text-7xl md:text-9xl tracking-widest text-brand-cream leading-none">
               {room.code}
             </div>
             <p className="font-body text-lg text-brand-cream/70 mt-3">
-              Go to <b className="text-brand-acid">madsettings.theboostnation.space/join</b> or scan the code.
+              Scan to join, or share this room code.
             </p>
           </div>
           {qr && (
@@ -128,18 +128,18 @@ export default function HostPage() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid min-w-0 grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Roster */}
-          <div className="p-6 poster-border poster-shadow bg-brand-cream text-brand-black">
+          <div className="min-w-0 p-4 sm:p-6 poster-border poster-shadow bg-brand-cream text-brand-black">
             <h2 className="font-display font-black text-2xl uppercase mb-4">
-              🏕️ CAMPERS · {room.players.filter(p => p.online).length}/{room.players.length} ONLINE
+              🏕️ Players · {room.players.filter(p => p.online).length}/{room.players.length} online
             </h2>
             <ul className="space-y-2">
               {room.players.map(p => (
                 <li key={p.id} className="flex items-center gap-3 p-3 border-4 border-brand-black/10">
                   <span className={`w-3 h-3 rounded-full shrink-0 ${p.online ? 'bg-brand-acid' : 'bg-brand-black/20'}`} />
                   <span className="text-3xl">{p.avatar}</span>
-                  <span className="font-display font-black uppercase truncate flex-1">
+                  <span className="min-w-0 font-display font-black uppercase truncate flex-1">
                     {p.name}
                     {p.isHost && <span className="ml-2 px-2 py-0.5 bg-brand-purple text-brand-cream text-xs">HOST</span>}
                   </span>
@@ -150,7 +150,7 @@ export default function HostPage() {
                       aria-label={`Remove ${p.name}`}
                       className={`${btn} px-3 py-2 bg-brand-coral text-xs shrink-0`}
                     >
-                      KICK
+                      ✕ Remove
                     </button>
                   )}
                 </li>
@@ -159,22 +159,22 @@ export default function HostPage() {
           </div>
 
           {/* Pick the game + live leaderboard */}
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             {/* Host-led rounds everyone plays at once */}
-            <div className="p-6 poster-border poster-shadow bg-white text-brand-black">
-              <h2 className="font-display font-black text-2xl uppercase mb-4">📣 GROUP ROUND</h2>
+            <div className="min-w-0 p-4 sm:p-6 poster-border poster-shadow bg-white text-brand-black">
+              <h2 className="font-display font-black text-2xl uppercase mb-4">📣 Play together</h2>
               {room.round?.game === 'trivia' && <TriviaHost roundId={room.round.id} />}
               {room.round?.game === 'bingo' && <BingoHost roundId={room.round.id} />}
               {!room.round && <RoundStartButtons code={code} />}
             </div>
-            <div className="p-6 poster-border poster-shadow bg-brand-cream text-brand-black">
-              <h2 className="font-display font-black text-2xl uppercase mb-4">🎮 NOW PLAYING</h2>
+            <details className="p-6 poster-border bg-brand-cream text-brand-black">
+              <summary className="min-h-11 cursor-pointer font-display font-black text-xl uppercase">🎮 Pick a game</summary>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => run(() => setGame({ code, playerId: playerId!, game: null }))}
                   className={`${btn} py-3 text-xs col-span-2 ${!room.currentGame ? 'bg-brand-black text-brand-cream' : 'bg-white'}`}
                 >
-                  ✋ FREE PLAY
+                  ✋ Let players choose
                 </button>
                 {GAMES.map(g => (
                   <button
@@ -186,16 +186,16 @@ export default function HostPage() {
                   </button>
                 ))}
               </div>
-            </div>
+            </details>
 
             <div className="p-6 poster-border poster-shadow bg-brand-cream text-brand-black">
-              <h2 className="font-display font-black text-2xl uppercase mb-4">🏆 LEADERBOARD</h2>
+              <h2 className="font-display font-black text-2xl uppercase mb-4">🏆 Scores</h2>
               <ol className="space-y-2">
                 {room.players.map((p, i) => (
                   <li key={p.id} className={`flex items-center gap-3 p-2 ${i === 0 && p.total > 0 ? 'bg-brand-acid/30 border-2 border-brand-acid' : ''}`}>
                     <span className="font-display font-black text-xl w-8">{i + 1}.</span>
                     <span className="text-2xl">{p.avatar}</span>
-                    <span className="font-display font-black uppercase flex-1 truncate">{p.name}</span>
+                    <span className="min-w-0 font-display font-black uppercase flex-1 truncate">{p.name}</span>
                     <span className="font-display font-black text-2xl text-brand-purple">{p.total}</span>
                   </li>
                 ))}
@@ -209,18 +209,18 @@ export default function HostPage() {
             onClick={() => router.push(`/room/${code}`)}
             className={`${btn} px-6 py-3 bg-brand-cream text-brand-black`}
           >
-            ← ROOM
+            ← Back to room
           </button>
           {!confirmClose ? (
-            <button onClick={() => setConfirmClose(true)} className={`${btn} px-6 py-3 bg-brand-coral text-brand-black`}>
+            <button onClick={() => setConfirmClose(true)} className={`${btn} px-6 py-3 bg-brand-cream text-brand-black`}>
               🛑 CLOSE ROOM
             </button>
           ) : (
             <button
               onClick={() => run(() => close({ code, playerId: playerId! }).then(() => router.push('/join')))}
-              className={`${btn} px-6 py-3 bg-brand-coral text-brand-black animate-pulse`}
+              className={`${btn} px-6 py-3 bg-brand-coral text-brand-black`}
             >
-              TAP AGAIN: EVERYONE IS OUT
+              Close for everyone? Tap again
             </button>
           )}
         </div>

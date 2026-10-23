@@ -1,0 +1,453 @@
+{
+  "started": "2026-10-23T05:09:06+0100",
+  "base": "http://localhost:3000",
+  "backend": "https://joyous-pelican-468.convex.cloud",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "fresh_contexts": true,
+  "checks": {
+    "frontend uses authorized DEV backend": {
+      "pass": true,
+      "detail": null
+    },
+    "fresh localStorage has no saved room/profile": {
+      "pass": true,
+      "detail": null
+    },
+    "no reconnect banner on initial load": {
+      "pass": true,
+      "detail": null
+    },
+    "How it works dismissal survives reload": {
+      "pass": true,
+      "detail": null
+    },
+    "optional fields collapsed on first visit": {
+      "pass": true,
+      "detail": null
+    },
+    "name and birthday only signup": {
+      "pass": false,
+      "detail": "Server requires two prompt answers; backend scope is item 2 only."
+    },
+    "first profile defaults both modes on": {
+      "pass": true,
+      "detail": null
+    },
+    "Simple Ada 1e2a saved and unverified without photos": {
+      "pass": true,
+      "detail": null
+    },
+    "second profile defaults both modes on": {
+      "pass": true,
+      "detail": null
+    },
+    "Simple Tobi 1e2a saved and unverified without photos": {
+      "pass": true,
+      "detail": null
+    },
+    "Like is visible without scrolling on mobile": {
+      "pass": true,
+      "detail": {
+        "x": 16,
+        "y": 680.734375,
+        "width": 343,
+        "height": 58
+      }
+    },
+    "unverified camper with no approved photo can like": {
+      "pass": true,
+      "detail": null
+    },
+    "mutual like creates a real match in both contexts": {
+      "pass": true,
+      "detail": null
+    },
+    "chat delivered in both directions": {
+      "pass": true,
+      "detail": null
+    },
+    "selected photo shown immediately to owner": {
+      "pass": true,
+      "detail": null
+    },
+    "pending photo saved but not exposed to another camper": {
+      "pass": true,
+      "detail": null
+    },
+    "other camper sees avatar while photo awaits approval": {
+      "pass": true,
+      "detail": null
+    },
+    "fresh room join reaches live two-player roster": {
+      "pass": true,
+      "detail": null
+    },
+    "computer mode starts by default and accepts a move": {
+      "pass": true,
+      "detail": null
+    },
+    "friend invite, start, and moves synchronize in both contexts": {
+      "pass": true,
+      "detail": null
+    },
+    "no reconnect banner before three seconds lost": {
+      "pass": true,
+      "detail": null
+    },
+    "reconnect banner after real network loss": {
+      "pass": false,
+      "detail": null
+    },
+    "reconnect banner clears after recovery": {
+      "pass": true,
+      "detail": null
+    },
+    "no horizontal overflow in screenshots": {
+      "pass": true,
+      "detail": null
+    },
+    "no browser page exceptions": {
+      "pass": true,
+      "detail": []
+    }
+  },
+  "screens": [
+    {
+      "file": "docs/briefs/shots/simple-welcome.png",
+      "caption": "Meet campers here; tap Start meeting campers.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Start meeting campers \u2192",
+            "height": 46,
+            "bottom": 603.046875
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-profile.png",
+      "caption": "This is your profile; enter your name and birthday, then tap Start meeting campers.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Start meeting campers",
+            "height": 56,
+            "bottom": 764.046875
+          }
+        ],
+        "smallTargets": [
+          {
+            "label": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "label": "",
+            "width": 22,
+            "height": 22
+          }
+        ]
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-profile-server-blocker.png",
+      "caption": "Signup is blocked by the unchanged server rule; open Add more and answer both prompts.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Start meeting campers",
+            "height": 56,
+            "bottom": 2077.046875
+          }
+        ],
+        "smallTargets": [
+          {
+            "label": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "label": "",
+            "width": 22,
+            "height": 22
+          }
+        ]
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-meet.png",
+      "caption": "This is a camper; tap Like, Skip, or Super like.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "\ud83e\udeb5Like",
+            "height": 58,
+            "bottom": 738.734375
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-match.png",
+      "caption": "You matched; tap Open Chat.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Open Chat",
+            "height": 46,
+            "bottom": 195.5
+          },
+          {
+            "label": "Open Chat",
+            "height": 46,
+            "bottom": 558.265625
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-chat.png",
+      "caption": "This is Chat; type a message and tap Send.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Send",
+            "height": 46,
+            "bottom": 804
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-matches.png",
+      "caption": "These are your Matches; tap a camper to chat.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-photo-owner.png",
+      "caption": "Your pending photo is visible only to you; tap Save profile after changes.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Save profile",
+            "height": 56,
+            "bottom": 828.046875
+          }
+        ],
+        "smallTargets": [
+          {
+            "label": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "label": "",
+            "width": 22,
+            "height": 22
+          }
+        ]
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-photo-peer.png",
+      "caption": "Your matched camper has an avatar until their photo is approved; tap their name to chat.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-start-room.png",
+      "caption": "Start a room here; enter your name and tap Start a room.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Start a room",
+            "height": 68,
+            "bottom": 620
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-join.png",
+      "caption": "Join your friend\u2019s room; enter your name, pick a face, and tap Join.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "Join",
+            "height": 68,
+            "bottom": 676
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-room.png",
+      "caption": "This is your room; tap Pick a game.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-host.png",
+      "caption": "This is your host screen; share the code, then choose a game.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-games.png",
+      "caption": "This is the game list; tap Play now for Tic tac toe.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "\u25b6 Play now \u00b7 Tic tac toe",
+            "height": 76,
+            "bottom": 428
+          },
+          {
+            "label": "\ud83c\udfaf\ud83c\udfafSMART BINGOPLAY \u2192",
+            "height": 184,
+            "bottom": 680
+          },
+          {
+            "label": "\ud83c\udccf\ud83c\udccfWHOT!PLAY \u2192",
+            "height": 184,
+            "bottom": 2188
+          },
+          {
+            "label": "\u2b55\u2b55ENDLESS TIC TAC TOEPLAY \u2192",
+            "height": 184,
+            "bottom": 3644
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-computer.png",
+      "caption": "Play the computer here; tap an empty square.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-friend-picker.png",
+      "caption": "Play a friend here; select their name and tap Invite.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [
+          {
+            "label": "\u2192 Invite",
+            "height": 52,
+            "bottom": 476
+          }
+        ],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-friend-invite.png",
+      "caption": "Your friend invited you; tap Join.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-friend-game.png",
+      "caption": "This is your live game; tap an empty square on your turn.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "file": "docs/briefs/shots/simple-friend-peer.png",
+      "caption": "This is the same live game on your friend\u2019s phone; wait for your turn.",
+      "metrics": {
+        "width": 375,
+        "height": 812,
+        "scrollWidth": 375,
+        "primary": [],
+        "smallTargets": []
+      }
+    }
+  ],
+  "page_errors": [],
+  "console_errors": [
+    "[CONVEX M(connect:saveProfile)] [Request ID: 24a8178a2536b8d4] Server Error\nUncaught ConvexError: Answer two different Campfire prompts.\n    at handler (../convex/connect.ts:33:100)\n"
+  ],
+  "test_room_code": "343B",
+  "completed": "2026-10-23T05:10:41+0100"
+}

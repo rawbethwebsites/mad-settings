@@ -5,9 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { getPlayer, updatePlayer } from '@/lib/player';
-import { camperId, stripServerError } from '@/lib/camper';
+import { camperId } from '@/lib/camper';
 
-const btn = 'font-display font-black uppercase poster-border';
+const btn = 'min-h-11 font-display font-black uppercase poster-border';
 
 export default function RoomPage() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function RoomPage() {
   if (room === undefined) {
     return (
       <main className="min-h-screen bg-brand-cream text-brand-black p-6 flex items-center justify-center">
-        <p className="font-display font-bold uppercase">Knocking on the cabin door…</p>
+        <p className="font-display font-bold uppercase">Loading your room…</p>
       </main>
     );
   }
@@ -66,7 +66,7 @@ export default function RoomPage() {
           <div className="text-5xl mb-3">⛺</div>
           <h1 className="font-display font-black text-2xl uppercase mb-4">That room is gone</h1>
           <button onClick={() => router.push('/join')} className={`${btn} px-6 py-3 bg-brand-purple text-brand-cream w-full`}>
-            JOIN ANOTHER →
+            Join another room →
           </button>
         </div>
       </main>
@@ -89,7 +89,7 @@ export default function RoomPage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="font-display font-bold text-xs uppercase tracking-widest opacity-50">CAMPERS HERE</div>
+              <div className="font-display font-bold text-xs uppercase tracking-widest opacity-50">PLAYERS HERE</div>
               <div className="font-display font-black text-4xl text-brand-acid">{onlineCount}/{room.players.length}</div>
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function RoomPage() {
         )}
 
         {/* Host's picked game */}
-        {room.currentGame ? (
+        {!room.round && (room.currentGame ? (
           <div className="p-6 poster-border poster-shadow bg-brand-purple text-brand-cream mb-6">
             <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-acid mb-1">
               THE HOST PICKED
@@ -118,24 +118,24 @@ export default function RoomPage() {
         ) : (
           <button
             onClick={() => router.push('/games')}
-            className={`${btn} w-full py-4 mb-6 bg-white text-lg`}
+            className={`${btn} w-full py-4 mb-6 bg-brand-purple text-brand-cream text-xl poster-shadow`}
           >
-            🎮 PICK A GAME FROM ALL GAMES →
+            🎮 Pick a game →
           </button>
-        )}
+        ))}
 
         {room.round && (
           <button
             onClick={() => router.push(`/room/${code}/play`)}
-            className={`${btn} w-full py-4 mb-6 bg-brand-coral text-xl animate-pulse`}
+            className={`${btn} w-full py-4 mb-6 bg-brand-purple text-brand-cream text-xl poster-shadow`}
           >
-            🔴 LIVE: {room.round.game.toUpperCase()} — TAP TO PLAY
+            ▶ Play {room.round.game}
           </button>
         )}
 
         {/* Roster + leaderboard (room.get returns players sorted by total) */}
         <div className="p-6 poster-border poster-shadow bg-white mb-6">
-          <h2 className="font-display font-black text-xl uppercase mb-4">🏕️ CAMPERS & SCORES</h2>
+          <h2 className="font-display font-black text-xl uppercase mb-4">🏕️ Players & scores</h2>
           <ul className="space-y-2">
             {room.players.map((p, i) => (
               <li
@@ -161,17 +161,20 @@ export default function RoomPage() {
         </div>
 
         <div className="grid gap-3">
+          <button onClick={() => router.push('/connect')} className={`${btn} w-full py-3 bg-white text-sm`}>
+            🏕 Meet campers →
+          </button>
           {isHost && (
             <button
               onClick={() => router.push(`/room/${code}/host`)}
-              className={`${btn} w-full py-4 bg-brand-black text-brand-cream text-xl`}
+              className={`${btn} w-full py-3 bg-white text-sm`}
             >
-              📺 HOST SCREEN
+              📺 Manage room
             </button>
           )}
           <button
             onClick={() =>
-              doLeave().catch(e => setError(stripServerError(e)))
+              doLeave().catch(() => setError('Could not leave. Tap Leave room again.'))
             }
             className={`${btn} w-full py-3 bg-white text-sm`}
           >

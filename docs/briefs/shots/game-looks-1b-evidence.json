@@ -1,0 +1,1005 @@
+{
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "base": "http://localhost:3070",
+  "started": "2026-10-23T04:25:40+0100",
+  "games": {
+    "connect4": {
+      "initial": {
+        "x": 16,
+        "y": 236,
+        "width": 343,
+        "height": 327.296875,
+        "bottom": 563.296875,
+        "right": 359,
+        "scrollWidth": 375,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Drop disc in column 1. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 30.5703125,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 2. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 75.3984375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 3. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 120.2421875,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 4. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 165.0859375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 5. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 209.9140625,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 6. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 254.7578125,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 7. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 299.5859375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          }
+        ]
+      },
+      "screenshots": {
+        "start": "docs/briefs/shots/c4-start.png",
+        "drop": "docs/briefs/shots/c4-drop.png",
+        "mid": "docs/briefs/shots/c4-mid.png",
+        "end": "docs/briefs/shots/c4-end.png"
+      },
+      "human_moves": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "state_snapshots": [
+        "\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc",
+        "\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc",
+        "\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc",
+        "\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc",
+        "\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc"
+      ],
+      "final_text": "\u2190 BACK\n\ud83d\udd34 CONNECT 4\nPLAY THE COMPUTER\nPLAY A FRIEND\nGAME OVER\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\n\u25bc\nYOU\nCOMPUTER\n\ud83e\udd16\nCOMPUTER WINS\nPLAY AGAIN \u2192",
+      "completed": true,
+      "final": {
+        "x": 16,
+        "y": 236,
+        "width": 343,
+        "height": 327.296875,
+        "bottom": 563.296875,
+        "right": 359,
+        "scrollWidth": 375,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Drop disc in column 1, full. Top to bottom: coral, coral, purple, coral, coral, coral",
+            "enabled": false,
+            "x": 30.5703125,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 2. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": false,
+            "x": 75.3984375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 3. Top to bottom: empty, empty, empty, empty, empty, purple",
+            "enabled": false,
+            "x": 120.2421875,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 4. Top to bottom: empty, empty, empty, empty, empty, purple",
+            "enabled": false,
+            "x": 165.0859375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 5. Top to bottom: empty, empty, empty, empty, empty, purple",
+            "enabled": false,
+            "x": 209.9140625,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 6. Top to bottom: empty, empty, empty, empty, empty, purple",
+            "enabled": false,
+            "x": 254.7578125,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 7. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": false,
+            "x": 299.5859375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          }
+        ]
+      }
+    },
+    "ayo": {
+      "initial": {
+        "x": 20,
+        "y": 240,
+        "width": 335,
+        "height": 203.453125,
+        "bottom": 443.453125,
+        "right": 355,
+        "scrollWidth": 375,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Pit 1, 4 seeds, your pit",
+            "enabled": true,
+            "x": 51.8515625,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 2, 4 seeds, your pit",
+            "enabled": true,
+            "x": 97.0703125,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 3, 4 seeds, your pit",
+            "enabled": true,
+            "x": 142.2890625,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 4, 4 seeds, your pit",
+            "enabled": true,
+            "x": 187.4921875,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 5, 4 seeds, your pit",
+            "enabled": true,
+            "x": 232.7109375,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 6, 4 seeds, your pit",
+            "enabled": true,
+            "x": 277.9296875,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 7, 4 seeds, opponent",
+            "enabled": false,
+            "x": 277.9296875,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 8, 4 seeds, opponent",
+            "enabled": false,
+            "x": 232.7109375,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 9, 4 seeds, opponent",
+            "enabled": false,
+            "x": 187.4921875,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 10, 4 seeds, opponent",
+            "enabled": false,
+            "x": 142.2890625,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 11, 4 seeds, opponent",
+            "enabled": false,
+            "x": 97.0703125,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 12, 4 seeds, opponent",
+            "enabled": false,
+            "x": 51.8515625,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          }
+        ]
+      },
+      "screenshots": {
+        "start": "docs/briefs/shots/ayo-start.png",
+        "sow": "docs/briefs/shots/ayo-sow.png",
+        "mid": "docs/briefs/shots/ayo-mid.png",
+        "end": "docs/briefs/shots/ayo-end.png"
+      },
+      "human_moves": [
+        "Pit 1, 4 seeds, your pit",
+        "Pit 2, 5 seeds, your pit",
+        "Pit 3, 6 seeds, your pit",
+        "Pit 4, 7 seeds, your pit",
+        "Pit 5, 8 seeds, your pit",
+        "Pit 6, 8 seeds, your pit",
+        "Pit 1, 2 seeds, your pit",
+        "Pit 2, 3 seeds, your pit",
+        "Pit 3, 4 seeds, your pit",
+        "Pit 1, 3 seeds, your pit",
+        "Pit 2, 3 seeds, your pit",
+        "Pit 3, 3 seeds, your pit",
+        "Pit 4, 3 seeds, your pit",
+        "Pit 5, 3 seeds, your pit",
+        "Pit 6, 4 seeds, your pit",
+        "Pit 3, 2 seeds, your pit",
+        "Pit 4, 3 seeds, your pit",
+        "Pit 5, 4 seeds, your pit",
+        "Pit 6, 3 seeds, your pit",
+        "Pit 1, 1 seeds, your pit"
+      ],
+      "state_snapshots": [
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n5\n5\n5\n5\n4\n0\n5\n5\n5\n5\n4\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n0\n6\n6\n6\n5\n0\n6\n5\n5\n5\n4\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n0\n0\n7\n7\n6\n0\n8\n6\n5\n5\n4\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n0\n0\n0\n8\n7\n0\n10\n7\n6\n6\n4\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n0\n0\n0\n0\n8\n0\n12\n8\n7\n7\n5\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n2\n1\n0\n0\n0\n0\n0\n14\n9\n8\n8\n6\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n3\n2\n1\n1\n1\n0\n14\n9\n8\n8\n0\n0\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n2\n1\n4\n0\n0\n0\n0\n14\n9\n0\n9\n1\n8\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n3\n2\n1\n0\n0\n0\n1\n14\n0\n1\n10\n2\n14\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n3\n2\n1\n0\n0\n0\n15\n0\n1\n10\n2\n14\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n0\n3\n2\n1\n0\n0\n15\n0\n0\n11\n2\n14\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n1\n0\n3\n2\n1\n0\n15\n0\n0\n11\n0\n14\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n1\n0\n0\n3\n2\n0\n16\n0\n0\n11\n0\n14\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n0\n1\n1\n1\n4\n2\n0\n2\n2\n13\n2\n20\n0",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n1\n2\n2\n2\n1\n4\n2\n1\n1\n0\n4\n22\n6",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n1\n0\n3\n3\n1\n4\n0\n2\n2\n0\n4\n22\n6",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n1\n0\n0\n4\n2\n5\n0\n0\n3\n1\n4\n22\n6",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n0\n1\n0\n0\n0\n3\n6\n1\n0\n4\n1\n4\n22\n6",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n0\n0\n0\n0\n0\n7\n2\n1\n0\n2\n5\n24\n6",
+        "OPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n0\n0\n0\n0\n0\n0\n3\n2\n1\n3\n6\n26\n6"
+      ],
+      "final_text": "\u2190 BACK\n\ud83c\udf30 AYO\nPLAY THE COMPUTER\nPLAY A FRIEND\nYOU \u00b7 6\nCOMPUTER \u00b7 26\nOPPONENT\nYOUR ROW \u00b7 TAP A LIT PIT\n1\n0\n0\n0\n0\n0\n0\n3\n2\n1\n3\n6\n26\n6\n\nSeeds go round counter-clockwise. Land your last seed in a pit that makes 2 or 3 and you capture it. First to 25 wins.\n\n\ud83e\udd16\nCOMPUTER WINS\n\n6 to 26\n\nPLAY AGAIN \u2192",
+      "completed": true,
+      "final": {
+        "x": 20,
+        "y": 240,
+        "width": 335,
+        "height": 203.453125,
+        "bottom": 443.453125,
+        "right": 355,
+        "scrollWidth": 375,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Pit 1, 1 seeds, your pit",
+            "enabled": false,
+            "x": 51.8515625,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 2, 0 seeds, your pit",
+            "enabled": false,
+            "x": 97.0703125,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 3, 0 seeds, your pit",
+            "enabled": false,
+            "x": 142.2890625,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 4, 0 seeds, your pit",
+            "enabled": false,
+            "x": 187.4921875,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 5, 0 seeds, your pit",
+            "enabled": false,
+            "x": 232.7109375,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 6, 0 seeds, your pit",
+            "enabled": false,
+            "x": 277.9296875,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 7, 0 seeds, opponent",
+            "enabled": false,
+            "x": 277.9296875,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 8, 3 seeds, opponent",
+            "enabled": false,
+            "x": 232.7109375,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 9, 2 seeds, opponent",
+            "enabled": false,
+            "x": 187.4921875,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 10, 1 seeds, opponent",
+            "enabled": false,
+            "x": 142.2890625,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 11, 3 seeds, opponent",
+            "enabled": false,
+            "x": 97.0703125,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 12, 6 seeds, opponent",
+            "enabled": false,
+            "x": 51.8515625,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          }
+        ]
+      }
+    }
+  },
+  "page_errors": [],
+  "console_errors": [],
+  "http_failures": [],
+  "fallbacks": {
+    "connect4": {
+      "playable": true,
+      "no_canvas": true,
+      "layout": {
+        "x": 16,
+        "y": 236,
+        "width": 343,
+        "height": 327.296875,
+        "bottom": 563.296875,
+        "right": 359,
+        "scrollWidth": 375,
+        "canvasCount": 0,
+        "controls": [
+          {
+            "label": "Drop disc in column 1. Top to bottom: empty, empty, empty, empty, empty, coral",
+            "enabled": true,
+            "x": 30.5703125,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 2. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 75.3984375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 3. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 120.2421875,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 4. Top to bottom: empty, empty, empty, empty, empty, purple",
+            "enabled": true,
+            "x": 165.0859375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 5. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 209.9140625,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 6. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 254.7578125,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          },
+          {
+            "label": "Drop disc in column 7. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 299.5859375,
+            "y": 249.078125,
+            "width": 44.828125,
+            "height": 284.734375
+          }
+        ]
+      },
+      "screenshot": "docs/briefs/shots/c4-fallback.png"
+    },
+    "ayo": {
+      "playable": true,
+      "no_canvas": true,
+      "layout": {
+        "x": 20,
+        "y": 240,
+        "width": 335,
+        "height": 203.453125,
+        "bottom": 443.453125,
+        "right": 355,
+        "scrollWidth": 375,
+        "canvasCount": 0,
+        "controls": [
+          {
+            "label": "Pit 1, 0 seeds, your pit",
+            "enabled": false,
+            "x": 51.8515625,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 2, 5 seeds, your pit",
+            "enabled": true,
+            "x": 97.0703125,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 3, 5 seeds, your pit",
+            "enabled": true,
+            "x": 142.2890625,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 4, 5 seeds, your pit",
+            "enabled": true,
+            "x": 187.4921875,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 5, 5 seeds, your pit",
+            "enabled": true,
+            "x": 232.7109375,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 6, 4 seeds, your pit",
+            "enabled": true,
+            "x": 277.9296875,
+            "y": 328.0546875,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 7, 0 seeds, opponent",
+            "enabled": false,
+            "x": 277.9296875,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 8, 5 seeds, opponent",
+            "enabled": false,
+            "x": 232.7109375,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 9, 5 seeds, opponent",
+            "enabled": false,
+            "x": 187.4921875,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 10, 5 seeds, opponent",
+            "enabled": false,
+            "x": 142.2890625,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 11, 5 seeds, opponent",
+            "enabled": false,
+            "x": 97.0703125,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          },
+          {
+            "label": "Pit 12, 4 seeds, opponent",
+            "enabled": false,
+            "x": 51.8515625,
+            "y": 268.7734375,
+            "width": 45.203125,
+            "height": 69.171875
+          }
+        ]
+      },
+      "screenshot": "docs/briefs/shots/ayo-fallback.png"
+    }
+  },
+  "responsive": [
+    {
+      "game": "connect4",
+      "width": 360,
+      "reduced_motion": true,
+      "layout": {
+        "x": 16,
+        "y": 236,
+        "width": 328,
+        "height": 312.984375,
+        "bottom": 548.984375,
+        "right": 344,
+        "scrollWidth": 360,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Drop disc in column 1. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 29.359375,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          },
+          {
+            "label": "Drop disc in column 2. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 72.234375,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          },
+          {
+            "label": "Drop disc in column 3. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 115.109375,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          },
+          {
+            "label": "Drop disc in column 4. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 158,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          },
+          {
+            "label": "Drop disc in column 5. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 200.875,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          },
+          {
+            "label": "Drop disc in column 6. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 243.75,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          },
+          {
+            "label": "Drop disc in column 7. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 286.625,
+            "y": 248.515625,
+            "width": 44,
+            "height": 272.28125
+          }
+        ]
+      }
+    },
+    {
+      "game": "ayo",
+      "width": 360,
+      "reduced_motion": true,
+      "layout": {
+        "x": 20,
+        "y": 240,
+        "width": 320,
+        "height": 194.34375,
+        "bottom": 434.34375,
+        "right": 340,
+        "scrollWidth": 360,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Pit 1, 4 seeds, your pit",
+            "enabled": true,
+            "x": 50.015625,
+            "y": 324.125,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 2, 4 seeds, your pit",
+            "enabled": true,
+            "x": 93.203125,
+            "y": 324.125,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 3, 4 seeds, your pit",
+            "enabled": true,
+            "x": 136.390625,
+            "y": 324.125,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 4, 4 seeds, your pit",
+            "enabled": true,
+            "x": 179.59375,
+            "y": 324.125,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 5, 4 seeds, your pit",
+            "enabled": true,
+            "x": 222.78125,
+            "y": 324.125,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 6, 4 seeds, your pit",
+            "enabled": true,
+            "x": 265.96875,
+            "y": 324.125,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 7, 4 seeds, opponent",
+            "enabled": false,
+            "x": 265.96875,
+            "y": 267.484375,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 8, 4 seeds, opponent",
+            "enabled": false,
+            "x": 222.78125,
+            "y": 267.484375,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 9, 4 seeds, opponent",
+            "enabled": false,
+            "x": 179.59375,
+            "y": 267.484375,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 10, 4 seeds, opponent",
+            "enabled": false,
+            "x": 136.390625,
+            "y": 267.484375,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 11, 4 seeds, opponent",
+            "enabled": false,
+            "x": 93.203125,
+            "y": 267.484375,
+            "width": 44,
+            "height": 66.0625
+          },
+          {
+            "label": "Pit 12, 4 seeds, opponent",
+            "enabled": false,
+            "x": 50.015625,
+            "y": 267.484375,
+            "width": 44,
+            "height": 66.0625
+          }
+        ]
+      }
+    },
+    {
+      "game": "connect4",
+      "width": 430,
+      "reduced_motion": true,
+      "layout": {
+        "x": 16,
+        "y": 236,
+        "width": 398,
+        "height": 379.78125,
+        "bottom": 615.78125,
+        "right": 414,
+        "scrollWidth": 430,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Drop disc in column 1. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 32.8984375,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          },
+          {
+            "label": "Drop disc in column 2. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 84.9296875,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          },
+          {
+            "label": "Drop disc in column 3. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 136.9609375,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          },
+          {
+            "label": "Drop disc in column 4. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 188.9921875,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          },
+          {
+            "label": "Drop disc in column 5. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 241.0078125,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          },
+          {
+            "label": "Drop disc in column 6. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 293.0390625,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          },
+          {
+            "label": "Drop disc in column 7. Top to bottom: empty, empty, empty, empty, empty, empty",
+            "enabled": true,
+            "x": 345.0703125,
+            "y": 251.1875,
+            "width": 52.015625,
+            "height": 330.40625
+          }
+        ]
+      }
+    },
+    {
+      "game": "ayo",
+      "width": 430,
+      "reduced_motion": true,
+      "layout": {
+        "x": 20,
+        "y": 240,
+        "width": 390,
+        "height": 236.859375,
+        "bottom": 476.859375,
+        "right": 410,
+        "scrollWidth": 430,
+        "canvasCount": 1,
+        "controls": [
+          {
+            "label": "Pit 1, 4 seeds, your pit",
+            "enabled": true,
+            "x": 57.078125,
+            "y": 342.515625,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 2, 4 seeds, your pit",
+            "enabled": true,
+            "x": 109.71875,
+            "y": 342.515625,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 3, 4 seeds, your pit",
+            "enabled": true,
+            "x": 162.359375,
+            "y": 342.515625,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 4, 4 seeds, your pit",
+            "enabled": true,
+            "x": 215,
+            "y": 342.515625,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 5, 4 seeds, your pit",
+            "enabled": true,
+            "x": 267.640625,
+            "y": 342.515625,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 6, 4 seeds, your pit",
+            "enabled": true,
+            "x": 320.28125,
+            "y": 342.515625,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 7, 4 seeds, opponent",
+            "enabled": false,
+            "x": 320.28125,
+            "y": 273.5,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 8, 4 seeds, opponent",
+            "enabled": false,
+            "x": 267.640625,
+            "y": 273.5,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 9, 4 seeds, opponent",
+            "enabled": false,
+            "x": 215,
+            "y": 273.5,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 10, 4 seeds, opponent",
+            "enabled": false,
+            "x": 162.359375,
+            "y": 273.5,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 11, 4 seeds, opponent",
+            "enabled": false,
+            "x": 109.71875,
+            "y": 273.5,
+            "width": 52.625,
+            "height": 80.53125
+          },
+          {
+            "label": "Pit 12, 4 seeds, opponent",
+            "enabled": false,
+            "x": 57.078125,
+            "y": 273.5,
+            "width": 52.625,
+            "height": 80.53125
+          }
+        ]
+      }
+    }
+  ]
+}

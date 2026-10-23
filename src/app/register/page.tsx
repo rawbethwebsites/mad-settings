@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { STAY_OPTIONS, type Stay } from "@/lib/registration";
 
 type Status = "idle" | "submitting" | "done" | "error";
@@ -61,12 +62,12 @@ export default function RegisterPage() {
             <p className="font-body text-lg">
               Registration saved for <strong>{savedEmail}</strong>. Watch that inbox — and your WhatsApp.
             </p>
-            <a
+            <Link
               href="/"
               className="mt-8 inline-flex min-h-11 items-center px-6 py-3 bg-brand-acid text-brand-black font-display font-black uppercase poster-border"
             >
               Back to camp →
-            </a>
+            </Link>
           </div>
         ) : (
           <form className="mt-10 p-6 md:p-8 poster-border poster-shadow bg-white space-y-5" onSubmit={onSubmit} noValidate>

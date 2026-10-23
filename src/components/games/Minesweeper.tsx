@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
+import { play } from '@/lib/sfx';
 
 const N = 9;
 const MINES = 10;
@@ -79,6 +80,7 @@ export default function Minesweeper({ award }: { award: (n: number) => void }) {
     let g = grid;
     if (flagMode) {
       if (g[r][c].open) return;
+      play('place');
       g = g.map(row => row.map(cell => ({ ...cell })));
       g[r][c].flag = !g[r][c].flag;
       setGrid(g);
@@ -96,6 +98,7 @@ export default function Minesweeper({ award }: { award: (n: number) => void }) {
       return;
     }
     g = flood(g, r, c);
+    if (!g.flat().every(cell => cell.mine || cell.open)) play('flip');
     setGrid(g);
     if (g.flat().every(cell => cell.mine || cell.open)) {
       const pts = 80 + Math.max(0, Math.floor((120 - seconds) / 2));
@@ -127,7 +130,7 @@ export default function Minesweeper({ award }: { award: (n: number) => void }) {
         <div className="p-2 poster-border bg-white">⏱ {seconds}s</div>
       </div>
 
-      <div className="grid grid-cols-9 gap-[2px] p-1 bg-brand-black poster-shadow">
+      <div data-sfx="none" className="grid grid-cols-9 gap-[2px] p-1 bg-brand-black poster-shadow">
         {grid.map((row, r) =>
           row.map((cell, c) => (
             <button

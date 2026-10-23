@@ -3,13 +3,17 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
+import { Bot, Users } from 'lucide-react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { addScore, getPlayer, type Player } from '@/lib/player';
-import { camperId, stripServerError } from '@/lib/camper';
+import { camperId } from '@/lib/camper';
 import { RULES } from '@/lib/rules';
 import type { OnlineProps } from '@/lib/rules/types';
+import { useResultSound, useTurnSound } from '@/lib/useGameSounds';
 import { Btn } from './ui';
+import SoundToggle, { buttonTap } from './SoundControls';
+import TurnCountdown from './TurnCountdown';
 
 export interface ShellApi {
   player: Player;
@@ -17,7 +21,7 @@ export interface ShellApi {
   award: (points: number) => void;
 }
 
-const btn = 'font-display font-black uppercase poster-border';
+const btn = 'min-h-11 font-display font-black uppercase poster-border';
 
 export default function GameShell({
   id,
@@ -66,6 +70,10 @@ export default function GameShell({
     api.matches.mine,
     inRoom ? { code: player!.roomCode, playerId: playerId!, game: id } : 'skip',
   );
+  const match = useQuery(
+    api.matches.get,
+    matchId && playerId ? { matchId, playerId } : 'skip',
+  );
   useEffect(() => {
     if (!matchId && mine) {
       const t = window.setTimeout(() => {
@@ -84,26 +92,39 @@ export default function GameShell({
 
   const myRoomPlayer = room?.players.find(p => p.id === room.me?.id);
   const showOnline = !!online && inRoom && !!room;
+  const playingOnline = showOnline && tab === 'campers' && match?.status === 'playing';
   const clearMatch = () => {
     setMatchId(null);
     window.history.replaceState(null, '', window.location.pathname);
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
+    <main onClick={buttonTap} className={`min-h-screen bg-brand-cream text-brand-black ${playingOnline ? 'p-3 md:p-6' : 'p-4 md:p-6'}`}>
       <div className="max-w-xl mx-auto">
-        <div className="flex justify-between items-center mb-4">
-          <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
-            ← BACK
-          </button>
-          <h1 className="font-display font-black text-2xl md:text-3xl uppercase italic">
+        <div className={`flex justify-between items-center gap-2 ${playingOnline ? 'mb-2' : 'mb-4'}`}>
+          {!playingOnline && (
+            <button onClick={() => router.push('/games')} className="min-h-11 min-w-11 font-display font-bold text-sm uppercase hover:text-brand-purple">
+              ← BACK
+            </button>
+          )}
+          <h1 className={`font-display font-black sm:text-2xl md:text-3xl uppercase italic min-w-0 ${playingOnline ? 'text-lg truncate' : 'text-xl'}`}>
             {emoji} {title}
           </h1>
-          <div className="font-display font-black text-xl">{player.avatar}</div>
+          <div className="flex items-center gap-2 shrink-0 [&_button]:min-h-11 [&_button]:min-w-11">
+            <span className="font-display font-black text-xl hidden sm:inline">{player.avatar}</span>
+            <SoundToggle />
+          </div>
         </div>
 
         {/* Room bar: where your points are going */}
-        {inRoom && room && (
+        {playingOnline && room ? (
+          <div data-online-room-bar className="flex items-center justify-between gap-2 mb-2 font-display font-bold text-xs uppercase">
+            <button onClick={() => router.push(`/room/${room.code}`)} className="min-h-11 min-w-0 truncate hover:text-brand-purple">
+              ROOM {room.code} · {room.players.filter(p => p.online).length} ONLINE
+            </button>
+            <button onClick={() => router.push('/games')} className="min-h-11 min-w-11 shrink-0 hover:text-brand-purple">← Back</button>
+          </div>
+        ) : inRoom && room && (
           <button
             onClick={() => router.push(`/room/${room.code}`)}
             className="w-full mb-4 p-3 poster-border bg-brand-black text-brand-cream flex items-center justify-between gap-2"
@@ -120,32 +141,43 @@ export default function GameShell({
         {error && (
           <div role="alert" className="p-3 mb-4 poster-border bg-brand-coral font-display font-bold text-sm uppercase">
             {error}
-            <button onClick={() => setError('')} className="float-right">✕</button>
+            <button onClick={() => setError('')} className="min-h-11 px-2 flex items-center gap-1">✕ Dismiss</button>
           </div>
         )}
 
-        {showOnline && (
+        {online && !playingOnline && (
           <div className="flex gap-2 mb-4" role="tablist">
             {(['computer', 'campers'] as const).map(t => (
               <button
                 key={t}
                 role="tab"
                 aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                className={`${btn} flex-1 py-3 text-sm ${tab === t ? 'bg-brand-black text-brand-cream' : 'bg-white'}`}
+                onClick={() => { setTab(t); setError(''); }}
+                className={`${btn} flex-1 flex items-center justify-center gap-2 px-2 py-3 text-sm normal-case ${tab === t ? 'bg-brand-black text-brand-cream' : 'bg-white'}`}
               >
-                {t === 'computer' ? '🤖 VS COMPUTER' : '🏕️ PLAY CAMPERS'}
+                {t === 'computer' ? <Bot aria-hidden="true" size={20} className="shrink-0" /> : <Users aria-hidden="true" size={20} className="shrink-0" />}
+                {t === 'computer' ? 'Play the computer' : 'Play a friend'}
               </button>
             ))}
           </div>
         )}
 
-        {showOnline && tab === 'campers' ? (
+        {online && tab === 'campers' && !showOnline ? (
+          <Arena>
+            {inRoom && room === undefined ? <p role="status">Loading your room…</p> : (
+              <>
+                <p className="font-body mb-4">Join your friend&apos;s room to play together.</p>
+                <button onClick={() => router.push('/join')} className={`${btn} w-full py-4 bg-brand-purple text-brand-cream`}>→ Join a room</button>
+              </>
+            )}
+          </Arena>
+        ) : showOnline && tab === 'campers' ? (
           <OnlineArena
             gameId={id}
             code={player.roomCode}
             playerId={playerId}
             matchId={matchId}
+            match={match}
             setMatchId={setMatchId}
             clearMatch={clearMatch}
             render={online!.render}
@@ -175,6 +207,7 @@ function OnlineArena({
   code,
   playerId,
   matchId,
+  match,
   setMatchId,
   clearMatch,
   render,
@@ -184,6 +217,7 @@ function OnlineArena({
   code: string;
   playerId: string;
   matchId: Id<'matches'> | null;
+  match: MatchData | null | undefined;
   setMatchId: (id: Id<'matches'>) => void;
   clearMatch: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -192,7 +226,7 @@ function OnlineArena({
 }) {
   const rules = RULES[gameId];
   const room = useQuery(api.rooms.get, { code, playerId });
-  const match = useQuery(api.matches.get, matchId ? { matchId, playerId } : 'skip');
+
   const create = useMutation(api.matches.create);
 
   const [picked, setPicked] = useState<Id<'roomPlayers'>[]>([]);
@@ -221,15 +255,15 @@ function OnlineArena({
     };
     return (
       <Arena>
-        <h2 className="font-display font-black text-xl uppercase mb-1">PICK WHO TO PLAY</h2>
-        <p className="font-body text-sm text-brand-black/60 mb-4">
+        <h2 className="font-display font-black text-xl uppercase mb-1">Pick a friend</h2>
+        {others.length > 0 && <p className="font-body text-sm text-brand-black/60 mb-4">
           {rules.min === rules.max
-            ? `Needs exactly ${rules.min} players — invite ${minNeeded}.`
-            : `${rules.min}-${rules.max} players — invite ${minNeeded}-${maxPick}.`}
-        </p>
+            ? `Pick ${minNeeded}, then tap Invite.`
+            : `Pick ${minNeeded}–${maxPick}, then tap Invite.`}
+        </p>}
         {others.length === 0 ? (
           <p className="font-body text-lg text-brand-black/70">
-            Nobody else is in the room yet. Share the room code so campers can join.
+            Share room code <b>{code}</b> with a friend.
           </p>
         ) : (
           <ul className="space-y-2 mb-4">
@@ -247,7 +281,7 @@ function OnlineArena({
                     <span className="text-3xl">{p.avatar}</span>
                     <span className="font-display font-black uppercase flex-1 text-left truncate">
                       {p.name}
-                      {!p.online && <span className="ml-2 font-body font-normal normal-case text-xs text-brand-black/50">away · sees it when back</span>}
+                      {!p.online && <span className="ml-2 font-body font-normal normal-case text-xs text-brand-black/50">away</span>}
                     </span>
                     <span className={`w-6 h-6 border-4 border-brand-black flex items-center justify-center font-display font-black ${on ? 'bg-brand-acid' : 'bg-white'}`}>
                       {on ? '✓' : ''}
@@ -260,17 +294,17 @@ function OnlineArena({
         )}
         <Btn
           variant="primary"
-          className="w-full"
+          className="w-full min-h-12"
           disabled={picked.length < minNeeded || busy}
           onClick={() => {
             setBusy(true);
             create({ code, playerId, game: gameId, invite: picked })
               .then(id => setMatchId(id as Id<'matches'>))
-              .catch(e => onError(stripServerError(e)))
+              .catch(() => onError('Could not invite. Tap Invite again.'))
               .finally(() => setBusy(false));
           }}
         >
-          {busy ? 'INVITING…' : `INVITE ${picked.length || ''} →`}
+          {busy ? 'Inviting…' : '→ Invite'}
         </Btn>
       </Arena>
     );
@@ -298,6 +332,8 @@ interface MatchData {
   seats: { name: string; avatar: string; online: boolean }[];
   waitingFor: string[];
   turn: number | null;
+  turnDeadline: number | null;
+  serverNow: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   view: any;
   result: { winners: number[]; reason: string } | null;
@@ -352,9 +388,10 @@ function WaitingRoom({
             <Btn
               variant="primary"
               disabled={!canDeal}
-              onClick={() => begin({ matchId: match.id, playerId }).catch(e => setError(stripServerError(e)))}
+              className="min-h-12"
+              onClick={() => begin({ matchId: match.id, playerId }).catch(() => setError('Could not start. Tap Start game again.'))}
             >
-              {canDeal ? '🃏 DEAL NOW' : `DEAL (NEED ${match.min - match.seats.length} MORE)`}
+              {canDeal ? '▶ Start game' : `Waiting for ${match.min - match.seats.length} more`}
             </Btn>
           )}
           {match.isCreator ? (
@@ -364,11 +401,11 @@ function WaitingRoom({
                 cancel({ matchId: match.id, playerId }).catch(() => {}).finally(clearMatch)
               }
             >
-              CANCEL GAME
+              ✕ Cancel game
             </Btn>
           ) : (
             <Btn variant="light" onClick={clearMatch}>
-              BACK WITHOUT LEAVING
+              ← Back
             </Btn>
           )}
         </div>
@@ -401,6 +438,9 @@ function LiveMatch({
   const winners = match.result?.winners ?? [];
   const draw = finished && winners.length === 0;
   const iWon = finished && match.seat !== null && winners.includes(match.seat);
+  const roundKey = `${match.id}:${match.round}`;
+  useTurnSound(!finished && match.seat !== null && match.turn === match.seat, roundKey);
+  useResultSound(finished && match.seat !== null ? (draw ? 'draw' : iWon ? 'win' : 'lose') : null, roundKey);
 
   // Points were awarded on the server by matches.act — no local award here
   const myPoints = finished ? (draw ? match.points.draw : iWon ? match.points.win : 0) : 0;
@@ -412,22 +452,36 @@ function LiveMatch({
   return (
     <div>
       {/* Player strips */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-2" aria-label="Players">
         {match.seats.map((s, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 px-3 py-2 poster-border ${
+            data-player-strip={i}
+            data-active={match.turn === i && !finished}
+            className={`flex min-w-0 items-center gap-1.5 px-2 py-1 min-h-12 poster-border ${
               match.turn === i ? 'bg-brand-acid' : 'bg-white'
             }`}
           >
-            <span className={`w-2.5 h-2.5 rounded-full ${s.online ? 'bg-green-500' : 'bg-brand-black/20'}`} />
-            <span className="text-xl">{s.avatar}</span>
-            <span className="font-display font-black uppercase text-sm">
-              {s.name}
-              {match.seat === i && ' · YOU'}
-            </span>
-            {match.turn === i && match.status === 'playing' && (
-              <span className="font-display font-bold text-xs uppercase text-brand-black/60">▶ TURN</span>
+            <span aria-label={s.online ? 'Online' : 'Away'} className={`w-2 h-2 shrink-0 rounded-full ${s.online ? 'bg-green-500' : 'bg-brand-black/20'}`} />
+            <span className="text-lg shrink-0" aria-hidden="true">{s.avatar}</span>
+            <div className="min-w-0 flex-1 font-display uppercase">
+              <div title={s.name} className="font-black text-xs truncate">{s.name}</div>
+              <div className="font-bold text-[10px] text-brand-black/60">
+                {match.seat === i ? 'YOU' : 'FRIEND'}{match.turn === i && !finished && ' · TURN'}
+              </div>
+            </div>
+            {match.turn === i && !finished && match.turnDeadline !== null && (
+              <div className="shrink-0 [&_[role=timer]]:m-0 [&_[role=timer]]:border-0 [&_[role=timer]]:p-0 [&_[role=timer]>p]:sr-only [&_[aria-hidden=true]]:size-8">
+                <TurnCountdown
+                  key={`${roundKey}:${match.turnDeadline}`}
+                  deadline={match.turnDeadline}
+                  serverNow={match.serverNow}
+                  duration={RULES[match.game]?.turnSeconds ?? 30}
+                  label={match.turn === match.seat ? 'Your move' : `${names[match.turn]}'s move`}
+                  round={`${roundKey}:${match.turnDeadline}`}
+                  seat={match.turn}
+                />
+              </div>
             )}
           </div>
         ))}
@@ -443,9 +497,7 @@ function LiveMatch({
             try {
               await send(a);
             } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              const m = msg.match(/Uncaught Error: (.+?)(?:\n|$)/);
-              throw new Error(m ? m[1] : 'That move did not go through.');
+              throw new Error('Move not saved. Tap your move again.', { cause: e });
             }
           },
         })
@@ -456,12 +508,12 @@ function LiveMatch({
           onClick={() => {
             if (!confirmResign) { setConfirmResign(true); return; }
             setConfirmResign(false);
-            resign({ matchId: match.id, playerId }).catch(e => onError(stripServerError(e)));
+            resign({ matchId: match.id, playerId }).catch(() => onError('Could not leave. Tap Give up again.'));
           }}
           onBlur={() => setConfirmResign(false)}
           className={`${btn} w-full mt-4 py-2 text-xs ${confirmResign ? 'bg-brand-coral' : 'bg-white'}`}
         >
-          {confirmResign ? 'TAP AGAIN TO RESIGN — OTHERS WIN' : '🏳 RESIGN'}
+          {confirmResign ? 'Give up? Tap again' : '🏳 Give up'}
         </button>
       )}
 
@@ -475,18 +527,19 @@ function LiveMatch({
           <h2 className="font-display font-black text-3xl uppercase italic mb-2">
             {draw ? 'DRAW' : iWon ? 'YOU WIN!' : `${winners.map(w => names[w]).join(' & ')} WIN${winners.length > 1 ? '' : 'S'}`}
           </h2>
+          {/ran out of time/i.test(match.result.reason) && <p className="font-display font-black uppercase mb-2">Ran out of time</p>}
           <p className="font-body text-lg mb-2">{match.result.reason}</p>
           {myPoints > 0 && <p className="font-display font-black text-xl">+{myPoints} PTS ON THE BOARD</p>}
           <div className="flex gap-3 mt-4">
             <button onClick={clearMatch} className={`${btn} flex-1 py-3 bg-brand-cream`}>
-              BACK
+              ← Back
             </button>
             {match.seat !== null && (
               <button
-                onClick={() => rematch({ matchId: match.id, playerId }).catch(e => onError(stripServerError(e)))}
+                onClick={() => rematch({ matchId: match.id, playerId }).catch(() => onError('Could not restart. Tap Play again.'))}
                 className={`${btn} flex-1 py-3 bg-brand-black text-brand-cream`}
               >
-                REMATCH →
+                ▶ Play again
               </button>
             )}
           </div>

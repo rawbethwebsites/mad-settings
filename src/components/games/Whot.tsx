@@ -1,53 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { play as playSound } from '@/lib/sfx';
 import { Btn, Label, Panel, Result } from '@/components/arcade/ui';
+import { CardChoice, CardGameTable } from '@/components/cards/Table';
+import { ShapeIcon, WhotBack, WhotFront } from '@/components/cards/WhotCard';
 import type { OnlineProps } from '@/lib/rules/types';
 import {
   aiTurn,
   canPlay,
   deal,
   draw,
-  GLYPH,
   playCard,
   SHAPES,
-  top,
-  type Card,
+  whot,
   type Shape,
   type State,
   type WhotAction,
   type WhotView,
 } from '@/lib/rules/whot';
 
-const TINT: Record<Shape, string> = {
-  circle: 'text-red-600',
-  triangle: 'text-blue-600',
-  cross: 'text-green-700',
-  square: 'text-amber-600',
-  star: 'text-purple-700',
-};
-
-export function Face({ c, size = 'md' }: { c: Card; size?: 'md' | 'lg' }) {
-  const big = size === 'lg';
-  return (
-    <span
-      className={`flex flex-col items-center justify-center bg-white border-2 border-brand-black font-display font-black leading-none ${
-        big ? 'w-20 h-28 text-3xl' : 'w-12 h-[4.5rem] text-lg'
-      } ${c.shape === 'whot' ? 'text-brand-black' : TINT[c.shape]}`}
-    >
-      {c.shape === 'whot' ? (
-        <>
-          <span>W</span>
-          <span className={big ? 'text-sm' : 'text-[10px]'}>20</span>
-        </>
-      ) : (
-        <>
-          <span>{c.n}</span>
-          <span>{GLYPH[c.shape]}</span>
-        </>
-      )}
-    </span>
-  );
+// Both modes render only the public view, so opponents' faces never enter the DOM.
+function WhotTable({ view, seat, names, busy, picking, error, onPlay, onDraw, onChoose, onCancel }: {
+  view: WhotView; seat: number | null; names: string[]; busy?: boolean;
+  picking: number | null; error?: string | null; onPlay: (i: number) => void;
+  onDraw: () => void; onChoose: (shape: Shape) => void; onCancel: () => void;
+}) {
+  const myTurn = seat !== null && seat === view.turn && view.winner === null;
+  const previous = useRef(view);
+  useEffect(() => {
+    const before = previous.current;
+    // Counts catch duplicate WHOT faces and extra turns; forced pickups belong
+    // to the same play event, so flip takes precedence over card.
+    const played = view.handCounts.some((n, p) => n < before.handCounts[p]);
+    const drawn = view.handCounts.some((n, p) => n > before.handCounts[p]);
+    if (played) playSound('flip');
+    else if (drawn) playSound('card');
+    previous.current = view;
+  }, [view]);
+  return <div data-sfx="none">
+    <CardGameTable game="whot" names={names} seat={seat} counts={view.handCounts}
+      turn={view.turn} winner={view.winner} marketCount={view.marketCount}
+      topKey={`${view.top.shape}-${view.top.n}`} topFace={<WhotFront card={view.top} />}
+      backFace={<WhotBack />} match={<><ShapeIcon shape={view.want ?? view.top.shape} size={12} />{view.want ?? view.top.shape}</>}
+      log={view.log} busy={busy} choosing={picking !== null} error={error} onPlay={onPlay} onDraw={onDraw}
+      hand={view.hand.map(c => ({
+        id: `${c.shape}-${c.n}`, label: `${c.shape} ${c.n}`, front: <WhotFront card={c} />,
+        playable: myTurn && (c.shape === 'whot' || (view.want ? c.shape === view.want : c.shape === view.top.shape || c.n === view.top.n)),
+      }))} />
+    {picking !== null && <CardChoice title="Choose a shape" onCancel={() => { playSound('tap'); onCancel(); }}
+      options={SHAPES.map(shape => ({ value: shape, label: shape, icon: <ShapeIcon shape={shape} size={22} /> }))}
+      onChoose={shape => onChoose(shape as Shape)} />}
+  </div>;
 }
 
 export default function Whot({ award }: { award: (n: number) => void }) {
@@ -55,6 +59,8 @@ export default function Whot({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<State | null>(null);
   const [picking, setPicking] = useState<number | null>(null);
   const [points, setPoints] = useState(0);
+  const awardRef = useRef(award);
+  useEffect(() => { awardRef.current = award; }, [award]);
 
   const settle = (next: State) => {
     if (next.winner === null) return;
@@ -65,14 +71,17 @@ export default function Whot({ award }: { award: (n: number) => void }) {
 
   useEffect(() => {
     if (!s || s.winner !== null || s.turn === 0) return;
-    const t = window.setTimeout(() => {
+    const t = setTimeout(() => {
       const next = aiTurn(s);
       setS(next);
-      settle(next);
+      if (next.winner !== null) {
+        const pts = next.winner === 0 ? 40 + opponents * 20 : 0;
+        awardRef.current(pts);
+        setPoints(pts);
+      }
     }, 900);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s]);
+    return () => clearTimeout(t);
+  }, [s, opponents]);
 
   if (!s) {
     return (
@@ -93,16 +102,16 @@ export default function Whot({ award }: { award: (n: number) => void }) {
             <Btn key={n} variant={opponents === n ? 'primary' : 'light'} onClick={() => setOpponents(n)}>{n}</Btn>
           ))}
         </div>
-        <Btn className="w-full" onClick={() => setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)]))}>DEAL →</Btn>
+        <Btn data-sfx="none" className="w-full" onClick={() => { setS(deal(['You', ...Array.from({ length: opponents }, (_, k) => `Computer ${k + 1}`)])); playSound('card'); }}>DEAL →</Btn>
       </Panel>
     );
   }
 
   const myTurn = s.turn === 0 && s.winner === null;
-  const t = top(s);
+  const view = whot.view(s, 0);
 
   const tap = (i: number) => {
-    if (!myTurn) return;
+    if (!myTurn || picking !== null) return;
     const c = s.hands[0][i];
     if (!canPlay(s, c)) return;
     if (c.shape === 'whot') { setPicking(i); return; }
@@ -112,7 +121,7 @@ export default function Whot({ award }: { award: (n: number) => void }) {
   };
 
   const chooseShape = (shape: Shape) => {
-    if (picking === null) return;
+    if (!myTurn || picking === null) return;
     const next = playCard(s, 0, picking, shape);
     setPicking(null);
     setS(next);
@@ -120,7 +129,7 @@ export default function Whot({ award }: { award: (n: number) => void }) {
   };
 
   const market = () => {
-    if (!myTurn) return;
+    if (!myTurn || picking !== null) return;
     setS(draw(s, 0));
   };
 
@@ -128,57 +137,7 @@ export default function Whot({ award }: { award: (n: number) => void }) {
   const name = (p: number) => s.names[p];
 
   return (
-    <div>
-      <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${s.hands.length - 1}, minmax(0, 1fr))` }}>
-        {s.hands.slice(1).map((h, k) => (
-          <div key={k} className={`p-2 poster-border text-center font-display font-black uppercase text-xs ${s.turn === k + 1 && s.winner === null ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
-            {name(k + 1)}<div className="text-xl">🂠 {h.length}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-center gap-6 p-4 poster-border poster-shadow bg-emerald-800 mb-3">
-        <button onClick={market} disabled={!myTurn} aria-label="Go to market and draw a card"
-          className="w-20 h-28 poster-border bg-brand-purple text-brand-cream font-display font-black text-xs uppercase disabled:opacity-60 hover:-translate-y-1 transition-transform">
-          MARKET<br />{s.market.length}
-        </button>
-        <div className="text-center">
-          <Face c={t} size="lg" />
-          {s.want && (
-            <div className="mt-1 px-2 py-0.5 bg-white font-display font-black text-sm">{GLYPH[s.want]} {s.want.toUpperCase()}</div>
-          )}
-        </div>
-      </div>
-
-      <p className="font-body text-sm text-center min-h-5 mb-3">{s.log}</p>
-
-      {picking !== null && (
-        <Panel className="mb-3">
-          <Label>CHOOSE A SHAPE</Label>
-          <div className="grid grid-cols-5 gap-2">
-            {SHAPES.map(sh => (
-              <button key={sh} onClick={() => chooseShape(sh)} aria-label={sh}
-                className={`py-3 poster-border bg-white text-3xl ${TINT[sh]}`}>{GLYPH[sh]}</button>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      <div className={`p-3 poster-border ${myTurn ? 'bg-brand-acid' : 'bg-white'}`}>
-        <div className="font-display font-black text-xs uppercase mb-2">
-          {s.winner !== null ? '' : myTurn ? 'YOUR TURN — PLAY A CARD OR TAP THE MARKET' : 'WAITING…'}
-        </div>
-        <div className="flex flex-wrap gap-1.5 justify-center">
-          {s.hands[0].map((c, i) => (
-            <button key={i} onClick={() => tap(i)} disabled={!myTurn || !canPlay(s, c)}
-              aria-label={c.shape === 'whot' ? 'Whot 20' : `${c.shape} ${c.n}`}
-              className={`${myTurn && canPlay(s, c) ? 'hover:-translate-y-2 transition-transform' : 'opacity-50'}`}>
-              <Face c={c} />
-            </button>
-          ))}
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {s.winner !== null && (
         <Result
           tone={s.winner === 0 ? 'win' : 'lose'}
@@ -188,6 +147,9 @@ export default function Whot({ award }: { award: (n: number) => void }) {
           onAgain={reset}
         />
       )}
+
+      <WhotTable view={view} seat={0} names={s.names} picking={picking}
+        onPlay={tap} onDraw={market} onChoose={chooseShape} onCancel={() => setPicking(null)} />
     </div>
   );
 }
@@ -204,7 +166,6 @@ export function WhotOnline({ view, seat, names, act }: OnlineProps<WhotView, Who
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Clear a pending shape pick when the turn moves on (render-phase adjust)
   const [lastTurn, setLastTurn] = useState(view.turn);
   if (view.turn !== lastTurn) {
     setLastTurn(view.turn);
@@ -226,87 +187,23 @@ export function WhotOnline({ view, seat, names, act }: OnlineProps<WhotView, Who
   };
 
   const tap = (i: number) => {
-    if (!myTurn || busy) return;
+    if (!myTurn || busy || picking !== null) return;
     const c = view.hand[i];
+    if (!c || !(c.shape === 'whot' || (view.want ? c.shape === view.want : c.shape === view.top.shape || c.n === view.top.n))) return;
     if (c.shape === 'whot') { setPicking(i); return; }
     void send({ type: 'play', idx: i });
   };
 
   const chooseShape = (shape: Shape) => {
-    if (picking === null || busy) return;
+    if (!myTurn || picking === null || busy) return;
     const i = picking;
     setPicking(null);
     void send({ type: 'play', idx: i, shape });
   };
 
-  const others = names.map((_, p) => p).filter(p => p !== seat);
-
-  return (
-    <div>
-      <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${Math.max(others.length, 1)}, minmax(0, 1fr))` }}>
-        {others.map(p => (
-          <div key={p} className={`p-2 poster-border text-center font-display font-black uppercase text-xs ${view.turn === p && view.winner === null ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
-            {names[p]}<div className="text-xl">🂠 {view.handCounts[p] ?? 0}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-center gap-6 p-4 poster-border poster-shadow bg-emerald-800 mb-3">
-        <button
-          onClick={() => { if (myTurn && !busy) void send({ type: 'draw' }); }}
-          disabled={!myTurn || busy}
-          aria-label="Go to market and draw a card"
-          className="w-20 h-28 poster-border bg-brand-purple text-brand-cream font-display font-black text-xs uppercase disabled:opacity-60 hover:-translate-y-1 transition-transform"
-        >
-          MARKET<br />{view.marketCount}
-        </button>
-        <div className="text-center">
-          <Face c={view.top} size="lg" />
-          {view.want && (
-            <div className="mt-1 px-2 py-0.5 bg-white font-display font-black text-sm">{GLYPH[view.want]} {view.want.toUpperCase()}</div>
-          )}
-        </div>
-      </div>
-
-      <p className="font-body text-sm text-center min-h-5 mb-1">{view.log}</p>
-      <p className="font-body text-sm text-center text-red-600 min-h-5 mb-3" role="alert">{err ?? ''}</p>
-
-      {picking !== null && (
-        <Panel className="mb-3">
-          <Label>CHOOSE A SHAPE</Label>
-          <div className="grid grid-cols-5 gap-2">
-            {SHAPES.map(sh => (
-              <button key={sh} onClick={() => chooseShape(sh)} aria-label={sh}
-                className={`py-3 poster-border bg-white text-3xl ${TINT[sh]}`}>{GLYPH[sh]}</button>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      <div className={`p-3 poster-border ${myTurn ? 'bg-brand-acid' : 'bg-white'}`}>
-        <div className="font-display font-black text-xs uppercase mb-2">
-          {view.winner !== null
-            ? `${names[view.winner].toUpperCase()} WINS`
-            : seat === null
-              ? 'WATCHING'
-              : myTurn
-                ? 'YOUR TURN — PLAY A CARD OR TAP THE MARKET'
-                : 'WAITING…'}
-        </div>
-        <div className="flex flex-wrap gap-1.5 justify-center">
-          {seat === null ? (
-            <span className="font-display font-black text-3xl">🂠 {view.handCounts.reduce((a, b) => a + b, 0) ? '' : ''}</span>
-          ) : (
-            view.hand.map((c, i) => (
-              <button key={i} onClick={() => tap(i)} disabled={!myTurn || busy}
-                aria-label={c.shape === 'whot' ? 'Whot 20' : `${c.shape} ${c.n}`}
-                className={`${myTurn && !busy ? 'hover:-translate-y-2 transition-transform' : 'opacity-50'}`}>
-                <Face c={c} />
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <div data-online-board="whot" className="[&_.card-table-kicker]:hidden! [&_.card-opponent-name]:hidden! [&_.card-opponent]:border-0! [&_.card-opponent]:bg-transparent! [&_.card-opponent]:p-0! [&_.card-opponents]:mb-2! [&_.card-hand-heading_strong]:hidden! [&_.card-hand-heading]:justify-end! [&_.card-hand-tip]:hidden! [&_.card-log]:min-h-0! [&_.card-log]:my-2!">
+    <WhotTable view={view} seat={seat} names={names} busy={busy} error={err} picking={picking}
+      onPlay={tap} onDraw={() => { if (myTurn && !busy && picking === null) void send({ type: 'draw' }); }}
+      onChoose={chooseShape} onCancel={() => setPicking(null)} />
+  </div>;
 }

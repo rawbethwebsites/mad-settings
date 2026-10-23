@@ -48,6 +48,7 @@ export const isFull = (board: Board) => board[0].every(v => v !== 0);
 export const connect4: Rules<C4Match, { col: number }, C4Match> = {
   min: 2,
   max: 2,
+  turnSeconds: 25,
   points: { win: 60, draw: 20 },
   init: () => ({ board: emptyBoard(), turn: 0 }),
   act(s, seat, a) {

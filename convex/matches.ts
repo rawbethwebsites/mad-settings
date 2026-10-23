@@ -1,6 +1,7 @@
-import { mutation, query } from "./_generated/server";
-import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import type { DatabaseReader, DatabaseWriter, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { v, ConvexError } from "convex/values";
 import { RULES } from "../src/lib/rules";
 import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
@@ -18,11 +19,29 @@ function seatOf(match: Doc<"matches">, playerId: string) {
   return i < 0 ? null : i;
 }
 
-function start(match: Doc<"matches">) {
+async function turnTimer(
+  ctx: MutationCtx,
+  match: Doc<"matches">,
+  state: Doc<"matches">["state"],
+): Promise<{ moveNo: number; turnDeadline: number | undefined }> {
   const rules = rulesFor(match.game);
+  if (!rules.turnSeconds || rules.turn(state) === null) {
+    return { moveNo: match.moveNo ?? 0, turnDeadline: undefined };
+  }
+  const moveNo = (match.moveNo ?? 0) + 1;
+  const ms = rules.turnSeconds * 1000;
+  const turnDeadline = Date.now() + ms;
+  await ctx.scheduler.runAfter(ms + 500, internal.matches.expire, { matchId: match._id, moveNo });
+  return { moveNo, turnDeadline };
+}
+
+async function start(ctx: MutationCtx, match: Doc<"matches">) {
+  const rules = rulesFor(match.game);
+  const state = rules.init(match.seats.map((s) => s.name));
   return {
     status: "playing" as const,
-    state: rules.init(match.seats.map((s) => s.name)),
+    state,
+    ...await turnTimer(ctx, match, state),
     result: undefined,
     updatedAt: Date.now(),
   };
@@ -34,14 +53,43 @@ async function load(db: DatabaseReader, matchId: Id<"matches">) {
   return match;
 }
 
-// Someone left a live game: the others win and get the points
+// Someone leaves or times out: the others win and get the points
 async function forfeit(db: DatabaseWriter, match: Doc<"matches">, seat: number, reason: string) {
   const rules = rulesFor(match.game);
   const winners = match.seats.map((_, i) => i).filter((i) => i !== seat);
-  await db.patch(match._id, { status: "finished", result: { winners, reason }, updatedAt: Date.now() });
+  await db.patch(match._id, {
+    status: "finished", result: { winners, reason }, turnDeadline: undefined, updatedAt: Date.now(),
+  });
   for (const i of winners) {
     const row = await memberOf(db, match.roomId, match.seats[i].playerId);
     if (row && !row.kicked) await addPoints(db, row, match.game, rules.points.win);
+  }
+}
+
+// Normal moves and timeout auto-moves share timer, result and leaderboard handling.
+async function applyMove(ctx: MutationCtx, match: Doc<"matches">, seat: number, action: unknown) {
+  const rules = rulesFor(match.game);
+  let state;
+  try {
+    state = rules.act(match.state, seat, action ?? {});
+  } catch (e) {
+    // Rule errors are written for campers; ConvexError keeps them readable in production
+    throw new ConvexError(e instanceof Error ? e.message : "That move is not allowed.");
+  }
+  const outcome = rules.outcome(state);
+  if (!outcome) {
+    await ctx.db.patch(match._id, { state, ...await turnTimer(ctx, match, state), updatedAt: Date.now() });
+    return;
+  }
+  await ctx.db.patch(match._id, {
+    state, status: "finished", result: outcome, turnDeadline: undefined, updatedAt: Date.now(),
+  });
+  // Points go straight onto the room leaderboard
+  const draw = outcome.winners.length === 0;
+  for (let i = 0; i < match.seats.length; i++) {
+    const points = draw ? rules.points.draw : outcome.winners.includes(i) ? rules.points.win : 0;
+    const row = await memberOf(ctx.db, match.roomId, match.seats[i].playerId);
+    if (row && !row.kicked) await addPoints(ctx.db, row, match.game, points);
   }
 }
 
@@ -158,7 +206,7 @@ export const join = mutation({
     const next = { ...match, seats };
     // Everyone invited is in: deal and go
     const everyone = seats.length === match.invited.length + 1;
-    await ctx.db.patch(match._id, everyone ? { seats, ...start(next) } : { seats, updatedAt: Date.now() });
+    await ctx.db.patch(match._id, everyone ? { seats, ...await start(ctx, next) } : { seats, updatedAt: Date.now() });
     return null;
   },
 });
@@ -176,7 +224,7 @@ export const decline = mutation({
       await ctx.db.patch(match._id, { invited, status: "cancelled", updatedAt: Date.now() });
     } else if (pending === 0) {
       // Everyone else already joined: deal
-      await ctx.db.patch(match._id, { invited, ...start(match) });
+      await ctx.db.patch(match._id, { invited, ...await start(ctx, match) });
     } else {
       await ctx.db.patch(match._id, { invited, updatedAt: Date.now() });
     }
@@ -192,7 +240,7 @@ export const begin = mutation({
     if (match.creatorId !== args.playerId) throw new ConvexError("Only whoever started the game can deal.");
     if (match.status !== "waiting") return null;
     if (match.seats.length < rulesFor(match.game).min) throw new ConvexError("Wait for someone to join.");
-    await ctx.db.patch(match._id, start(match));
+    await ctx.db.patch(match._id, await start(ctx, match));
     return null;
   },
 });
@@ -217,26 +265,27 @@ export const act = mutation({
     if (seat === null) throw new ConvexError("You are not in this game.");
     const member = await memberOf(ctx.db, match.roomId, args.playerId);
     if (!member || member.kicked) throw new ConvexError("You are no longer in this room.");
+    if (match.turnDeadline !== undefined && Date.now() >= match.turnDeadline) {
+      throw new ConvexError("Time is up for that turn.");
+    }
+    await applyMove(ctx, match, seat, args.action);
+    return null;
+  },
+});
+
+export const expire = internalMutation({
+  args: { matchId: v.id("matches"), moveNo: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    const match = await ctx.db.get(args.matchId);
+    if (!match || match.status !== "playing" || match.moveNo !== args.moveNo) return null;
     const rules = rulesFor(match.game);
-    let state;
-    try {
-      state = rules.act(match.state, seat, args.action ?? {});
-    } catch (e) {
-      // Rule errors are written for campers; ConvexError keeps them readable in production
-      throw new ConvexError(e instanceof Error ? e.message : "That move is not allowed.");
-    }
-    const outcome = rules.outcome(state);
-    if (!outcome) {
-      await ctx.db.patch(match._id, { state, updatedAt: Date.now() });
-      return null;
-    }
-    await ctx.db.patch(match._id, { state, status: "finished", result: outcome, updatedAt: Date.now() });
-    // Points go straight onto the room leaderboard
-    const draw = outcome.winners.length === 0;
-    for (let i = 0; i < match.seats.length; i++) {
-      const points = draw ? rules.points.draw : outcome.winners.includes(i) ? rules.points.win : 0;
-      const row = await memberOf(ctx.db, match.roomId, match.seats[i].playerId);
-      if (row && !row.kicked) await addPoints(ctx.db, row, match.game, points);
+    const seat = rules.turn(match.state);
+    if (seat === null) return null;
+    if (rules.autoMove) {
+      await applyMove(ctx, match, seat, rules.autoMove(match.state, seat));
+    } else {
+      await forfeit(ctx.db, match, seat, `${match.seats[seat].name} ran out of time.`);
     }
     return null;
   },
@@ -262,7 +311,7 @@ export const rematch = mutation({
     if (match.status !== "finished") return null;
     if (seatOf(match, args.playerId) === null) throw new ConvexError("You are not in this game.");
     const seats = [...match.seats.slice(1), match.seats[0]];
-    await ctx.db.patch(match._id, { seats, round: match.round + 1, ...start({ ...match, seats }) });
+    await ctx.db.patch(match._id, { seats, round: match.round + 1, ...await start(ctx, { ...match, seats }) });
     return null;
   },
 });
@@ -298,6 +347,8 @@ export const get = query({
       })),
       waitingFor: invitedNames,
       turn: match.status === "playing" ? rules.turn(match.state) : null,
+      turnDeadline: match.turnDeadline ?? null,
+      serverNow: Date.now(),
       view: match.state === undefined ? null : rules.view(match.state, seat),
       result: match.result ?? null,
       points: rules.points,

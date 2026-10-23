@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import { getChessPlayerId } from '@/lib/chessOnline';
 import { Leaderboard, roundError } from './TriviaPlayer';
+import { BingoBoard } from '@/components/boards/BingoBoard';
+import { play } from '@/lib/sfx';
+import { useResultSound } from '@/lib/useGameSounds';
 
 const btn = 'font-display font-black uppercase poster-border';
 
@@ -24,6 +27,15 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
   const data = useQuery(api.rounds.get, { roundId, playerId });
   const enter = useMutation(api.rounds.enter);
   const claim = useMutation(api.rounds.claim);
+  const calledCount = data?.game === 'bingo' ? data.called.length : null;
+  const previousCall = useRef<{ roundId: string; count: number } | null>(null);
+  useEffect(() => {
+    if (calledCount === null) return;
+    const old = previousCall.current;
+    previousCall.current = { roundId, count: calledCount };
+    if (old?.roundId === roundId && calledCount > old.count) play('card');
+  }, [roundId, calledCount]);
+  useResultSound(data?.game === 'bingo' ? (data.me.score > 0 ? 'win' : data.status === 'ended' ? 'lose' : null) : null, roundId);
 
   useEffect(() => {
     enter({ roundId, playerId }).catch(() => {});
@@ -78,7 +90,8 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
   const toggle = (cell: number) => {
     if (!data.card) return;
     const word = data.card[cell];
-    if (word !== 'FREE' && !data.called.includes(word)) return; // only mark called words
+    if (word === 'FREE' || !data.called.includes(word)) return; // only mark called words
+    play('place');
     setMarked((prev) => {
       const next = new Set(prev);
       if (next.has(cell)) {
@@ -129,36 +142,15 @@ export default function BingoPlayer({ roundId }: { roundId: Id<'rounds'> }) {
           Dealing your card…
         </div>
       ) : (
-        <div className="grid grid-cols-5 gap-1">
-          {/* Column headers */}
-          {['B', 'I', 'N', 'G', 'O'].map((h) => (
-            <div key={h} className="p-1 poster-border bg-brand-purple text-brand-cream text-center font-display font-black text-lg">
-              {h}
-            </div>
-          ))}
-          {data.card.map((word, cell) => {
-            const isMarked = marked.has(cell);
-            const isCalled = word === 'FREE' || data.called.includes(word);
-            const isLatest = word === latestCalled;
-            return (
-              <button
-                key={cell}
-                type="button"
-                onClick={() => toggle(cell)}
-                disabled={!isCalled && word !== 'FREE'}
-                className={`aspect-square p-0.5 poster-border font-display font-black uppercase text-[10px] leading-tight transition-colors ${
-                  isMarked
-                    ? 'bg-brand-acid'
-                    : isCalled
-                      ? 'bg-brand-cream hover:bg-brand-acid'
-                      : 'bg-white opacity-60'
-                } ${isLatest && !isMarked ? 'ring-2 ring-brand-coral' : ''}`}
-              >
-                {word === 'FREE' ? '⭐' : word}
-              </button>
-            );
-          })}
-        </div>
+        <div data-sfx="none"><BingoBoard
+          grid={data.card}
+          marked={marked}
+          called={new Set(data.called)}
+          currentCall={data.called[data.called.length - 1] || ''}
+          won={false}
+          winLine={winnableLine ?? null}
+          onToggle={(i) => toggle(i)}
+        /></div>
       )}
 
       {error && (
