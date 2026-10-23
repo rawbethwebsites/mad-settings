@@ -10,7 +10,7 @@ import { camperId } from '@/lib/camper';
 import { naira, serverMessage } from '@/lib/account';
 
 type Overview = NonNullable<FunctionReturnType<typeof api.walletAdmin.overview>>;
-const TABS = ['Payments', 'Campers', 'Prices', 'Shop', 'Casino', 'Settings'] as const;
+const TABS = ['Payments', 'Campers', 'Prices', 'Shop', 'Casino', 'Messages', 'Settings'] as const;
 const GAMES = ['ludo', 'whot', 'ocho', 'ayo', 'connect4', 'tictactoe', 'dots', 'chopchop', 'minesweeper', 'tenten', 'trivia', 'bingo', 'search', 'puzzles', 'same', 'vault'];
 const input = 'p-2 border-[3px] border-brand-black bg-white font-body';
 const btn = 'px-3 py-2 poster-border font-display font-black uppercase text-sm disabled:opacity-40';
@@ -58,6 +58,7 @@ export default function AdminPage() {
             {tab === 'Prices' && <Prices data={data} me={me} run={run} />}
             {tab === 'Shop' && <Shop data={data} me={me} run={run} />}
             {tab === 'Casino' && <Casino data={data} me={me} run={run} />}
+            {tab === 'Messages' && <Messages me={me} run={run} />}
             {tab === 'Settings' && <Settings data={data} me={me} run={run} />}
           </>
         )}
@@ -267,6 +268,27 @@ function Casino({ data, me, run }: TabProps) {
           </form>
         </div>
       ) : <p className="font-body text-sm opacity-70">Only the Head Ranger can pause chip games or change the house cut.</p>}
+    </Section>
+  );
+}
+
+// What campers' avatars say on the homepage; staff can remove any of it
+function Messages({ me, run }: { me: string; run: TabProps['run'] }) {
+  const rows = useQuery(api.avatars.shouts, { playerId: me });
+  const clear = useMutation(api.avatars.clearShout);
+  if (!rows) return null;
+  return (
+    <Section title="Avatar messages on the homepage">
+      {rows.length === 0 ? <p className="font-body">No camper has written a message yet.</p> : (
+        <ul className="space-y-2">
+          {rows.map(r => (
+            <li key={r.id} className="flex items-start justify-between gap-3 p-3 border-2 border-brand-black/15">
+              <div className="min-w-0"><div className="font-display font-black uppercase text-sm">{r.name} · {r.phone}</div><p className="font-body break-words">{r.shout}</p></div>
+              <button className={`${btn} bg-brand-coral shrink-0`} onClick={() => run(() => clear({ playerId: me, accountId: r.id }), 'Message removed.')}>Remove</button>
+            </li>
+          ))}
+        </ul>
+      )}
     </Section>
   );
 }

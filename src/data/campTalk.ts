@@ -3,6 +3,7 @@ export type TalkTag = "mad" | "tbn" | "tip";
 export type TalkLine = {
   tag: TalkTag;
   text: string;
+  by?: string; // a real camper's first name
   cta?: { label: string; href: string };
 };
 

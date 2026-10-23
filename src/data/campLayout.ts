@@ -1,4 +1,5 @@
 import { TENT_COLORS, type Vec3 } from "./campWorld";
+import { AVATAR_PANTS, AVATAR_SHIRTS, AVATAR_SKIN, type Gender } from "./avatar";
 
 /**
  * Where everything and everyone sits in the campsite. Pure data, seeded so the
@@ -29,6 +30,8 @@ export type PersonSpec = {
   phase: number;
   path?: PathFn;
   mic?: boolean;
+  // A real camper: first name and the message their bubble shows
+  label?: { name: string; shout: string };
 };
 
 export type TentSpec = { x: number; z: number; ry: number; color: string; scale: number };
@@ -272,5 +275,35 @@ export function ballAt(t: number) {
 }
 
 export const PEOPLE = buildPeople();
+
+// ── Real campers ────────────────────────────────────────────────────────────
+export type CamperOnSite = { id: string; name: string; gender: Gender; look: { skin: number; hair: string; shirt: number; pants: number }; shout: string };
+
+// Paid campers take over the strollers first, then the people hanging out by the tents
+const CAMPER_SLOTS = (["walk", "stand", "ground"] as const).flatMap((pose) =>
+  PEOPLE.map((p, i) => (p.pose === pose && !(pose === "ground" && p.z < -7) ? i : -1)).filter((i) => i >= 0),
+);
+
+export function withCampers(campers: CamperOnSite[]): PersonSpec[] {
+  if (!campers.length) return PEOPLE;
+  const people = PEOPLE.slice();
+  campers.slice(0, CAMPER_SLOTS.length).forEach((c, k) => {
+    const i = CAMPER_SLOTS[k];
+    const hair = c.look.hair as Hair;
+    people[i] = {
+      ...people[i],
+      look: {
+        skin: AVATAR_SKIN[c.look.skin] ?? AVATAR_SKIN[0],
+        shirt: AVATAR_SHIRTS[c.look.shirt] ?? AVATAR_SHIRTS[0],
+        pants: AVATAR_PANTS[c.look.pants] ?? AVATAR_PANTS[0],
+        hair,
+        hairColor: hair === "cap" ? "#6D28D9" : undefined,
+        build: c.gender === "female" ? 0.92 : 1.04,
+      },
+      label: { name: c.name, shout: c.shout },
+    };
+  });
+  return people;
+}
 
 export type { Vec3 };

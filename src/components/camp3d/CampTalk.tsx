@@ -12,7 +12,7 @@ import { TALK_LINES, TALK_ROTATION, TALK_TAGS, type TalkLine } from "@/data/camp
  * (outside the canvas) above their head every frame.
  */
 
-type Talker = { head: THREE.Object3D };
+type Talker = { head: THREE.Object3D; line?: () => TalkLine };
 type Picker = (raycaster: THREE.Raycaster) => string | undefined;
 
 const talkers = new Map<string, Talker>();
@@ -135,7 +135,7 @@ export function TalkDirector() {
   }, []);
 
   const say = (id: string, now: number, bonus = 0) => {
-    const line = nextLine(state.current);
+    const line = talkers.get(id)?.line?.() ?? nextLine(state.current);
     speaker.current = id;
     speaking.current = true;
     talkState.speaking = true;
@@ -179,7 +179,9 @@ export function TalkDirector() {
         inView.sort((a, b) => a.dist - b.dist);
         const candidates = inView.slice(0, 10).filter((c) => roomForBubble(c.x, c.y));
         if (candidates.length) {
-          const pickFrom = candidates.slice(0, 4);
+          // Real campers with a message get the floor most of the time
+          const campers = candidates.filter((c) => talkers.get(c.id)?.line);
+          const pickFrom = campers.length && Math.random() < 0.7 ? campers : candidates.slice(0, 4);
           say(pickFrom[Math.floor(Math.random() * pickFrom.length)].id, now);
         } else {
           phaseEnds.current = now + 600;
@@ -227,8 +229,8 @@ export function TalkBubble() {
     <div className="camp-talk-layer" aria-live="polite">
       <div ref={ref} className="camp-talk-anchor">
         {said && (
-          <div key={said.key} className={`camp-talk camp-talk-${said.line.tag}`}>
-            <span className="camp-talk-tag">{TALK_TAGS[said.line.tag]}</span>
+          <div key={said.key} className={`camp-talk camp-talk-${said.line.by ? "camper" : said.line.tag}`}>
+            <span className="camp-talk-tag">{said.line.by ? `${said.line.by} says` : TALK_TAGS[said.line.tag]}</span>
             <p>{said.line.text}</p>
             {said.line.cta && (
               <a

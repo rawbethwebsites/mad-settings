@@ -357,6 +357,7 @@ body.camp-night {
 .camp-talk-tip .camp-talk-tag { background: #22D3EE; }
 .camp-talk-tbn { background: #6D28D9; color: #FDFBF7; }
 .camp-talk-tbn .camp-talk-tag { background: #FDFBF7; color: #0A0A0A; }
+.camp-talk-camper .camp-talk-tag { background: #F59E0B; }
 
 .camp-talk-cta {
   display: inline-block;

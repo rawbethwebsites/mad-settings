@@ -28,7 +28,11 @@ export const walletTables = {
     // Casino chips: bought with the wallet, play-only, never turned back into naira or prizes
     chips: v.optional(v.number()),
     adult: v.optional(v.boolean()), // ticked "I'm 18 or older" before buying chips
-    founderNo: v.optional(v.number()), // Founding Camper #1–#100, by approval order
+    founderNo: v.optional(v.number()), // Founding Camper number, by approval order
+    // Their avatar walking round the homepage camp, and what it says
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+    look: v.optional(v.object({ skin: v.number(), hair: v.string(), shirt: v.number(), pants: v.number() })),
+    shout: v.optional(v.string()),
   }).index('by_phone', ['phone']).index('by_player_key', ['playerKey']).index('by_created', ['createdAt'])
     .index('by_chips', ['chips']).index('by_founder', ['founderNo']),
 
