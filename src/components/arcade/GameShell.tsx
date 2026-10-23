@@ -103,7 +103,7 @@ export default function GameShell({
       <div className="max-w-xl mx-auto">
         <div className={`flex justify-between items-center gap-2 ${playingOnline ? 'mb-2' : 'mb-4'}`}>
           {!playingOnline && (
-            <button onClick={() => router.push('/games')} className="min-h-11 min-w-11 font-display font-bold text-sm uppercase hover:text-brand-purple">
+            <button onClick={() => router.push('/games')} className="min-h-11 min-w-11 shrink-0 whitespace-nowrap font-display font-bold text-sm uppercase hover:text-brand-purple">
               ← BACK
             </button>
           )}
