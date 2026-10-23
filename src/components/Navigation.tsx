@@ -48,7 +48,7 @@ export default function Navigation({ night = false }: { night?: boolean }) {
       <nav
         className={cn(
           'fixed top-0 inset-x-0 z-[120] h-12 transition-colors duration-300',
-          dark ? 'bg-black/70 text-white backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent text-brand-black',
+          dark ? 'bg-black/85 md:bg-black/70 text-white md:backdrop-blur-xl md:backdrop-saturate-150' : 'bg-transparent text-brand-black',
           scrolled && !open && 'border-b border-white/10',
         )}
       >

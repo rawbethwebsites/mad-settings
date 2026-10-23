@@ -15,6 +15,8 @@ const READING_SPEED = 0.15; // fraction of full speed while a camper is talking
 export default function AutoScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Phones scroll by touch; drifting on its own fights the finger and feels jerky
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     let idleTimer = 0;
     let frame = 0;
@@ -44,7 +46,7 @@ export default function AutoScroll() {
       const whole = Math.floor(carry);
       if (whole > 0) {
         carry -= whole;
-        window.scrollTo(0, window.scrollY + whole);
+        window.scrollTo({ top: window.scrollY + whole, behavior: "instant" });
       }
       frame = requestAnimationFrame(step);
     };

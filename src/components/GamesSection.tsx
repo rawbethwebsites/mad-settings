@@ -8,7 +8,7 @@ import { GAMES } from '@/data/games';
 gsap.registerPlugin(ScrollTrigger);
 
 // Frosted glass: the camp shows through, the words stay crisp
-const glass = 'game-card flex items-center gap-3 min-h-16 px-4 py-3 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md text-white shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:bg-white/20 transition-colors';
+const glass = 'game-card flex items-center gap-3 min-h-16 px-4 py-3 rounded-2xl border border-white/25 bg-[#140f22]/45 md:bg-white/10 md:backdrop-blur-md text-white shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:bg-white/20 transition-colors';
 
 export default function GamesSection() {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -422,6 +422,8 @@ export function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
   }, [heads, layout, PEOPLE]);
 
   const frame = useRef(0);
+  // Phones pose far-off campers less often so scrolling stays smooth
+  const phone = useMemo(() => typeof window !== "undefined" && window.innerWidth < 768, []);
 
   useFrame(({ clock, camera }) => {
     const time = clock.elapsedTime;
@@ -448,7 +450,7 @@ export function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
         continue;
       }
       const dist = camera.position.distanceTo(probe.center);
-      const every = dist > 26 ? 3 : dist > 15 ? 2 : 1;
+      const every = phone ? (dist > 18 ? 4 : dist > 9 ? 2 : 1) : dist > 26 ? 3 : dist > 15 ? 2 : 1;
       if (every > 1 && (frame.current + i) % every !== 0) continue;
       root.position.set(px, p.y, pz);
       root.rotation.set(0, ry, 0);
