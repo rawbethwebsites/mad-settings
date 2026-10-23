@@ -1,7 +1,7 @@
 // The camp admin panel: check bank-transfer receipts, run wallets, set prices, the shop and bank details.
 // Open to the Head Ranger and to Cashiers the Head Ranger appoints.
 import { ConvexError, v } from 'convex/values';
-import { action, internalQuery, mutation, query } from './_generated/server';
+import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import type { DatabaseReader } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
@@ -210,5 +210,20 @@ export const setCashier = mutation({
     if (on && !row) await ctx.db.insert('staff', { playerId: a.playerKey, role: 'cashier', createdAt: Date.now() });
     if (!on && row) await ctx.db.delete(row._id);
     return null;
+  },
+});
+
+// CLI only (npx convex run): make a camper account a Head Ranger, alongside any existing one
+export const makeHeadRanger = internalMutation({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const target = email.trim().toLowerCase();
+    const matches = (await ctx.db.query('accounts').collect()).filter(a => a.email === target);
+    if (matches.length !== 1) throw new ConvexError(`Expected one account with that email, found ${matches.length}.`);
+    const a = matches[0];
+    const existing = await ctx.db.query('rangers').withIndex('by_player', q => q.eq('playerId', a.playerKey)).unique();
+    if (existing) await ctx.db.patch(existing._id, { role: 'headRanger' });
+    else await ctx.db.insert('rangers', { playerId: a.playerKey, role: 'headRanger', createdAt: Date.now() });
+    return { name: a.name, status: a.status };
   },
 });
