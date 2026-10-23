@@ -4,9 +4,25 @@ import { action, internalMutation, internalQuery, mutation, query } from './_gen
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import { accountByKey, bank, charge, cleanAmount, cleanPhone, requireAccount, staffRole } from './walletLib';
-import { TICKETS } from '../src/data/tickets';
+import { TENTS_TOTAL, TICKETS } from '../src/data/tickets';
+import type { DatabaseReader } from './_generated/server';
 
 const LOCK_AFTER = 5;
+const TENT_NAMES: string[] = TICKETS.filter(t => t.stay === 'sleepover').map(t => t.name);
+
+// Tents booked: paid or waiting for the receipt check (rejected sign-ups free their tent)
+async function tentsTaken(db: DatabaseReader) {
+  const rows = await db.query('accounts').collect();
+  return rows.filter(a => a.status !== 'rejected' && a.ticket && TENT_NAMES.includes(a.ticket)).length;
+}
+
+export const tents = query({
+  args: {},
+  handler: async ctx => {
+    const taken = await tentsTaken(ctx.db);
+    return { total: TENTS_TOTAL, left: Math.max(0, TENTS_TOTAL - taken) };
+  },
+});
 const LOCK_MS = 10 * 60_000;
 
 function hex(bytes: Uint8Array) {
@@ -57,6 +73,9 @@ export const create = internalMutation({
     if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120)) throw new ConvexError('Enter a valid email, or leave it empty.');
     // Attendee tickets are per person; a tent is one price for the people it sleeps
     const ticket = TICKETS.find(t => t.id === args.ticket) ?? TICKETS[0];
+    if (ticket.stay === 'sleepover' && await tentsTaken(ctx.db) >= TENTS_TOTAL) {
+      throw new ConvexError('All the tents are taken. Pick an Attendee ticket instead.');
+    }
     const count = Math.max(1, Math.min(20, Math.floor(args.guests ?? 1)));
     const guests = ticket.id === 'attendee' ? count : ticket.people;
     const ticketTotal = ticket.id === 'attendee' ? ticket.price * count : ticket.price;

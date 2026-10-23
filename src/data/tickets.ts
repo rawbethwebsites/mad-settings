@@ -8,6 +8,9 @@ export const TICKETS = [
   { id: 'couples', name: 'Couples tent', price: 35000, people: 2, note: 'One tent for two', stay: 'sleepover' },
 ] as const;
 
+// Tents on site; sign-ups stop offering tents once these are taken
+export const TENTS_TOTAL = 70;
+
 export type TicketId = (typeof TICKETS)[number]['id'];
 
 export const naira = (n: number) => `₦${n.toLocaleString('en-NG')}`;

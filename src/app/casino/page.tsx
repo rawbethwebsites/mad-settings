@@ -76,7 +76,7 @@ export default function CasinoPage() {
                   ★ Founding spots left: <span className={gold}>{data.foundersLeft}</span>
                 </p>
                 <p className="font-body text-sm opacity-80 mt-1">
-                  The first 100 campers whose camp fee is approved get {data.founderChips.toLocaleString()} free chips and a gold Founding Camper badge.
+                  The first {data.founders} campers whose camp fee is approved get {data.founderChips.toLocaleString()} free chips and a gold Founding Camper badge.
                 </p>
               </Panel>
             )}

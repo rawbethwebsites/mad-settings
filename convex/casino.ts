@@ -34,6 +34,7 @@ export const lobby = query({
       dailyLimit: DAILY_BUY_LIMIT,
       foundersLeft: Math.max(0, FOUNDERS - await foundersTaken(ctx.db)),
       founderChips: FOUNDER_CHIPS,
+      founders: FOUNDERS,
       staff: await staffRole(ctx.db, playerKey),
       leaderboard: top.map(t => ({ name: firstName(t.name), chips: t.chips ?? 0, founderNo: t.founderNo ?? null, me: t._id === a?._id })),
       me: a && {
@@ -111,6 +112,7 @@ export const report = query({
       houseKept: matches.reduce((s, m) => s + (m.payout?.house ?? 0), 0),
       chipsHeld: holders.reduce((s, a) => s + (a.chips ?? 0), 0),
       founders: await foundersTaken(ctx.db),
+      foundersTotal: FOUNDERS,
     };
   },
 });

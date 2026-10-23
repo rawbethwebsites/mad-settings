@@ -12,7 +12,7 @@ export const PACKS = [
 ];
 export const STAKES = [100, 200, 500, 1_000, 2_000, 5_000];
 export const DAILY_BUY_LIMIT = 20_000; // naira of chips per camper per day
-export const FOUNDERS = 100;
+export const FOUNDERS = 10;
 export const FOUNDER_CHIPS = 2_000;
 const DEFAULT_CUT = 5;
 
