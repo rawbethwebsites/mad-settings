@@ -3,7 +3,7 @@
 import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { requireAccount, requireStaff, staffRole } from './walletLib';
-import { SHOUT_MAX, validLook, type AvatarHair } from '../src/data/avatar';
+import { SHOUT_MAX, validLook, type AvatarLook } from '../src/data/avatar';
 
 const ON_SITE = 40;
 const firstName = (name: string) => name.split(' ')[0].slice(0, 16);
@@ -19,12 +19,12 @@ export const save = mutation({
   args: {
     playerKey: v.string(),
     gender: v.union(v.literal('male'), v.literal('female')),
-    look: v.object({ skin: v.number(), hair: v.string(), shirt: v.number(), pants: v.number() }),
+    look: v.object({ skin: v.number(), hair: v.string(), shirt: v.number(), pants: v.number(), hairColor: v.optional(v.number()), shape: v.optional(v.string()), top: v.optional(v.string()), bottom: v.optional(v.string()) }),
     shout: v.string(),
   },
   handler: async (ctx, { playerKey, gender, look, shout }) => {
     const a = await requireAccount(ctx.db, playerKey, false);
-    if (!validLook(gender, { ...look, hair: look.hair as AvatarHair })) throw new ConvexError('Pick your look from the options.');
+    if (!validLook(gender, look as AvatarLook)) throw new ConvexError('Pick your look from the options.');
     const message = cleanShout(shout);
     await ctx.db.patch(a._id, { gender, look, shout: message || undefined });
     return null;

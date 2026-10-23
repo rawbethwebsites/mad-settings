@@ -1,13 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { serverMessage } from '@/lib/account';
 import {
-  AVATAR_HAIR, AVATAR_PANTS, AVATAR_SHIRTS, AVATAR_SKIN, HAIR_NAMES, SHOUT_MAX, startingLook,
+  AVATAR_BOTTOMS, AVATAR_HAIR, AVATAR_HAIR_COLORS, AVATAR_PANTS, AVATAR_SHAPES, AVATAR_SHIRTS, AVATAR_SKIN, AVATAR_TOPS,
+  HAIR_NAMES, SHOUT_MAX, STYLE_NAMES, startingLook,
   type AvatarHair, type AvatarLook, type Gender,
 } from '@/data/avatar';
+
+// The 3D preview loads only in the browser
+const AvatarStage = dynamic(() => import('@/components/camp3d/AvatarStage'), { ssr: false, loading: () => <div className="h-full w-full bg-[#1b1430]" /> });
 
 const swatch = 'size-10 rounded-full border-[3px] shrink-0';
 
@@ -57,7 +62,13 @@ export default function AvatarCard({ playerKey, name, gender: g0, look: l0, shou
 
   const pickGender = (next: Gender) => {
     setGender(next);
-    if (!AVATAR_HAIR[next].includes(look.hair)) setLook({ ...look, hair: AVATAR_HAIR[next][0] });
+    // Keep what still fits; swap anything that belongs to the other look
+    setLook({
+      ...look,
+      hair: AVATAR_HAIR[next].includes(look.hair) ? look.hair : AVATAR_HAIR[next][0],
+      shape: AVATAR_SHAPES[next][0],
+      top: AVATAR_TOPS[next][0],
+    });
   };
 
   return (
@@ -68,7 +79,7 @@ export default function AvatarCard({ playerKey, name, gender: g0, look: l0, shou
       </p>
 
       <div className="flex gap-4 items-start">
-        <div className="shrink-0 rounded-2xl bg-[#1b1430] p-2"><AvatarPreview gender={gender} look={look} /></div>
+        <div className="shrink-0 w-36 h-56 rounded-2xl overflow-hidden bg-[#1b1430]"><AvatarStage gender={gender} look={look} /></div>
         <div className="min-w-0 flex-1 space-y-3">
           <div className="grid grid-cols-2 gap-2">
             {(['female', 'male'] as const).map(x => (
@@ -89,13 +100,30 @@ export default function AvatarCard({ playerKey, name, gender: g0, look: l0, shou
         </div>
       </div>
 
-      {([['Skin', AVATAR_SKIN, 'skin'], ['Top', AVATAR_SHIRTS, 'shirt'], ['Trousers', AVATAR_PANTS, 'pants']] as const).map(([label, colors, k]) => (
+      {([['Body', AVATAR_SHAPES[gender], 'shape'], ['Top', AVATAR_TOPS[gender], 'top'], ['Bottoms', AVATAR_BOTTOMS, 'bottom']] as const).map(([label, options, k]) => (
+        <div key={k} className="mt-4">
+          <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-black/50 mb-2">{label}</div>
+          <div className="flex flex-wrap gap-2">
+            {options.map(o => {
+              const on = (look[k] ?? options[0]) === o;
+              return (
+                <button key={o} type="button" aria-pressed={on} onClick={() => setLook({ ...look, [k]: o })}
+                  className={`min-h-11 px-3 border-[3px] font-display font-bold text-sm ${on ? 'border-brand-purple bg-brand-purple/10' : 'border-brand-black/15'}`}>
+                  {STYLE_NAMES[o]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {([['Hair colour', AVATAR_HAIR_COLORS, 'hairColor'], ['Skin', AVATAR_SKIN, 'skin'], ['Top colour', AVATAR_SHIRTS, 'shirt'], ['Bottoms colour', AVATAR_PANTS, 'pants']] as const).map(([label, colors, k]) => (
         <div key={k} className="mt-4">
           <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-black/50 mb-2">{label}</div>
           <div className="flex flex-wrap gap-2">
             {colors.map((c, i) => (
-              <button key={c} type="button" aria-label={`${label} ${i + 1}`} aria-pressed={look[k] === i} onClick={() => setLook({ ...look, [k]: i })}
-                className={`${swatch} ${look[k] === i ? 'border-brand-purple ring-2 ring-brand-purple ring-offset-2' : 'border-brand-black/20'}`} style={{ background: c }} />
+              <button key={c} type="button" aria-label={`${label} ${i + 1}`} aria-pressed={(look[k] ?? 0) === i} onClick={() => setLook({ ...look, [k]: i })}
+                className={`${swatch} ${(look[k] ?? 0) === i ? 'border-brand-purple ring-2 ring-brand-purple ring-offset-2' : 'border-brand-black/20'}`} style={{ background: c }} />
             ))}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { TENT_COLORS, type Vec3 } from "./campWorld";
-import { AVATAR_PANTS, AVATAR_SHIRTS, AVATAR_SKIN, type Gender } from "./avatar";
+import { AVATAR_HAIR_COLORS, AVATAR_PANTS, AVATAR_SHIRTS, AVATAR_SKIN, type Gender } from "./avatar";
 
 /**
  * Where everything and everyone sits in the campsite. Pure data, seeded so the
@@ -7,7 +7,7 @@ import { AVATAR_PANTS, AVATAR_SHIRTS, AVATAR_SKIN, type Gender } from "./avatar"
  */
 
 export type Pose = "walk" | "run" | "sit" | "ground" | "dance" | "sing" | "dj" | "stand";
-export type Hair = "short" | "afro" | "cap" | "bun" | "bald" | "braids";
+export type Hair = "short" | "afro" | "cap" | "bun" | "bald" | "braids" | "long";
 
 export type Look = {
   skin: string;
@@ -16,6 +16,9 @@ export type Look = {
   hair: Hair;
   hairColor?: string;
   build?: number;
+  shape?: "curvy" | "slim" | "broad" | "athletic";
+  top?: "tee" | "crop" | "bikini" | "tank" | "shirtless";
+  bottom?: "shorts" | "trousers";
 };
 
 export type PathFn = (t: number) => { x: number; z: number; ry: number };
@@ -76,7 +79,9 @@ export function treeAllowed(x: number, z: number) {
 export const SKIN = ["#4a2c1c", "#5c3722", "#6e4129", "#7d4c30", "#8f5a3a", "#3f2618", "#a46b45"];
 const SHIRTS = ["#6D28D9", "#BEF264", "#FB7185", "#22D3EE", "#FDFBF7", "#F59E0B", "#2b2b3a", "#3b6e8f", "#8a2a3a", "#e9e4d8", "#1f7a5a"];
 const PANTS = ["#1d1d2a", "#2a3a5a", "#22222e", "#3a3226", "#4a4a52", "#1b2b44", "#d8cdb8"];
-const HAIRS: Hair[] = ["short", "short", "afro", "braids", "cap", "bun", "bald", "short", "braids"];
+const HAIRS: Hair[] = ["short", "short", "afro", "braids", "cap", "bun", "bald", "long", "braids", "long"];
+// Mostly dark hair, with the odd anime colour
+const HAIR_TONES = ["#1a1420", "#1a1420", "#1a1420", "#2a1a12", "#5a3825", "#5a3825", "#8b5cf6", "#f29cc2", "#4c7bd9", "#e8c46a"];
 const CAP_COLORS = ["#6D28D9", "#0A0A0A", "#FB7185", "#22D3EE", "#BEF264"];
 
 function randomLook(): Look {
@@ -86,8 +91,21 @@ function randomLook(): Look {
     shirt: pickOne(SHIRTS),
     pants: pickOne(PANTS),
     hair,
-    hairColor: hair === "cap" ? pickOne(CAP_COLORS) : undefined,
+    hairColor: hair === "cap" ? pickOne(CAP_COLORS) : pickOne(HAIR_TONES),
     build: 0.9 + rand() * 0.18,
+    ...(hair === "long" || hair === "braids" || hair === "bun" || (hair === "afro" && rand() < 0.5)
+      ? pickOne([
+          { shape: "curvy", top: "crop", bottom: "shorts" },
+          { shape: "curvy", top: "tee", bottom: "trousers" },
+          { shape: "slim", top: "tee", bottom: "shorts" },
+          { shape: "slim", top: "crop", bottom: "trousers" },
+        ] as const)
+      : pickOne([
+          { shape: "broad", top: "tank", bottom: "shorts" },
+          { shape: "broad", top: "tee", bottom: "trousers" },
+          { shape: "athletic", top: "tee", bottom: "trousers" },
+          { shape: "athletic", top: "tank", bottom: "trousers" },
+        ] as const)),
   };
 }
 
@@ -277,31 +295,35 @@ export function ballAt(t: number) {
 export const PEOPLE = buildPeople();
 
 // ── Real campers ────────────────────────────────────────────────────────────
-export type CamperOnSite = { id: string; name: string; gender: Gender; look: { skin: number; hair: string; shirt: number; pants: number }; shout: string };
+export type CamperOnSite = { id: string; name: string; gender: Gender; look: { skin: number; hair: string; shirt: number; pants: number; hairColor?: number; shape?: string; top?: string; bottom?: string }; shout: string };
 
 // Paid campers take over the strollers first, then the people hanging out by the tents
 const CAMPER_SLOTS = (["walk", "stand", "ground"] as const).flatMap((pose) =>
   PEOPLE.map((p, i) => (p.pose === pose && !(pose === "ground" && p.z < -7) ? i : -1)).filter((i) => i >= 0),
 );
 
+// A camper's saved choices as a 3D look
+export function camperLook(c: Pick<CamperOnSite, "gender" | "look">): Look {
+  const hair = c.look.hair as Hair;
+  return {
+    skin: AVATAR_SKIN[c.look.skin] ?? AVATAR_SKIN[0],
+    shirt: AVATAR_SHIRTS[c.look.shirt] ?? AVATAR_SHIRTS[0],
+    pants: AVATAR_PANTS[c.look.pants] ?? AVATAR_PANTS[0],
+    hair,
+    hairColor: hair === "cap" ? "#6D28D9" : AVATAR_HAIR_COLORS[c.look.hairColor ?? 0] ?? AVATAR_HAIR_COLORS[0],
+    build: c.gender === "female" ? 0.92 : 1.04,
+    shape: (c.look.shape as Look["shape"]) ?? (c.gender === "female" ? "slim" : "athletic"),
+    top: (c.look.top as Look["top"]) ?? "tee",
+    bottom: (c.look.bottom as Look["bottom"]) ?? "trousers",
+  };
+}
+
 export function withCampers(campers: CamperOnSite[]): PersonSpec[] {
   if (!campers.length) return PEOPLE;
   const people = PEOPLE.slice();
   campers.slice(0, CAMPER_SLOTS.length).forEach((c, k) => {
     const i = CAMPER_SLOTS[k];
-    const hair = c.look.hair as Hair;
-    people[i] = {
-      ...people[i],
-      look: {
-        skin: AVATAR_SKIN[c.look.skin] ?? AVATAR_SKIN[0],
-        shirt: AVATAR_SHIRTS[c.look.shirt] ?? AVATAR_SHIRTS[0],
-        pants: AVATAR_PANTS[c.look.pants] ?? AVATAR_PANTS[0],
-        hair,
-        hairColor: hair === "cap" ? "#6D28D9" : undefined,
-        build: c.gender === "female" ? 0.92 : 1.04,
-      },
-      label: { name: c.name, shout: c.shout },
-    };
+    people[i] = { ...people[i], look: camperLook(c), label: { name: c.name, shout: c.shout } };
   });
   return people;
 }
