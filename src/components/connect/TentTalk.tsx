@@ -10,7 +10,7 @@ import { api } from '../../../convex/_generated/api';
 import { CONNECT_PROMPTS, CONNECT_REACTIONS, CONNECT_STICKERS } from '../../../convex/connectConstants';
 import ConnectShell, { connectError, ConnectError, ConnectLoading, useConnectPlayer } from './ConnectShell';
 
-const GAMES = [{ id: 'whot', name: 'Whot!' }, { id: 'ocho', name: 'Ocho!' }, { id: 'ayo', name: 'Ayo' }, { id: 'connect4', name: 'Connect 4' }, { id: 'tictactoe', name: 'Endless Tic Tac Toe' }, { id: 'dots', name: 'Dots & Boxes' }];
+const GAMES = [{ id: 'whot', name: 'Whot!' }, { id: 'ocho', name: 'Ocho!' }, { id: 'ayo', name: 'Ayo' }, { id: 'ludo', name: 'Ludo' }, { id: 'connect4', name: 'Connect 4' }, { id: 'tictactoe', name: 'Endless Tic Tac Toe' }, { id: 'dots', name: 'Dots & Boxes' }];
 export default function TentTalk() {
   const { id } = useParams<{ id: string }>(); const playerId = useConnectPlayer(); const router = useRouter();
   const valid = /^[a-z0-9]{20,64}$/.test(id ?? ''); const matchId = id as Id<'connectMatches'>;
