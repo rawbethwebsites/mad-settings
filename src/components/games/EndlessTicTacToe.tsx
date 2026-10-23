@@ -106,14 +106,14 @@ function Board({
   // The piece that vanishes on the next placement for whoever is up
   const fading = (i: number) => !win && active !== null && queue[active].length === 3 && queue[active][0] === i;
   return (
-    <div className="grid grid-cols-3 gap-2 aspect-square">
+    <div className="grid grid-cols-3 grid-rows-3 gap-2 aspect-square">
       {cells.map((v, i) => (
         <button
           key={i}
           onClick={() => onTap(i)}
           disabled={!enabled}
           aria-label={`Square ${i + 1}${v ? ` ${v}` : ''}`}
-          className={`poster-border font-display font-black text-6xl flex items-center justify-center disabled:cursor-default ${
+          className={`min-h-0 min-w-0 overflow-hidden leading-none poster-border font-display font-black text-6xl flex items-center justify-center disabled:cursor-default ${
             win?.line.includes(i) ? 'bg-brand-acid' : 'bg-white'
           } ${v === 'X' ? 'text-brand-coral' : 'text-brand-purple'} ${fading(i) ? 'opacity-30' : ''}`}
         >
