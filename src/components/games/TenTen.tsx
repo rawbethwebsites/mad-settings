@@ -161,7 +161,7 @@ export default function TenTen({ award }: { award: (n: number) => void }) {
   );
 }
 
-export function TenTenOnline({ view, seat, names, act }: OnlineProps<{
+export function TenTenOnline({ view, seat, act }: OnlineProps<{
   round: number;
   chaser: boolean;
   myPick: Dir | null;
@@ -186,20 +186,17 @@ export function TenTenOnline({ view, seat, names, act }: OnlineProps<{
   const DIRS: Dir[] = ['up','down','left','right'];
   return (
     <div>
-      <div className={`p-3 poster-border text-center font-display font-black uppercase mb-4 ${canPick?'bg-brand-acid':'bg-white'}`}>ROUND {round} · {chaser?'CHASE — MATCH THEM':'ESCAPE — DIFFER'}</div>
-      <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
-        <div className="p-3 poster-border bg-brand-acid">YOU · {scores[seat ?? 0] ?? 0}</div>
-        <div className="p-3 poster-border bg-brand-purple text-brand-cream">{names[seat===0?1:0]} · {scores[seat===0?1:0] ?? 0}</div>
-      </div>
-      <div className="p-6 poster-border poster-shadow bg-white text-center">
-        <div className="font-display font-black text-5xl mb-4">TEN TEN!</div>
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        Round {round} · {chaser ? 'Chase: match them' : 'Escape: differ'} · Points {scores[seat ?? 0] ?? 0}–{scores[seat === 0 ? 1 : 0] ?? 0}
+      </p>
+      <div data-online-board="tenten" className="p-4 poster-border poster-shadow bg-white text-center">
         {reveal ? (
           <div>
             <div className="flex justify-center gap-8 text-5xl mb-3"><div><div className="font-display font-bold text-xs uppercase">YOU</div>{Icon(myPick)}</div><div><div className="font-display font-bold text-xs uppercase">THEM</div>{Icon(theirPick)}</div></div>
             <div className="font-display font-black text-2xl uppercase">{winner===seat ? 'YOU WIN ROUND' : 'THEY WIN ROUND'}</div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">{DIRS.map(d=><button data-sfx="none" key={d} onClick={()=>send({dir:d})} disabled={!canPick||busy} className="py-6 text-5xl poster-border bg-brand-cream hover:bg-brand-acid disabled:opacity-50">{Icon(d)}</button>)}</div>
+          <div className="grid grid-cols-2 gap-3">{DIRS.map(d=><button data-sfx="none" key={d} aria-label={`Point ${d}`} onClick={()=>send({dir:d})} disabled={!canPick||busy} className="py-6 text-5xl poster-border bg-brand-cream hover:bg-brand-acid disabled:opacity-50">{Icon(d)}</button>)}</div>
         )}
       </div>
       {err && <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">{err}</div>}

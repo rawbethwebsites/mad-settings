@@ -69,6 +69,10 @@ export default function GameShell({
     api.matches.mine,
     inRoom ? { code: player!.roomCode, playerId: playerId!, game: id } : 'skip',
   );
+  const match = useQuery(
+    api.matches.get,
+    matchId && playerId ? { matchId, playerId } : 'skip',
+  );
   useEffect(() => {
     if (!matchId && mine) {
       const t = window.setTimeout(() => {
@@ -87,19 +91,22 @@ export default function GameShell({
 
   const myRoomPlayer = room?.players.find(p => p.id === room.me?.id);
   const showOnline = !!online && inRoom && !!room;
+  const playingOnline = showOnline && tab === 'campers' && match?.status === 'playing';
   const clearMatch = () => {
     setMatchId(null);
     window.history.replaceState(null, '', window.location.pathname);
   };
 
   return (
-    <main onClick={buttonTap} className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
+    <main onClick={buttonTap} className={`min-h-screen bg-brand-cream text-brand-black ${playingOnline ? 'p-3 md:p-6' : 'p-4 md:p-6'}`}>
       <div className="max-w-xl mx-auto">
-        <div className="flex justify-between items-center gap-2 mb-4">
-          <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
-            ← BACK
-          </button>
-          <h1 className="font-display font-black text-xl sm:text-2xl md:text-3xl uppercase italic min-w-0">
+        <div className={`flex justify-between items-center gap-2 ${playingOnline ? 'mb-2' : 'mb-4'}`}>
+          {!playingOnline && (
+            <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
+              ← BACK
+            </button>
+          )}
+          <h1 className={`font-display font-black sm:text-2xl md:text-3xl uppercase italic min-w-0 ${playingOnline ? 'text-lg truncate' : 'text-xl'}`}>
             {emoji} {title}
           </h1>
           <div className="flex items-center gap-2 shrink-0">
@@ -109,7 +116,14 @@ export default function GameShell({
         </div>
 
         {/* Room bar: where your points are going */}
-        {inRoom && room && (
+        {playingOnline && room ? (
+          <div data-online-room-bar className="flex items-center justify-between gap-2 mb-2 font-display font-bold text-xs uppercase">
+            <button onClick={() => router.push(`/room/${room.code}`)} className="min-h-8 min-w-0 truncate hover:text-brand-purple">
+              ROOM {room.code} · {room.players.filter(p => p.online).length} ONLINE
+            </button>
+            <button onClick={() => router.push('/games')} className="min-h-8 shrink-0 hover:text-brand-purple">← BACK</button>
+          </div>
+        ) : inRoom && room && (
           <button
             onClick={() => router.push(`/room/${room.code}`)}
             className="w-full mb-4 p-3 poster-border bg-brand-black text-brand-cream flex items-center justify-between gap-2"
@@ -130,7 +144,7 @@ export default function GameShell({
           </div>
         )}
 
-        {showOnline && (
+        {showOnline && !playingOnline && (
           <div className="flex gap-2 mb-4" role="tablist">
             {(['computer', 'campers'] as const).map(t => (
               <button
@@ -152,6 +166,7 @@ export default function GameShell({
             code={player.roomCode}
             playerId={playerId}
             matchId={matchId}
+            match={match}
             setMatchId={setMatchId}
             clearMatch={clearMatch}
             render={online!.render}
@@ -181,6 +196,7 @@ function OnlineArena({
   code,
   playerId,
   matchId,
+  match,
   setMatchId,
   clearMatch,
   render,
@@ -190,6 +206,7 @@ function OnlineArena({
   code: string;
   playerId: string;
   matchId: Id<'matches'> | null;
+  match: MatchData | null | undefined;
   setMatchId: (id: Id<'matches'>) => void;
   clearMatch: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -198,7 +215,7 @@ function OnlineArena({
 }) {
   const rules = RULES[gameId];
   const room = useQuery(api.rooms.get, { code, playerId });
-  const match = useQuery(api.matches.get, matchId ? { matchId, playerId } : 'skip');
+
   const create = useMutation(api.matches.create);
 
   const [picked, setPicked] = useState<Id<'roomPlayers'>[]>([]);
@@ -423,38 +440,40 @@ function LiveMatch({
   return (
     <div>
       {/* Player strips */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-2" aria-label="Players">
         {match.seats.map((s, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 px-3 py-2 poster-border ${
+            data-player-strip={i}
+            data-active={match.turn === i && !finished}
+            className={`flex min-w-0 items-center gap-1.5 px-2 py-1 min-h-12 poster-border ${
               match.turn === i ? 'bg-brand-acid' : 'bg-white'
             }`}
           >
-            <span className={`w-2.5 h-2.5 rounded-full ${s.online ? 'bg-green-500' : 'bg-brand-black/20'}`} />
-            <span className="text-xl">{s.avatar}</span>
-            <span className="font-display font-black uppercase text-sm">
-              {s.name}
-              {match.seat === i && ' · YOU'}
-            </span>
-            {match.turn === i && match.status === 'playing' && (
-              <span className="font-display font-bold text-xs uppercase text-brand-black/60">▶ TURN</span>
+            <span aria-label={s.online ? 'Online' : 'Away'} className={`w-2 h-2 shrink-0 rounded-full ${s.online ? 'bg-green-500' : 'bg-brand-black/20'}`} />
+            <span className="text-lg shrink-0" aria-hidden="true">{s.avatar}</span>
+            <div className="min-w-0 flex-1 font-display uppercase">
+              <div title={s.name} className="font-black text-xs truncate">{s.name}</div>
+              <div className="font-bold text-[10px] text-brand-black/60">
+                {match.seat === i ? 'YOU' : 'CAMPER'}{match.turn === i && !finished && ' · TURN'}
+              </div>
+            </div>
+            {match.turn === i && !finished && match.turnDeadline !== null && (
+              <div className="shrink-0 [&_[role=timer]]:m-0 [&_[role=timer]]:border-0 [&_[role=timer]]:p-0 [&_[role=timer]>p]:sr-only [&_[aria-hidden=true]]:size-8">
+                <TurnCountdown
+                  key={`${roundKey}:${match.turnDeadline}`}
+                  deadline={match.turnDeadline}
+                  serverNow={match.serverNow}
+                  duration={RULES[match.game]?.turnSeconds ?? 30}
+                  label={match.turn === match.seat ? 'Your move' : `${names[match.turn]}'s move`}
+                  round={`${roundKey}:${match.turnDeadline}`}
+                  seat={match.turn}
+                />
+              </div>
             )}
           </div>
         ))}
       </div>
-
-      {match.status === 'playing' && match.turn !== null && match.turnDeadline !== null && (
-        <TurnCountdown
-          key={`${roundKey}:${match.turnDeadline}`}
-          deadline={match.turnDeadline}
-          serverNow={match.serverNow}
-          duration={RULES[match.game]?.turnSeconds ?? 30}
-          label={match.turn === match.seat ? 'Your move' : `${names[match.turn]}'s move`}
-          round={`${roundKey}:${match.turnDeadline}`}
-          seat={match.turn}
-        />
-      )}
 
       {/* The game itself */}
       {match.status === 'playing' && match.view !== null && (

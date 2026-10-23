@@ -68,18 +68,17 @@ export function TriviaOnline({ view, names, act }: OnlineProps<{
   };
 
   return (
-    <div>
-      <div className="p-3 poster-border text-center font-display font-black uppercase mb-3 bg-brand-purple text-brand-cream">SEED {seed} · PLAY</div>
+    <div data-online-board="trivia">
+      <p className="mb-2 text-center font-body text-xs text-brand-black/60">Seed {seed} · Question {Math.min(i + 1, COUNT)}/{COUNT}</p>
       {!allDone && !done && (
-        <div className="p-6 poster-border poster-shadow bg-white text-center">
+        <div className="p-4 poster-border poster-shadow bg-white text-center">
           <div className="font-display font-black text-2xl uppercase mb-2">{q?.q}</div>
           <div className="grid grid-cols-2 gap-2">
             {q?.options?.map((c:string, idx:number)=>(
               <button data-sfx="none" key={idx} onClick={()=>answer(idx)} disabled={chosen !== null} className="p-3 poster-border bg-brand-cream hover:bg-brand-acid">{c}</button>
             ))}
           </div>
-          <div className="mt-3 font-display font-bold">{left}s</div>
-          <div className="mt-2">Score: {score}</div>
+          <div className="mt-3 font-display font-bold">{left}s · Score {score}</div>
         </div>
       )}
       {done && (

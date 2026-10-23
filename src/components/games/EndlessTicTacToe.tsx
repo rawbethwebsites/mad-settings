@@ -125,15 +125,12 @@ function Board({
 }
 
 // Online: seat 0 plays X (always your colour = X on your screen as "you").
-export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch, { cell: number }>) {
+export function TicTacToeOnline({ view, seat, act }: OnlineProps<TttMatch, { cell: number }>) {
   const [err, setErr] = useState('');
   usePlacementSound(view.cells);
   const win = winner(view.cells);
   const yourTurn = seat !== null && !win && view.turn === seat;
   const active: P | null = view.turn === 0 ? 'X' : 'O';
-
-  const me = seat !== null ? names[seat] : null;
-  const opp = seat !== null ? names[seat === 0 ? 1 : 0] : null;
 
   const tap = async (cell: number) => {
     if (!yourTurn || view.cells[cell]) return;
@@ -148,18 +145,10 @@ export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch
 
   return (
     <div>
-      <div className="mb-4 grid grid-cols-2 gap-2 text-center font-display font-black uppercase text-sm">
-        <div className={`p-3 poster-border ${view.turn === seat && !win ? 'bg-brand-acid' : 'bg-white'}`}>
-          {me ?? 'RED'} · <span className="text-brand-coral">X</span>
-        </div>
-        <div className={`p-3 poster-border ${seat !== null && view.turn !== seat && !win ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
-          {opp ?? 'THEM'} · <span className="text-brand-purple">O</span>
-        </div>
-      </div>
-      <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`} aria-live="polite">
-        {win ? 'GAME OVER' : yourTurn ? 'YOUR TURN' : `${opp ?? 'THEY'} IS PLAYING…`}
-      </div>
-      <div data-sfx="none"><TicTacToeBoard
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        You play {seat === 1 ? 'O' : 'X'} · Faded piece disappears next move.
+      </p>
+      <div data-online-board="tictactoe" data-sfx="none"><TicTacToeBoard
         cells={view.cells}
         queue={view.queue}
         active={yourTurn ? active : null}
@@ -167,7 +156,6 @@ export function TicTacToeOnline({ view, seat, names, act }: OnlineProps<TttMatch
         onTap={tap}
         enabled={yourTurn}
       /></div>
-      <p className="font-body text-xs text-center mt-3 text-brand-black/60">Faded piece = disappears on the next move.</p>
       {err && (
         <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">
           {err}

@@ -33,18 +33,19 @@ export function SameOnline({ view, seat, names, act }: OnlineProps<SameView, Sam
   const winner = view?.winner;
 
   return (
-    <div>
-      <div className="p-3 poster-border text-center font-display font-black uppercase mb-4 bg-brand-coral">PROMPT: {prompt}</div>
-      <div className="grid gap-2 mb-4">
+    <div data-online-board="same">
+      <p className="mb-2 text-center font-body text-xs text-brand-black/60">
+        Lives: {' '}
         {names.map((n:string,i:number)=>(
-          <div key={i} className={`p-3 poster-border font-display font-black uppercase ${i===seat?'bg-brand-acid':'bg-white'}`}>
-            {n} · ❤️ {lives[i] ?? 0}
-          </div>
+          <span key={i} title={n} aria-label={`${n}: ${lives[i] ?? 0} lives`}>
+            {i > 0 && ' · '}{i === seat ? 'you' : names.length === 2 ? 'them' : `P${i + 1}`} ❤️ {lives[i] ?? 0}
+          </span>
         ))}
-      </div>
+      </p>
       {!finished && (
-        <div className="p-6 poster-border poster-shadow bg-white text-center">
-          <input value={word} onChange={e=>setWord(e.target.value)} placeholder="Type one word…" className="w-full p-3 border-2 border-black font-body text-lg mb-3" />
+        <div className="p-4 poster-border poster-shadow bg-white text-center">
+          <label htmlFor="same-word" className="block mb-3 font-display font-black uppercase">{prompt}</label>
+          <input id="same-word" value={word} onChange={e=>setWord(e.target.value)} placeholder="Type one word…" className="w-full p-3 border-2 border-black font-body text-lg mb-3" />
           <button data-sfx="none" onClick={send} disabled={busy || !word.trim()} className="w-full py-4 poster-border bg-brand-purple text-brand-cream font-display font-black text-xl uppercase disabled:opacity-50">Submit</button>
           {err && <div className="mt-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">{err}</div>}
           <div className="mt-3 text-sm font-body">

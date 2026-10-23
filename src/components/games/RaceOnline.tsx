@@ -35,25 +35,18 @@ export function RaceOnline({ view, seat, names, act }: OnlineProps<RaceView, Rac
   const myFinished = finished[myIdx] !== null;
 
   return (
-    <div>
-      <div className="p-3 poster-border text-center font-display font-black uppercase mb-3 bg-brand-purple text-brand-cream">SEED {seed}</div>
-      <div className="p-4 poster-border bg-white mb-4 font-display">
-        <div>Play your solo version with this seed.</div>
-        <div className="mt-2 text-sm">When done, enter your score and submit.</div>
-      </div>
-      <div className="grid gap-2 mb-4">
-        {names.map((n:string,i:number)=>(
-          <div key={i} className={`p-3 poster-border font-display font-black ${i===seat?'bg-brand-acid':'bg-white'}`}>
-            {n} · {finished[i] === null ? 'Waiting…' : finished[i] === -1 ? 'Done ✓' : `Score: ${finished[i]}`}
-          </div>
-        ))}
-      </div>
+    <div data-online-board="race">
+      <p className="mb-2 text-center font-body text-xs text-brand-black/60" aria-live="polite">
+        Seed {seed} · {finished.filter(score => score !== null).length}/{names.length} submitted
+      </p>
       {!myFinished && !allDone && (
-        <div className="p-6 poster-border poster-shadow bg-white text-center">
-          <input value={scoreInput} onChange={e=>setScoreInput(e.target.value)} placeholder="Score 0-1000" className="w-full p-3 border-2 border-black font-body text-lg mb-3" />
+        <div className="p-4 poster-border poster-shadow bg-white text-center">
+          <label htmlFor="race-score" className="block mb-3 font-body text-sm">Play your solo version with this seed, then enter your score.</label>
+          <input id="race-score" inputMode="numeric" value={scoreInput} onChange={e=>setScoreInput(e.target.value)} placeholder="Score 0-1000" className="w-full p-3 border-2 border-black font-body text-lg mb-3" />
           <button data-sfx="none" onClick={submit} disabled={!scoreInput || busy} className="w-full py-4 poster-border bg-brand-purple text-brand-cream font-display font-black text-xl uppercase">Submit Score</button>
         </div>
       )}
+      {myFinished && !allDone && <p className="p-4 poster-border bg-white text-center font-body text-sm">Score submitted. Waiting for the other campers.</p>}
       {allDone && (
         <div className="mt-6 p-8 poster-border poster-shadow text-center bg-brand-acid">
           <div className="text-6xl mb-3">🏆</div>

@@ -180,16 +180,13 @@ export default function DotsAndBoxes({ award }: { award: (n: number) => void }) 
 }
 
 // Online: seat 0 owns boxes 1 ("Y"), seat 1 owns boxes 2. Your mark is always Y.
-export function DotsOnline({ view, seat, names, act }: OnlineProps<DotsState, Line>) {
+export function DotsOnline({ view, seat, act }: OnlineProps<DotsState, Line>) {
   useLineSound(view);
   const [err, setErr] = useState('');
   const mine = boxCount(view, 1);
   const theirs = boxCount(view, 2);
   const over = mine + theirs === N * N;
   const yourTurn = seat !== null && !over && view.turn === seat + 1;
-
-  const me = seat !== null ? names[seat] : null;
-  const opp = seat !== null ? names[seat === 0 ? 1 : 0] : null;
 
   // The server view is from seat 0's angle: boxes are 1/2 by seat index.
   // Flip when you are seat 1 so "you" is always the acid Y boxes on screen.
@@ -216,13 +213,10 @@ export function DotsOnline({ view, seat, names, act }: OnlineProps<DotsState, Li
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
-        <div className={`p-3 poster-border ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`}>{me ?? 'YOU'} · {yourBoxes}</div>
-        <div className={`p-3 poster-border ${!yourTurn && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{opp ?? 'THEM'} · {theirBoxes}</div>
-      </div>
-
-      <div data-sfx="none"><DotsBoard s={shown} marks={['Y','T']} enabled={yourTurn} onTap={tap} /></div>
-      <p className="font-body text-xs text-center mt-3 text-brand-black/60">Finish a box to take another turn.</p>
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        Boxes: you {yourBoxes} · them {theirBoxes} · Close a box, play again.
+      </p>
+      <div data-online-board="dots" data-sfx="none"><DotsBoard s={shown} marks={['Y','T']} enabled={yourTurn} onTap={tap} /></div>
 
       {err && (
         <div role="alert" className="mt-3 p-3 poster-border bg-brand-coral font-display font-bold text-sm text-center">

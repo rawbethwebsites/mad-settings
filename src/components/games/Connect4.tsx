@@ -155,7 +155,7 @@ export default function Connect4({ award }: { award: (n: number) => void }) {
   );
 }
 
-export function Connect4Online({ view, seat, names, act }: OnlineProps<C4Match, { col: number }>) {
+export function Connect4Online({ view, seat, act }: OnlineProps<C4Match, { col: number }>) {
   useDropSound(view.board);
   const win = findWin(view.board);
   const full = view.board[0].every(v => v !== 0);
@@ -173,27 +173,12 @@ export function Connect4Online({ view, seat, names, act }: OnlineProps<C4Match, 
     }
   };
 
-  const me = seat !== null ? names[seat] : null;
-  const opp = seat !== null ? names[seat === 0 ? 1 : 0] : null;
-
   return (
     <div>
-      <div className={`mb-4 p-3 poster-border text-center font-display font-black uppercase ${yourTurn ? 'bg-brand-acid' : 'bg-white'}`} aria-live="polite">
-        {over ? 'GAME OVER' : yourTurn ? 'YOUR TURN · DROP A DISC' : `${opp ?? 'THEY'} IS PLAYING…`}
-      </div>
-
-      <div data-sfx="none"><Connect4Board3D board={view.board} winCells={win?.cells ?? []} enabled={yourTurn} onDrop={tapCol} /></div>
-
-      <div className="flex justify-between mt-3 font-display font-bold text-xs uppercase">
-        <span>
-          <span className={`inline-block w-3 h-3 rounded-full mr-1 align-middle ${youIs === 1 ? 'bg-brand-coral' : 'bg-brand-purple'}`} />
-          {me ? `${me} · YOU` : 'YOU'}
-        </span>
-        <span>
-          <span className={`inline-block w-3 h-3 rounded-full mr-1 align-middle ${youIs === 1 ? 'bg-brand-purple' : 'bg-brand-coral'}`} />
-          {opp ?? 'THEM'}
-        </span>
-      </div>
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        You play {youIs === 1 ? 'coral' : 'purple'} · Tap a column to drop a disc.
+      </p>
+      <div data-online-board="connect4" data-sfx="none"><Connect4Board3D board={view.board} winCells={win?.cells ?? []} enabled={yourTurn} onDrop={tapCol} /></div>
     </div>
   );
 }

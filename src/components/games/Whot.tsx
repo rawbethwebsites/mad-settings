@@ -201,7 +201,9 @@ export function WhotOnline({ view, seat, names, act }: OnlineProps<WhotView, Who
     void send({ type: 'play', idx: i, shape });
   };
 
-  return <WhotTable view={view} seat={seat} names={names} busy={busy} error={err} picking={picking}
-    onPlay={tap} onDraw={() => { if (myTurn && !busy && picking === null) void send({ type: 'draw' }); }}
-    onChoose={chooseShape} onCancel={() => setPicking(null)} />;
+  return <div data-online-board="whot" className="[&_.card-table-kicker]:hidden! [&_.card-opponent-name]:hidden! [&_.card-opponent]:border-0! [&_.card-opponent]:bg-transparent! [&_.card-opponent]:p-0! [&_.card-opponents]:mb-2! [&_.card-hand-heading_strong]:hidden! [&_.card-hand-heading]:justify-end! [&_.card-hand-tip]:hidden! [&_.card-log]:min-h-0! [&_.card-log]:my-2!">
+    <WhotTable view={view} seat={seat} names={names} busy={busy} error={err} picking={picking}
+      onPlay={tap} onDraw={() => { if (myTurn && !busy && picking === null) void send({ type: 'draw' }); }}
+      onChoose={chooseShape} onCancel={() => setPicking(null)} />
+  </div>;
 }

@@ -134,7 +134,7 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   );
 }
 
-export function AyoOnline({ view, seat, names, act }: {
+export function AyoOnline({ view, seat, act }: {
   view: State;
   seat: number | null;
   names: string[];
@@ -149,13 +149,9 @@ export function AyoOnline({ view, seat, names, act }: {
   const turn = s.turn;
   const yourTurn = seat !== null && !over && turn === seat;
   const movable = yourTurn && seat !== null ? legalMoves(s, seat as 0 | 1) : [];
-  const watching = seat === null;
-
   const top = mine === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
 
-  const yourName = seat !== null ? (names[seat] ?? `Seat ${seat + 1}`) : 'You';
   const otherSeat = seat === null ? 1 : seat === 0 ? 1 : 0;
-  const otherName = names[otherSeat] ?? `Seat ${otherSeat + 1}`;
 
   const tap = async (pit: number) => {
     setErr('');
@@ -185,12 +181,10 @@ export function AyoOnline({ view, seat, names, act }: {
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-4 text-center font-display font-black uppercase">
-        <div className={`p-3 poster-border ${!over && turn === mine ? 'bg-brand-acid' : 'bg-white'}`}>{yourName} · {s.store[mine]}</div>
-        <div className={`p-3 poster-border ${!over && turn === otherSeat ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{otherName} · {s.store[otherSeat]}</div>
-      </div>
-
-      <div data-sfx="none" className="p-3 poster-border poster-shadow bg-amber-200">
+      <p className="mb-2 font-body text-xs text-center text-brand-black/60">
+        Seeds: you {s.store[mine]} · them {s.store[otherSeat]} · First to {WIN_AT}.
+      </p>
+      <div data-online-board="ayo" data-sfx="none" className="p-3 poster-border poster-shadow bg-amber-200">
         <Suspense fallback={<div className="grid grid-cols-6 gap-2">{top.map(i => pit(i, false))}</div>}>
           <AyoBoard3D
             pits={s.pits}
@@ -203,22 +197,9 @@ export function AyoOnline({ view, seat, names, act }: {
         </Suspense>
       </div>
 
-      <p className="font-body text-sm text-center mt-3 min-h-5">
-        {over
-          ? ''
-          : s.note ||
-            (watching
-              ? 'Watching the room…'
-              : yourTurn
-                ? 'Your turn — pick one of your pits (bottom row).'
-                : 'Waiting for the other player…')}
-      </p>
       {err !== '' && !over && (
         <p className="font-body text-sm text-center text-brand-purple mt-1">{err}</p>
       )}
-      <p className="font-body text-xs text-center text-brand-black/60">
-        Seeds go round counter-clockwise. Land your last seed in a pit that makes 2 or 3 and you capture it. First to {WIN_AT} wins.
-      </p>
     </div>
   );
 }
