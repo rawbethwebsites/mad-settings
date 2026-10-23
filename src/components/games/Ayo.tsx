@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
@@ -16,7 +16,30 @@ import {
 
 import dynamic from 'next/dynamic';
 
-const AyoBoard3D = dynamic(() => import('./ayo3d/AyoBoard3D'), { ssr: false });
+const LoadingBoardContext = createContext({ pits: Array<number>(12).fill(4), store: [0, 0] as [number, number], seat: 0 });
+
+function AyoLoading() {
+  const { pits, store, seat } = useContext(LoadingBoardContext);
+  const top = seat === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
+  const bottom = seat === 0 ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10, 11];
+  return <div role="status" aria-label="Loading Ayo board" style={{ position: 'relative', aspectRatio: '8.15 / 4.95', display: 'grid', alignContent: 'center', gap: 12, padding: '6% 8%', background: 'repeating-linear-gradient(2deg,#ad713f44 0 1px,transparent 1px 7px),linear-gradient(130deg,#e6ba7e,#b27a43)' }}>
+    {[top, bottom].map((row, r) => <div key={r} style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
+      {row.map(i => <span key={i} style={{ position: 'relative', borderRadius: '50%', background: '#82502c', boxShadow: 'inset 0 3px 5px #321a16aa', textAlign: 'center', color: '#fff1d5', padding: '6px 0', fontWeight: 800 }}>
+        <span aria-hidden="true" style={{ display: 'block', height: 8, fontSize: 8, lineHeight: '8px', letterSpacing: -1, color: '#f6d8a5', overflow: 'hidden' }}>{'●'.repeat(Math.min(pits[i], 6))}</span>
+        {pits[i]}
+      </span>)}
+    </div>)}
+    {[1 - seat, seat].map((owner, side) => <span key={side} style={{ position: 'absolute', top: '28%', bottom: '28%', [side === 0 ? 'left' : 'right']: '1%', width: '6%', display: 'grid', placeItems: 'center', borderRadius: '50%', background: '#82502c', color: '#fff1d5', fontWeight: 800 }}>{store[owner]}</span>)}
+  </div>;
+}
+
+const LoadedAyoBoard = dynamic(() => import('./ayo3d/AyoBoard3D'), { ssr: false, loading: AyoLoading });
+
+function AyoBoard3D(props: ComponentProps<typeof LoadedAyoBoard>) {
+  return <LoadingBoardContext.Provider value={{ pits: props.pits, store: props.store, seat: props.seat ?? 0 }}>
+    <LoadedAyoBoard {...props} />
+  </LoadingBoardContext.Provider>;
+}
 
 function useSowSound(s: State) {
   const collected = s.store[0] + s.store[1];
@@ -35,7 +58,6 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   const [s, setS] = useState<State>(() => fresh(['You', 'Computer']));
   useSowSound(s);
   const [points, setPoints] = useState(0);
-  const [webglOk] = useState(true);
 
   const over = finished(s);
   const verdict = s.store[0] === s.store[1] ? 'draw' : s.store[0] > s.store[1] ? 'win' : 'lose';
@@ -67,23 +89,7 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
   }, [s, over]);
 
   const reset = () => { setS(fresh(['You', 'Computer'])); setPoints(0); };
-  const top = [11, 10, 9, 8, 7, 6];
-  const bottom = [0, 1, 2, 3, 4, 5];
   const movable = s.turn === 0 && !over ? legalMoves(s, 0) : [];
-
-  const pit = (i: number, mine: boolean) => (
-    <button
-      key={i}
-      onClick={() => tap(i)}
-      disabled={!mine}
-      aria-label={`Pit ${i + 1}, ${s.pits[i]} seeds${mine ? '' : ', computer'}`}
-      className={`aspect-square rounded-full border-4 border-brand-black flex items-center justify-center font-display font-black text-xl md:text-2xl ${
-        s.last === i ? 'ring-4 ring-brand-purple' : ''
-      } ${mine ? (movable.includes(i) ? 'bg-brand-acid hover:-translate-y-1 transition-transform' : 'bg-brand-acid/40') : 'bg-brand-purple/30'}`}
-    >
-      {s.pits[i]}
-    </button>
-  );
 
   return (
     <div>
@@ -92,24 +98,15 @@ export default function Ayo({ award }: { award: (n: number) => void }) {
         <div className={`p-3 poster-border ${s.turn === 1 && !over ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>{s.names[1]} · {s.store[1]}</div>
       </div>
 
-      <div data-sfx="none" className="p-3 poster-border poster-shadow bg-amber-200">
-        <Suspense fallback={<div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>}>
-          {webglOk ? (
-            <AyoBoard3D
-              pits={s.pits}
-              store={s.store}
-              turn={s.turn}
-              seat={0}
-              legalMoves={movable}
-              onPitSelect={tap}
-            />
-          ) : (
-            <>
-              <div className="grid grid-cols-6 gap-2 mb-2">{top.map(i => pit(i, false))}</div>
-              <div className="grid grid-cols-6 gap-2">{bottom.map(i => pit(i, true))}</div>
-            </>
-          )}
-        </Suspense>
+      <div data-sfx="none" className="poster-border poster-shadow bg-amber-200">
+        <AyoBoard3D
+          pits={s.pits}
+          store={s.store}
+          turn={s.turn}
+          seat={0}
+          legalMoves={movable}
+          onPitSelect={tap}
+        />
       </div>
 
       <p className="font-body text-sm text-center mt-3 min-h-5">
@@ -149,7 +146,6 @@ export function AyoOnline({ view, seat, act }: {
   const turn = s.turn;
   const yourTurn = seat !== null && !over && turn === seat;
   const movable = yourTurn && seat !== null ? legalMoves(s, seat as 0 | 1) : [];
-  const top = mine === 0 ? [11, 10, 9, 8, 7, 6] : [5, 4, 3, 2, 1, 0];
 
   const otherSeat = seat === null ? 1 : seat === 0 ? 1 : 0;
 
@@ -165,36 +161,20 @@ export function AyoOnline({ view, seat, act }: {
     }
   };
 
-  const pit = (i: number, myPit: boolean) => (
-    <button
-      key={i}
-      onClick={() => { if (myPit && yourTurn && movable.includes(i)) void tap(i); }}
-      disabled={!myPit || !movable.includes(i)}
-      aria-label={`Pit ${i + 1}, ${s.pits[i]} seeds${myPit ? '' : ', opponent'}`}
-      className={`aspect-square rounded-full border-4 border-brand-black flex items-center justify-center font-display font-black text-xl md:text-2xl ${
-        s.last === i ? 'ring-4 ring-brand-purple' : ''
-      } ${myPit ? (movable.includes(i) ? 'bg-brand-acid hover:-translate-y-1 transition-transform' : 'bg-brand-acid/40') : 'bg-brand-purple/30'}`}
-    >
-      {s.pits[i]}
-    </button>
-  );
-
   return (
     <div>
       <p className="mb-2 font-body text-xs text-center text-brand-black/60">
         Seeds: you {s.store[mine]} · them {s.store[otherSeat]} · First to {WIN_AT}.
       </p>
-      <div data-online-board="ayo" data-sfx="none" className="p-3 poster-border poster-shadow bg-amber-200">
-        <Suspense fallback={<div className="grid grid-cols-6 gap-2">{top.map(i => pit(i, false))}</div>}>
-          <AyoBoard3D
-            pits={s.pits}
-            store={s.store}
-            turn={s.turn}
-            seat={mine}
-            legalMoves={movable}
-            onPitSelect={(pit) => void tap(pit)}
-          />
-        </Suspense>
+      <div data-online-board="ayo" data-sfx="none" className="poster-border poster-shadow bg-amber-200">
+        <AyoBoard3D
+          pits={s.pits}
+          store={s.store}
+          turn={s.turn}
+          seat={seat}
+          legalMoves={movable}
+          onPitSelect={(pit) => void tap(pit)}
+        />
       </div>
 
       {err !== '' && !over && (

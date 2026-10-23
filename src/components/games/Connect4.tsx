@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ComponentProps } from 'react';
 import { play as playSound } from '@/lib/sfx';
 import { Btn, Result } from '@/components/arcade/ui';
 import {
@@ -9,7 +9,30 @@ import {
 } from '@/lib/rules/connect4';
 import type { OnlineProps } from '@/lib/rules/types';
 
-const Connect4Board3D = dynamic(() => import('./connect4-3d/Connect4Board3D'), { ssr: false });
+const LoadingBoardContext = createContext<Board>(emptyBoard());
+
+function Connect4Loading() {
+  const board = useContext(LoadingBoardContext);
+  return <div role="status" aria-label="Loading Connect four board" style={{ position: 'relative', width: '100%', aspectRatio: '7.65 / 7.3', borderRadius: 16, background: '#171c30', padding: '9.2% 3.5%' }}>
+    <div aria-hidden="true" style={{ height: '100%', display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridTemplateRows: 'repeat(6,1fr)', padding: '1%', borderRadius: 10, background: 'linear-gradient(135deg,#4394ff,#1464ed 42%,#104fbe)', boxShadow: '0 7px 0 #093c9f,0 16px 26px #0006' }}>
+      {board.flatMap((row, r) => row.map((cell, c) => <div key={`${r}-${c}`} style={{ display: 'grid', placeItems: 'center' }}>
+        <span style={{ display: 'block', width: '86%', aspectRatio: '1', borderRadius: '50%', background: cell === 1 ? '#FB7185' : cell === 2 ? '#6D28D9' : '#171c30', border: '2px solid #0950bf', boxShadow: cell ? 'inset 0 2px 3px #ffffff70,inset 0 -3px 3px #0004' : 'inset 0 3px 6px #0009' }} />
+      </div>))}
+    </div>
+    <span style={{ position: 'absolute', bottom: '1%', left: 0, right: 0, textAlign: 'center', fontSize: 11, color: '#fff' }}>SETTING UP THE BOARD…</span>
+  </div>;
+}
+
+const LoadedConnect4Board = dynamic(() => import('./connect4-3d/Connect4Board3D'), {
+  ssr: false,
+  loading: Connect4Loading,
+});
+
+function Connect4Board3D(props: ComponentProps<typeof LoadedConnect4Board>) {
+  return <LoadingBoardContext.Provider value={props.board}>
+    <LoadedConnect4Board {...props} />
+  </LoadingBoardContext.Provider>;
+}
 
 function useDropSound(board: Board) {
   const discs = board.flat().filter(Boolean).length;

@@ -1,13 +1,23 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
-import { useReducedMotion } from './useReducedMotion';
+import { Component, useEffect, useState, type ReactNode } from 'react';
+import { Canvas, type CanvasProps } from '@react-three/fiber';
 
 interface GameCanvasProps {
   children: React.ReactNode;
   className?: string;
   fallback?: React.ReactNode;
   onWebGLSupport?: (supported: boolean) => void;
+  camera?: CanvasProps['camera'];
+  orthographic?: boolean;
+  background?: string;
+}
+
+// Keep the playable DOM board when a driver cannot create (or loses) a context.
+class CanvasBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
 export function GameCanvas({
@@ -15,51 +25,45 @@ export function GameCanvas({
   className = '',
   fallback = null,
   onWebGLSupport,
+  camera = { position: [0, 0, 10], fov: 50, near: 0.1, far: 100 },
+  orthographic = false,
+  background = '#201b24',
 }: GameCanvasProps) {
-  const reduced = useReducedMotion();
-  const getWebGLSupport = () => {
-    if (typeof window === 'undefined') return true;
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-    return !!gl;
-  };
-  const supported = getWebGLSupport();
-  onWebGLSupport?.(supported);
-
-  if (!supported || reduced) {
-    return <div className={className} aria-hidden="true">{fallback}</div>;
-  }
-
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const [supported, setSupported] = useState<boolean | null>(null);
+  useEffect(() => {
+    let available = false;
+    try {
+      const probe = document.createElement('canvas');
+      const gl = probe.getContext('webgl2');
+      available = !!gl;
+      gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch { /* The fallback is also used when WebGL is blocked by policy. */ }
+    const timer = window.setTimeout(() => setSupported(available), 0);
+    onWebGLSupport?.(available);
+    return () => window.clearTimeout(timer);
+  }, [onWebGLSupport]);
 
   return (
-    <div className={className} aria-hidden="true" style={{ width: '100%', height: '100%' }}>
+    <div className={className} aria-hidden="true" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 'inherit', pointerEvents: 'none' }}>
+      {supported === true ? <CanvasBoundary fallback={fallback}>
       <Canvas
-        dpr={isMobile ? 1 : [1, 1.5]}
-        gl={{ antialias: !isMobile, alpha: false, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 0, 10], fov: 50, near: 0.1, far: 100 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        camera={camera}
+        orthographic={orthographic}
+        fallback={fallback}
         onCreated={({ gl }) => {
-          gl.setClearColor('#1a1210', 1);
+          gl.setClearColor(background, 1);
+          gl.domElement.addEventListener('webglcontextlost', () => setSupported(false), { once: true });
         }}
       >
-        <ambientLight intensity={0.3} color="#ffb380" />
-        <directionalLight
-          position={[2, 5, 3]}
-          intensity={1.2}
-          color="#ff8844"
-          castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
-          shadow-camera-near={0.1}
-          shadow-camera-far={20}
-          shadow-camera-left={-8}
-          shadow-camera-right={8}
-          shadow-camera-top={8}
-          shadow-camera-bottom={-8}
-        />
-        <pointLight position={[0, 2, 2]} intensity={0.8} color="#ffaa66" />
+        <ambientLight intensity={1.05} color="#fff4e8" />
+        <hemisphereLight intensity={1.4} color="#e5edff" groundColor="#9c6344" />
+        <directionalLight position={[-3, 5, 6]} intensity={2.3} color="#ffc48e" />
+        <directionalLight position={[4, 2, 5]} intensity={1.5} color="#dbe7ff" />
         {children}
       </Canvas>
+      </CanvasBoundary> : fallback}
     </div>
   );
 }

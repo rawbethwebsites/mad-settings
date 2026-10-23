@@ -2,7 +2,7 @@ import { v, ConvexError } from 'convex/values';
 import { query, mutation, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
 import { connectMode, connectVisibility, CONNECT_PROMPTS, CONNECT_TAGS, CONNECT_STICKERS, CONNECT_REACTIONS, PHOTO_TTL } from './connectConstants';
-import { own, requireProfile, publicProfile, nameKey, active, ready, blocked, usage, bump, matched, allMatches, requireMatch, matchView, paused, commonRoom, mayViewPhotos, photoModerator, audit } from './connectLib';
+import { own, requireProfile, publicProfile, nameKey, active, blocked, usage, bump, matched, allMatches, requireMatch, matchView, paused, commonRoom, mayViewPhotos, photoModerator, audit } from './connectLib';
 import { cleanId } from './roomLib';
 import { cleanText, earlyContact } from './connectWords';
 
@@ -30,8 +30,10 @@ export const saveProfile = mutation({ args: { ...identity, campName: v.string(),
   if (age < 18 || age > 120) throw new ConvexError('MAD SETTINGS is 18+ only. You must be at least 18 to join.');
   if (p && p.dob !== args.dob) throw new ConvexError('Your date of birth cannot be changed. Ask a Ranger for help.');
   if (args.modes.length < 1 || args.modes.length > 2 || new Set(args.modes).size !== args.modes.length) throw new ConvexError('Choose Campfire, Squad, or both.');
-  if (args.prompts.length !== 2 || new Set(args.prompts.map(p => p.question)).size !== 2 || args.prompts.some(p => !Number.isInteger(p.question) || p.question < 0 || p.question >= CONNECT_PROMPTS.length)) throw new ConvexError('Answer two different Campfire prompts.');
-  const prompts = args.prompts.map(p => ({ question: p.question, answer: cleanText(p.answer, 120) }));
+  // Prompts are optional: 0, 1 or 2 answers, each to a different question; blank answers are dropped
+  const given = args.prompts.filter(p => p.answer.trim());
+  if (given.length > 2 || new Set(given.map(p => p.question)).size !== given.length || given.some(p => !Number.isInteger(p.question) || p.question < 0 || p.question >= CONNECT_PROMPTS.length)) throw new ConvexError('Pick up to two different questions.');
+  const prompts = given.map(p => ({ question: p.question, answer: cleanText(p.answer, 120) }));
   if (args.tags.length > 5 || new Set(args.tags).size !== args.tags.length || args.tags.some(t => !(CONNECT_TAGS as readonly string[]).includes(t))) throw new ConvexError('Choose up to five vibe tags from the list.');
   const socials = { instagram: args.socials.instagram?.trim(), discord: args.socials.discord?.trim() };
   if ((socials.instagram && !/^@?[\w.]{1,30}$/.test(socials.instagram)) || (socials.discord && !/^[\w.#-]{2,40}$/.test(socials.discord))) throw new ConvexError('Use your Instagram or Discord handle, not a link.');
@@ -88,7 +90,7 @@ export const photoUrls = mutation({ args: { ...identity, profileId: v.id('connec
 export const deck = query({ args: { ...identity, mode: connectMode }, handler: async (ctx, { playerId, mode }) => {
   const p = await own(ctx.db, playerId);
   const u = await usage(ctx.db, playerId);
-  const limits = { logsLeft: 100 - (u?.logs ?? 0), marshmallowsLeft: 3 - (u?.marshmallows ?? 0), backtracksLeft: 3 - (u?.backtracks ?? 0), canLog: !!p && active(p) && p.verified && ready(p) && p.visibility !== 'paused' && p.modes.includes(mode) };
+  const limits = { logsLeft: 100 - (u?.logs ?? 0), marshmallowsLeft: 3 - (u?.marshmallows ?? 0), backtracksLeft: 3 - (u?.backtracks ?? 0), canLog: !!p && active(p) && p.visibility !== 'paused' && p.modes.includes(mode) };
   if (!p || !active(p) || p.visibility === 'paused') return { cards: [], ...limits };
   // Only show a deck for modes you have switched on in your profile
   if (!p.modes.includes(mode)) return { cards: [], modeOff: true, ...limits };
@@ -97,7 +99,7 @@ export const deck = query({ args: { ...identity, mode: connectMode }, handler: a
   const candidates = await ctx.db.query('connectProfiles').take(1000);
   const cards = [];
   for (const peer of candidates) {
-    if (peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || !peer.modes.includes(mode) || !ready(peer) || seen.has(peer._id) || await blocked(ctx.db, p._id, peer._id)) continue;
+    if (peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || !peer.modes.includes(mode) || seen.has(peer._id) || await blocked(ctx.db, p._id, peer._id)) continue;
     if (await matched(ctx.db, p._id, peer._id, mode)) continue;
     const marshmallow = await ctx.db.query('connectSwipes').withIndex('by_pair', q => q.eq('from', peer._id).eq('to', p._id).eq('mode', mode)).filter(q => q.and(q.eq(q.field('undone'), false), q.eq(q.field('kind'), 'marshmallow'))).first();
     cards.push({ ...publicProfile(peer), sameRoom: !!await commonRoom(ctx.db, playerId, peer.playerId), marshmallow: !!marshmallow });
@@ -110,8 +112,7 @@ export const swipe = mutation({ args: { ...identity, target: v.id('connectProfil
   const peer = await ctx.db.get(target);
   if (p.visibility === 'paused') throw new ConvexError('Your profile is paused. Unpause it in My camp to swipe.');
   if (!p.modes.includes(mode)) throw new ConvexError(`Turn on ${mode === 'squad' ? 'Squad' : 'Campfire'} in My camp to swipe here.`);
-  if (!peer || peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || !peer.modes.includes(mode) || !ready(peer) || await blocked(ctx.db, p._id, target)) throw new ConvexError('That camper has left this Trail.');
-  if (kind !== 'pass' && (!p.verified || !ready(p))) throw new ConvexError('A Ranger must verify you and approve a photo before you can pull up a Log.');
+  if (!peer || peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || !peer.modes.includes(mode) || await blocked(ctx.db, p._id, target)) throw new ConvexError('That camper has left this Trail.');
   const previous = await ctx.db.query('connectSwipes').withIndex('by_pair', q => q.eq('from', p._id).eq('to', target).eq('mode', mode)).collect();
   if (previous.some(s => !s.undone)) throw new ConvexError('You already visited this camper. Use Backtrack first.');
   if (kind !== 'pass') await bump(ctx.db, playerId, 'logs');

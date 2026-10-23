@@ -79,8 +79,9 @@ export default function GamesHub() {
             </div>
           </div>
 
-          {/* Individual scores */}
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-6">
+          {/* Individual scores stay available without crowding the game picker. */}
+          <details className="mt-4"><summary className="min-h-11 flex items-center cursor-pointer font-display font-bold">＋ Your scores</summary>
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-2">
             {GAMES.map(g => (
               <div key={g.id} className="text-center p-2 border-2 border-brand-cream/20">
                 <div className="text-lg">{g.emoji}</div>
@@ -88,6 +89,8 @@ export default function GamesHub() {
               </div>
             ))}
           </div>
+
+          </details>
 
           {/* Vault pieces */}
           {player.vaultPieces.length > 0 && (
@@ -121,9 +124,9 @@ export default function GamesHub() {
           )}
         </div>
 
-        <button onClick={() => router.push('/connect')} className="w-full mb-8 p-6 poster-border poster-shadow bg-brand-black text-brand-cream text-left">
-          <span className="font-display font-black text-2xl uppercase block">Campfire Connect</span>
-          <span className="block mt-2">Friends, teammates and a seat around the fire. Walk the Trail →</span>
+        <h1 className="font-display font-black text-4xl uppercase italic mb-4">Pick a game</h1>
+        <button onClick={() => router.push('/games/tictactoe')} className="w-full min-h-14 mb-6 p-5 poster-border poster-shadow bg-brand-purple text-brand-cream font-display font-black text-xl">
+          ▶ Play now · Tic tac toe
         </button>
 
         {/* Game Cards */}
@@ -135,15 +138,15 @@ export default function GamesHub() {
                 <button
                   key={g.id}
                   onClick={() => router.push(g.path)}
-                  className={`group relative p-8 poster-border poster-shadow ${g.color} text-left hover:-translate-y-2 hover:-translate-x-2 transition-all overflow-hidden`}
+                  className={`group relative min-h-11 p-5 poster-border ${g.color} text-left hover:-translate-y-2 hover:-translate-x-2 transition-all overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 text-7xl opacity-20 group-hover:opacity-30 transition-opacity">
                     {g.emoji}
                   </div>
                   <div className="relative z-10">
-                    <div className="text-5xl mb-4">{g.emoji}</div>
-                    <h3 className="font-display font-black text-3xl uppercase italic mb-1">{g.name}</h3>
-                    <p className="font-body text-lg opacity-80">{g.tagline}</p>
+                    <div className="text-4xl mb-3" aria-hidden="true">{g.emoji}</div>
+                    <h3 className="font-display font-black text-2xl uppercase italic mb-1">{g.name}</h3>
+
                     <div className="mt-4 inline-block px-4 py-2 bg-brand-cream text-brand-black font-display font-bold text-xs uppercase tracking-widest group-hover:bg-brand-acid transition-colors">
                       PLAY →
                     </div>
@@ -154,12 +157,15 @@ export default function GamesHub() {
           </section>
         ))}
 
+        <button onClick={() => router.push('/connect')} className="w-full min-h-11 mb-4 p-3 poster-border bg-white font-display font-bold">
+          🏕 Meet campers →
+        </button>
         {/* Leave button */}
         <button
           onClick={handleLeave}
-          className="w-full py-3 border-4 border-brand-black font-display font-bold uppercase text-sm tracking-widest hover:bg-brand-black hover:text-brand-cream transition-colors"
+          className="w-full min-h-11 py-3 border-4 border-brand-black font-display font-bold uppercase text-sm tracking-widest hover:bg-brand-black hover:text-brand-cream transition-colors"
         >
-          LEAVE GAME
+          ← Leave games
         </button>
       </div>
     </main>
