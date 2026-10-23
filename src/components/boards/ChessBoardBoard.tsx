@@ -77,7 +77,7 @@ export default function ChessBoardBoard({
       style={{ perspective: '1200px', transformStyle: 'preserve-3d' } as React.CSSProperties}
     >
       <div
-        className="relative grid grid-cols-8 w-full aspect-square border-[12px] border-amber-950 poster-shadow bg-[radial-gradient(ellipse_at_center,_#7a4a1f_0%,_#4b2e16_100%)] rounded-[6px] shadow-[inset_0_0_40px_rgba(0,0,0,0.5),_10px_10px_0_0_#0A0A0A] [transform:rotateX(10deg)]"
+        className="relative grid grid-cols-8 grid-rows-8 w-full aspect-square border-[12px] border-amber-950 poster-shadow bg-[radial-gradient(ellipse_at_center,_#7a4a1f_0%,_#4b2e16_100%)] rounded-[6px] shadow-[inset_0_0_40px_rgba(0,0,0,0.5),_10px_10px_0_0_#0A0A0A] [transform:rotateX(10deg)]"
         role="grid"
         aria-label="Chess board"
         style={{
@@ -121,7 +121,7 @@ export default function ChessBoardBoard({
                 key={sq}
                 onClick={() => onSquare(sq)}
                 aria-label={`${sq}${cell ? ` ${CAMP_PIECES[cell.type].name} (${SIDES[cell.color].name})` : ' empty'}${move ? ', legal move' : ''}`}
-                className={`relative flex items-center justify-center ${bg} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-purple focus-visible:z-10`}
+                className={`relative min-h-0 min-w-0 flex items-center justify-center ${bg} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-purple focus-visible:z-10`}
                 style={{ transformStyle: 'preserve-3d' }}
               >
                 {c === order[0] && (

@@ -26,7 +26,7 @@ export function TicTacToeBoard({
     <div className="relative aspect-square w-full rounded-[8px] border-[12px] border-stone-800 bg-[radial-gradient(ellipse_at_center,_#2e2a25_0%,_#1a1612_100%)] shadow-[inset_0_0_40px_rgba(0,0,0,0.7),_6px_6px_0_0_#0A0A0A] p-3">
       {/* slate texture */}
       <div className="absolute inset-3 rounded-[6px] bg-[linear-gradient(105deg,_#3b3630_0%,_#2c2722_100%)] opacity-90 pointer-events-none" />
-      <div className="grid grid-cols-3 gap-[10px] h-full">
+      <div className="grid grid-cols-3 grid-rows-3 gap-[10px] h-full">
         {cells.map((v,i)=>{
           const isWin = !!win && win.line.includes(i);
           const isFading = fading(i);
@@ -37,7 +37,7 @@ export function TicTacToeBoard({
               onClick={()=>{onTap(i);}}
               disabled={!enabled || !isEmpty}
               aria-label={`Square ${i+1}${v?` ${v}`:''}`}
-              className={`relative flex items-center justify-center text-[clamp(40px,12vw,96px)] font-display font-black select-none [text-shadow:3px_3px_0_#0A0A0A] transition-transform duration-300 ${enabled && isEmpty ? 'hover:scale-[1.02] active:scale-[0.98]' : ''} ${isWin ? 'animate-pulse' : ''}`}
+              className={`relative min-h-0 min-w-0 overflow-hidden leading-none flex items-center justify-center text-[clamp(40px,12vw,96px)] font-display font-black select-none [text-shadow:3px_3px_0_#0A0A0A] ${enabled && isEmpty ? 'hover:brightness-125' : ''} ${isWin ? 'animate-pulse' : ''}`}
             >
               {/* cell background */}
               <div className={`absolute inset-0 rounded-[6px] border-[4px] border-stone-700 bg-[linear-gradient(180deg,_#4a453f_0%,_#2f2a25_100%)] ${isWin ? 'bg-brand-acid/30' : ''}`} />
