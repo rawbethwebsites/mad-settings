@@ -101,7 +101,7 @@ export default function KaraokeScene() {
       <div className="music-note absolute top-[40%] left-[60%] text-3xl text-brand-purple/20">♪</div>
 
       {/* Letters */}
-      <div className="relative z-10 font-display font-black text-6xl md:text-8xl uppercase italic leading-none flex justify-center flex-wrap gap-1">
+      <div className="relative z-10 font-display font-black text-[9vw] md:text-8xl uppercase italic leading-none flex justify-center flex-nowrap gap-1">
         {letters.map((letter, i) => (
           <span key={i} className="karaoke-letter inline-block">
             {letter === ' ' ? '\u00A0' : letter}

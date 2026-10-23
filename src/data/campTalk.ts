@@ -15,7 +15,7 @@ export const TALK_TAGS: Record<TalkTag, string> = {
 export const TALK_LINES: Record<TalkTag, TalkLine[]> = {
   mad: [
     { tag: "mad", text: "Games kick off at 8:30. Your phone is the controller.", cta: { label: "Join the games", href: "/join" } },
-    { tag: "mad", text: "Strangers at 4:30. Crew by midnight." },
+    { tag: "mad", text: "Strangers at noon. Crew by midnight." },
     { tag: "mad", text: "Karaoke at 10:30. Pick your song now." },
     { tag: "mad", text: "Bonfire lights at midnight. Bring your best story." },
     { tag: "mad", text: "Scan. Join. Play. The Vault code drops all night.", cta: { label: "Enter game room", href: "/join" } },

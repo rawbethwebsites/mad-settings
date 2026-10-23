@@ -14,6 +14,8 @@ export const walletTables = {
     email: v.optional(v.string()),
     stay: v.optional(v.string()),
     guests: v.optional(v.number()),
+    ticket: v.optional(v.string()), // ticket name, e.g. Couples tent
+    ticketTotal: v.optional(v.number()), // what the camp fee should be
     passwordHash: v.string(),
     salt: v.string(),
     // The same secret id the rest of the site uses for this camper (rooms, chess, Connect)

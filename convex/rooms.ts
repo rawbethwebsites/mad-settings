@@ -17,7 +17,7 @@ import { forfeitAll } from "./matches";
 // Games that score on one phone (solo games, and any game vs the computer); the browser sends the points
 const SOLO_GAMES = new Set([
   "minesweeper", "tenten", "chopchop", "puzzles", "search", "vault", "same", "chess", "bingo", "trivia",
-  "tictactoe", "connect4", "dots", "ayo", "whot", "ocho",
+  "tictactoe", "connect4", "dots", "ayo", "whot", "ocho", "ludo",
 ]);
 const MAX_SOLO_POINTS = 300;
 

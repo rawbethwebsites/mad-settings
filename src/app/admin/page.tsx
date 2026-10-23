@@ -82,6 +82,11 @@ function Payments({ data, me, run }: TabProps) {
                 <div>
                   <div className="font-display font-black uppercase">{p.camper?.name ?? 'Unknown'} · {p.kind === 'registration' ? 'Camp fee' : 'Wallet top-up'}</div>
                   <div className="font-body text-sm">{p.camper?.phone} · sent {new Date(p.createdAt).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                  {p.kind === 'registration' && p.camper?.ticket && (
+                    <div className={`font-body text-sm mt-1 px-2 py-1 inline-block ${p.camper.ticketTotal === p.amount ? 'bg-brand-acid' : 'bg-brand-coral'}`}>
+                      Ticket: {p.camper.ticket} · should be {naira(p.camper.ticketTotal ?? 0)}{p.camper.ticketTotal === p.amount ? ' ✓' : ' — check!'}
+                    </div>
+                  )}
                 </div>
                 <div className="font-display font-black text-2xl">{naira(p.amount)}</div>
               </div>

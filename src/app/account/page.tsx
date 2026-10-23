@@ -9,6 +9,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { camperId } from '@/lib/camper';
 import { logOutOfThisPhone, naira, serverMessage, signInOnThisPhone, uploadReceipt } from '@/lib/account';
 import { Btn } from '@/components/arcade/ui';
+import { CAMP_DATE, CAMP_START, TICKETS, type TicketId } from '@/data/tickets';
 
 const field = 'w-full p-3 border-[3px] border-brand-black bg-white font-body text-lg';
 const label = 'block font-display font-bold text-xs uppercase tracking-widest mb-1';
@@ -41,7 +42,11 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
   const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const register = useAction(api.accounts.register);
   const login = useAction(api.accounts.login);
-  const [f, setF] = useState({ name: '', phone: '', password: '', email: '', guests: '1', stay: 'sleepover' });
+  const [f, setF] = useState({ name: '', phone: '', password: '', email: '', guests: '1' });
+  const [ticketId, setTicketId] = useState<TicketId>('attendee');
+  const ticket = TICKETS.find(t => t.id === ticketId)!;
+  const people = Math.max(1, Math.min(20, Number(f.guests) || 1));
+  const total = ticket.id === 'attendee' ? ticket.price * people : ticket.price;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -51,7 +56,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
     setBusy(true); setError('');
     try {
       const r = mode === 'signup'
-        ? await register({ name: f.name, phone: f.phone, password: f.password, email: f.email || undefined, guests: Number(f.guests) || 1, stay: f.stay, playerKey: camperId() })
+        ? await register({ name: f.name, phone: f.phone, password: f.password, email: f.email || undefined, ticket: ticketId, guests: people, playerKey: camperId() })
         : await login({ phone: f.phone, password: f.password });
       signInOnThisPhone(r.playerKey, r.name);
       onDone(r.playerKey);
@@ -78,13 +83,24 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
         {mode === 'signup' && (
           <>
             <div><label className={label} htmlFor="email">Email (optional)</label><input id="email" type="email" className={field} value={f.email} onChange={set('email')} autoComplete="email" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={label} htmlFor="guests">People</label><input id="guests" inputMode="numeric" className={field} value={f.guests} onChange={set('guests')} /></div>
-              <div><label className={label} htmlFor="stay">Staying</label>
-                <select id="stay" className={field} value={f.stay} onChange={set('stay')}>
-                  <option value="sleepover">Sleepover</option><option value="day">Day only</option><option value="undecided">Not sure yet</option>
-                </select>
+            <fieldset>
+              <legend className={label}>Ticket · {CAMP_DATE} from {CAMP_START}</legend>
+              <div className="grid gap-2">
+                {TICKETS.map(t => (
+                  <label key={t.id} className={`flex items-center justify-between gap-3 p-3 poster-border cursor-pointer ${ticketId === t.id ? 'bg-brand-acid' : 'bg-brand-cream'}`}>
+                    <input type="radio" name="ticket" value={t.id} checked={ticketId === t.id} onChange={() => setTicketId(t.id)} className="sr-only" />
+                    <span><span className="block font-display font-black uppercase leading-tight">{t.name}</span><span className="block font-body text-sm text-brand-black/60">{t.note}</span></span>
+                    <span className="font-display font-black whitespace-nowrap">{naira(t.price)}</span>
+                  </label>
+                ))}
               </div>
+            </fieldset>
+            {ticket.id === 'attendee' && (
+              <div><label className={label} htmlFor="guests">How many people</label><input id="guests" inputMode="numeric" className={field} value={f.guests} onChange={set('guests')} /></div>
+            )}
+            <div className="flex items-baseline justify-between p-3 bg-brand-black text-brand-cream poster-border">
+              <span className="font-display font-black uppercase text-sm tracking-widest">Total</span>
+              <span className="font-display font-black text-2xl">{naira(total)}</span>
             </div>
           </>
         )}
@@ -112,10 +128,10 @@ function BankDetails({ bank }: { bank: Me['bank'] }) {
   );
 }
 
-function SendReceipt({ playerKey, kind, bank, cta }: { playerKey: string; kind: 'registration' | 'topup'; bank: Me['bank']; cta: string }) {
+function SendReceipt({ playerKey, kind, bank, cta, suggested }: { playerKey: string; kind: 'registration' | 'topup'; bank: Me['bank']; cta: string; suggested?: number | null }) {
   const uploadUrl = useMutation(api.accounts.proofUploadUrl);
   const submit = useMutation(api.accounts.submitPayment);
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(suggested ? String(suggested) : '');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -184,8 +200,10 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
           {feePending ? <p className="p-3 bg-brand-acid poster-border font-body">We got your receipt. Camp staff are checking it now. This page updates by itself.</p> : (
             <>
               {feeRejected && <p className="p-3 bg-brand-coral poster-border font-body mb-3">Your last receipt was not approved{feeRejected.note ? `: ${feeRejected.note}` : '.'} Send it again below.</p>}
-              <p className="font-body mb-3">{me.bank.priceNote}</p>
-              <SendReceipt playerKey={playerKey} kind="registration" bank={me.bank} cta="Send my receipt →" />
+              {a.ticket && a.ticketTotal
+                ? <p className="p-3 poster-border bg-brand-cream font-body mb-3">Your ticket: <b>{a.ticket}</b>{a.ticket === 'Attendee' ? ` × ${a.guests}` : ''}. Send <b>{naira(a.ticketTotal)}</b>.</p>
+                : <p className="font-body mb-3">{me.bank.priceNote}</p>}
+              <SendReceipt playerKey={playerKey} kind="registration" bank={me.bank} cta="Send my receipt →" suggested={a.ticketTotal} />
             </>
           )}
         </Card>

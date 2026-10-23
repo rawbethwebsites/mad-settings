@@ -4,6 +4,7 @@ import { action, internalMutation, internalQuery, mutation, query } from './_gen
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import { accountByKey, bank, charge, cleanAmount, cleanPhone, requireAccount, staffRole } from './walletLib';
+import { TICKETS } from '../src/data/tickets';
 
 const LOCK_AFTER = 5;
 const LOCK_MS = 10 * 60_000;
@@ -33,7 +34,7 @@ export function checkPassword(p: string) {
 // ── Sign up and log in ────────────────────────────────────────────────
 
 export const register = action({
-  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), password: v.string(), stay: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string() },
+  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), password: v.string(), ticket: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string() },
   handler: async (ctx, args): Promise<{ playerKey: string; name: string }> => {
     const { password, ...rest } = args;
     checkPassword(password);
@@ -44,7 +45,7 @@ export const register = action({
 });
 
 export const create = internalMutation({
-  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), stay: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string(), salt: v.string(), passwordHash: v.string(), spareKey: v.string() },
+  args: { name: v.string(), phone: v.string(), email: v.optional(v.string()), ticket: v.optional(v.string()), guests: v.optional(v.number()), playerKey: v.string(), salt: v.string(), passwordHash: v.string(), spareKey: v.string() },
   handler: async (ctx, args) => {
     const name = args.name.trim().replace(/\s+/g, ' ').slice(0, 40);
     if (name.length < 2) throw new ConvexError('Enter your name.');
@@ -54,12 +55,16 @@ export const create = internalMutation({
     }
     const email = args.email?.trim().toLowerCase() || undefined;
     if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120)) throw new ConvexError('Enter a valid email, or leave it empty.');
-    const guests = args.guests === undefined ? undefined : Math.max(1, Math.min(20, Math.floor(args.guests)));
+    // Attendee tickets are per person; a tent is one price for the people it sleeps
+    const ticket = TICKETS.find(t => t.id === args.ticket) ?? TICKETS[0];
+    const count = Math.max(1, Math.min(20, Math.floor(args.guests ?? 1)));
+    const guests = ticket.id === 'attendee' ? count : ticket.people;
+    const ticketTotal = ticket.id === 'attendee' ? ticket.price * count : ticket.price;
     // Keep this phone's camp history (rooms, chess, Connect) unless that id already belongs to someone else
     const taken = args.playerKey.length >= 8 && await accountByKey(ctx.db, args.playerKey);
     const playerKey = args.playerKey.length >= 8 && !taken ? args.playerKey : args.spareKey;
     await ctx.db.insert('accounts', {
-      name, phone, email, stay: args.stay?.slice(0, 20), guests, passwordHash: args.passwordHash, salt: args.salt,
+      name, phone, email, stay: ticket.stay, guests, ticket: ticket.name, ticketTotal, passwordHash: args.passwordHash, salt: args.salt,
       playerKey, status: 'pending', balance: 0, failedLogins: 0, lockedUntil: 0, createdAt: Date.now(),
     });
     return { playerKey, name };
@@ -140,7 +145,7 @@ export const me = query({
     return {
       bank: bankInfo,
       staff: await staffRole(ctx.db, playerKey),
-      account: { name: a.name, phone: a.phone, status: a.status, balance: a.balance },
+      account: { name: a.name, phone: a.phone, status: a.status, balance: a.balance, ticket: a.ticket ?? null, ticketTotal: a.ticketTotal ?? null, guests: a.guests ?? 1 },
       payments: payments.map(p => ({ id: p._id, kind: p.kind, amount: p.amount, status: p.status, note: p.note ?? null, createdAt: p.createdAt })),
       entries: entries.map(e => ({ id: e._id, amount: e.amount, label: e.label, createdAt: e.createdAt })),
       orders: orders.map(o => ({ id: o._id, item: o.item, emoji: o.emoji, price: o.price, status: o.status, createdAt: o.createdAt })),

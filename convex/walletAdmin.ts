@@ -21,7 +21,7 @@ export const overview = query({
     const withAccount = async <T extends { accountId: Id<'accounts'> }>(rows: T[]) =>
       Promise.all(rows.map(async r => {
         const a = await ctx.db.get(r.accountId);
-        return { row: r, camper: a ? { id: a._id, name: a.name, phone: a.phone, status: a.status, balance: a.balance } : null };
+        return { row: r, camper: a ? { id: a._id, name: a.name, phone: a.phone, status: a.status, balance: a.balance, ticket: a.ticket ?? null, ticketTotal: a.ticketTotal ?? null } : null };
       }));
     const staff = await ctx.db.query('staff').collect();
     return {

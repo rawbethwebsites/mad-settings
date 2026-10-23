@@ -18,6 +18,7 @@ const GAMES = [
   { id: 'vault', name: 'THE VAULT', emoji: '🔐' },
   { id: 'same', name: "DON'T SAY IT", emoji: '🤐' },
   { id: 'chess', name: 'CAMP CHESS', emoji: '♟️' },
+  { id: 'ludo', name: 'LUDO', emoji: '🎲' },
   { id: 'ayo', name: 'AYO', emoji: '🌰' },
   { id: 'whot', name: 'WHOT!', emoji: '🃏' },
   { id: 'ocho', name: 'OCHO!', emoji: '🎴' },

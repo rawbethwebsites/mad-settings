@@ -15,6 +15,7 @@ const GAMES = [
   { id: 'same', group: 'camp', name: "DON'T SAY IT", emoji: '🤐', tagline: "2v2. Don't say the same thing.", path: '/games/same', color: 'bg-brand-cyan text-brand-black' },
   { id: 'chess', group: 'camp', name: 'CAMP CHESS', emoji: '♟️', tagline: 'Campfire vs. the night. Play a camper online.', path: '/games/chess', color: 'bg-brand-coral text-brand-black' },
   // Arcade
+  { id: 'ludo', group: 'arcade', name: 'LUDO', emoji: '🎲', tagline: 'Shake to roll. Race your seeds home.', path: '/games/ludo', color: 'bg-brand-coral text-brand-black' },
   { id: 'ayo', group: 'arcade', name: 'AYO', emoji: '🌰', tagline: 'Sow seeds. Capture pits.', path: '/games/ayo', color: 'bg-brand-acid text-brand-black' },
   { id: 'whot', group: 'arcade', name: 'WHOT!', emoji: '🃏', tagline: 'Nigeria\'s favourite card game.', path: '/games/whot', color: 'bg-brand-purple text-brand-cream' },
   { id: 'ocho', group: 'arcade', name: 'OCHO!', emoji: '🎴', tagline: 'Match it. Call OCHO!', path: '/games/ocho', color: 'bg-brand-coral text-brand-black' },

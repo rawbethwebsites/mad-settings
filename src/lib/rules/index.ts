@@ -3,6 +3,7 @@ import { tictactoe } from './tictactoe';
 import { connect4 } from './connect4';
 import { dots } from './dots';
 import { ayo } from './ayo';
+import { ludo } from './ludo';
 import { whot } from './whot';
 import { ocho } from './ocho';
 import { race } from './race';
@@ -16,6 +17,7 @@ export const RULES: Record<string, Rules<any, any, any>> = {
   connect4,
   dots,
   ayo,
+  ludo,
   whot,
   ocho,
   tenten,
