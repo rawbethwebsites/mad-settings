@@ -55,23 +55,24 @@ export default function ScrollProgress() {
         ))}
       </nav>
 
-      <nav
-        aria-label="Jump the night"
-        className="night-rail md:hidden"
-      >
-        {NIGHT_STAGES.map((stage, i) => (
-          <a
-            key={stage.id}
-            href={stage.href}
-            className={cn(
-              "night-rail-chip",
-              i === activeStage && "night-rail-chip-active"
-            )}
-          >
-            {stage.label}
-          </a>
-        ))}
-      </nav>
+      {/* Phones: one slim dock at the bottom, chapters that scroll plus Register, above the home bar */}
+      <div className="night-dock md:hidden">
+        <nav aria-label="Jump the night" className="night-rail">
+          {NIGHT_STAGES.map((stage, i) => (
+            <a
+              key={stage.id}
+              href={stage.href}
+              className={cn(
+                "night-rail-chip",
+                i === activeStage && "night-rail-chip-active"
+              )}
+            >
+              {stage.label}
+            </a>
+          ))}
+        </nav>
+        <a href="/account" className="night-dock-cta">Register</a>
+      </div>
     </>
   );
 }
