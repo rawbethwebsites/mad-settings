@@ -39,7 +39,7 @@ export default function HomeExperience() {
         headline="WE OUTSIDE."
         subheadline="ARRIVAL & SETTLING IN"
       >
-        <div className="font-body text-xl md:text-3xl space-y-4 max-w-2xl font-medium italic">
+        <div className="font-body text-lg md:text-3xl space-y-4 max-w-2xl font-medium italic">
           <p>Pull up.</p>
           <p>Find your tent.</p>
           <p>Meet the crew.</p>
@@ -60,8 +60,8 @@ export default function HomeExperience() {
         headline="STRANGERS? NOT FOR LONG."
         subheadline="ICE BREAKING"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="font-body text-xl space-y-4 max-w-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+          <div className="font-body text-base md:text-xl space-y-4 max-w-md">
             <p>Event Introduction</p>
             <p>Guest Introductions</p>
             <p>Ice Breaking Activities</p>
@@ -92,7 +92,7 @@ export default function HomeExperience() {
         headline="GAME ON."
         subheadline="YOUR PHONE IS YOUR CONTROLLER"
       >
-        <div className="mb-12 font-body text-lg md:text-xl max-w-xl">
+        <div className="mb-12 font-body text-base md:text-xl max-w-xl">
           No downloads. No complicated setup. Join and play.
         </div>
         <GamesSection />
@@ -105,7 +105,7 @@ export default function HomeExperience() {
         headline="LIGHTS DOWN."
         subheadline="MOVIE SCREENING"
       >
-        <div className="max-w-xl font-body text-xl md:text-2xl italic">
+        <div className="max-w-xl font-body text-base md:text-2xl italic">
           The camp screen lights up. Same night. Same crew. Cinematic hour.
         </div>
       </EventChapter>
@@ -128,10 +128,10 @@ export default function HomeExperience() {
         subheadline="BONFIRE PARTY"
       >
         <div className="text-center mb-8">
-          <div className="font-display font-black text-2xl md:text-4xl uppercase tracking-widest mb-4">
+          <div className="font-display font-black text-lg md:text-4xl uppercase tracking-wider md:tracking-widest mb-3 md:mb-4">
             12:00 AM → 2:30 AM
           </div>
-          <div className="font-body text-xl md:text-2xl opacity-80 italic">
+          <div className="font-body text-base md:text-2xl opacity-80 italic">
             Music. Fire. Stories. Games. Vibes.
           </div>
         </div>
@@ -145,8 +145,8 @@ export default function HomeExperience() {
         subheadline="LOW TEMPO"
       >
         <div className="max-w-2xl mx-auto text-center space-y-6">
-          <p className="font-body text-2xl italic opacity-80">Music comes down. Conversations go up.</p>
-          <div className="font-display font-bold text-xl uppercase tracking-widest opacity-50">
+          <p className="font-body text-lg md:text-2xl italic opacity-80">Music comes down. Conversations go up.</p>
+          <div className="font-display font-bold text-sm md:text-xl uppercase tracking-wider md:tracking-widest opacity-50">
             2:30 AM → 7:30 AM
           </div>
         </div>
@@ -162,10 +162,10 @@ export default function HomeExperience() {
         subheadline="SURVIVAL MODE"
       >
         <div className="text-center space-y-6">
-          <div className="font-display font-black text-4xl md:text-6xl uppercase italic">
+          <div className="font-display font-black text-3xl md:text-6xl uppercase italic">
             SOMEHOW... <br /> WE SURVIVED.
           </div>
-          <div className="font-body text-xl max-w-lg mx-auto">
+          <div className="font-body text-base md:text-xl max-w-lg mx-auto">
             Interactive Games & Catching Up.
             <br /> 7:30 AM – 8:30 AM
           </div>
@@ -179,15 +179,15 @@ export default function HomeExperience() {
         headline="RUN IT BACK."
         subheadline="5-A-SIDE"
       >
-        <div className="flex flex-col md:flex-row gap-12 items-center">
+        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-4">
-            <div className="font-body text-xl">
+            <div className="font-body text-base md:text-xl">
               Football. Medium-Tempo Music. Vibes.
               <br /> 9:00 AM – 11:30 AM
             </div>
           </div>
           <div className="relative w-full h-48 bg-brand-acid text-brand-black poster-border poster-shadow flex items-center justify-center overflow-hidden">
-            <div className="font-display font-black text-8xl opacity-20 absolute -right-10 -bottom-10 rotate-12">GOAL</div>
+            <div className="font-display font-black text-6xl md:text-8xl opacity-20 absolute -right-10 -bottom-10 rotate-12">GOAL</div>
             <div className="font-display font-black text-4xl uppercase italic">Pitch Ready</div>
           </div>
         </div>
@@ -201,13 +201,13 @@ export default function HomeExperience() {
         subheadline="DEPARTURE"
       >
         <div className="text-center space-y-12">
-          <div className="font-body text-2xl md:text-4xl italic leading-relaxed">
+          <div className="font-body text-lg md:text-4xl italic leading-relaxed">
             You arrived as strangers. <br />
             Hopefully, you leave with stories.
           </div>
 
-          <div className="p-12 poster-border poster-shadow bg-brand-black text-brand-cream max-w-3xl mx-auto">
-            <div className="font-display font-black text-5xl uppercase italic mb-8">
+          <div className="p-6 md:p-12 poster-border poster-shadow bg-brand-black text-brand-cream max-w-3xl mx-auto">
+            <div className="font-display font-black text-3xl md:text-5xl uppercase italic mb-6 md:mb-8">
               MAD SETTINGS
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left font-body">

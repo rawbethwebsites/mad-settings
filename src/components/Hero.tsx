@@ -136,24 +136,24 @@ export default function Hero({ night = false }: { night?: boolean }) {
 
       <div className="relative z-10 text-center px-6">
         <div className="hero-title flex flex-col items-center font-display font-black leading-none uppercase italic">
-          <span className={`text-7xl md:text-9xl ${night ? "text-brand-cream" : "text-brand-black"}`}>MAD</span>
-          <span className={`text-7xl md:text-9xl -mt-4 md:-mt-8 ${night ? "text-brand-acid" : "text-brand-purple"}`}>SETT</span>
-          <span className={`text-7xl md:text-9xl -mt-4 md:-mt-8 ${night ? "text-brand-cream" : "text-brand-black"}`}>INGS</span>
+          <span className={`text-[clamp(3rem,16vw,4.5rem)] md:text-9xl ${night ? "text-brand-cream" : "text-brand-black"}`}>MAD</span>
+          <span className={`text-[clamp(3rem,16vw,4.5rem)] md:text-9xl -mt-2 md:-mt-8 ${night ? "text-brand-acid" : "text-brand-purple"}`}>SETT</span>
+          <span className={`text-[clamp(3rem,16vw,4.5rem)] md:text-9xl -mt-2 md:-mt-8 ${night ? "text-brand-cream" : "text-brand-black"}`}>INGS</span>
         </div>
 
-        <div className={`hero-subtitle mt-6 font-display font-bold tracking-widest text-sm md:text-lg uppercase ${night ? "text-brand-cream/70" : "text-brand-black/60"}`}>
+        <div className={`hero-subtitle mt-4 md:mt-6 font-display font-bold tracking-wider md:tracking-widest text-xs md:text-lg uppercase ${night ? "text-brand-cream/70" : "text-brand-black/60"}`}>
           POP-UP • BONFIRE • SLEEPOVER
         </div>
-        <div className={`hero-subtitle mt-3 font-display font-black tracking-widest text-sm md:text-lg uppercase ${night ? "text-brand-acid" : "text-brand-purple"}`}>
+        <div className={`hero-subtitle mt-2 md:mt-3 font-display font-black tracking-wider md:tracking-widest text-xs md:text-lg uppercase ${night ? "text-brand-acid" : "text-brand-purple"}`}>
           {CAMP_DATE} • {CAMP_START} • FROM {FROM_PRICE}
         </div>
 
-        <h2 className={`hero-headline mt-12 font-display font-black text-4xl md:text-6xl uppercase leading-tight max-w-2xl mx-auto ${night ? "text-brand-cream" : ""}`}>
+        <h2 className={`hero-headline mt-8 md:mt-12 font-display font-black text-2xl sm:text-3xl md:text-6xl uppercase leading-tight max-w-2xl mx-auto ${night ? "text-brand-cream" : ""}`}>
           ONE NIGHT.<br />
           <span className={night ? "text-brand-acid" : "text-brand-purple"}>ZERO CHILL.</span>
         </h2>
 
-        <p className={`hero-copy mt-6 font-body text-lg md:text-xl max-w-md mx-auto ${night ? "text-brand-cream/80" : "text-brand-black/70"}`}>
+        <p className={`hero-copy mt-4 md:mt-6 font-body text-base md:text-xl max-w-md mx-auto ${night ? "text-brand-cream/80" : "text-brand-black/70"}`}>
           Come for the vibe.<br />
           Stay for the games.
         </p>

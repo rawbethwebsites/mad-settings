@@ -114,6 +114,8 @@ export function TalkDirector() {
   const pointer = useRef<{ x: number; y: number; clicked: boolean; moved: boolean }>({ x: 0, y: 0, clicked: false, moved: false });
   const lastHover = useRef(0);
   const lastSpot = useRef({ x: 0, y: 0 });
+  // On phones the page copy fills the screen, so a bubble closes as soon as the camper scrolls
+  const scrolled = useRef(false);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -126,9 +128,14 @@ export function TalkDirector() {
       onMove(e);
       pointer.current.clicked = true;
     };
+    const onScroll = () => {
+      if (window.innerWidth < 768) scrolled.current = true;
+    };
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerdown", onClick, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onClick);
     };
@@ -154,6 +161,11 @@ export function TalkDirector() {
 
   useFrame(() => {
     const now = performance.now();
+    if (scrolled.current) {
+      scrolled.current = false;
+      if (speaking.current) hush(now);
+      phaseEnds.current = Math.max(phaseEnds.current, now + GAP_MS);
+    }
 
     // Hover or tap a camper and they speak up.
     const p = pointer.current;

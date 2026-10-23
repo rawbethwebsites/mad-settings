@@ -74,7 +74,7 @@ export default function ProgramTimeline() {
   return (
     <section id="program" ref={sectionRef} className="py-24 px-6 bg-brand-black text-brand-cream overflow-hidden">
       <div className="max-w-4xl mx-auto">
-        <h2 className="program-title font-display font-black text-5xl md:text-7xl uppercase italic mb-16 text-center">
+        <h2 className="program-title font-display font-black text-4xl md:text-7xl uppercase italic mb-10 md:mb-16 text-center">
           PROGRAM OF EVENTS
         </h2>
         <div className="timeline-list relative">
