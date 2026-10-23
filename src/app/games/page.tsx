@@ -19,7 +19,7 @@ const GAMES = [
   { id: 'ocho', group: 'arcade', name: 'OCHO!', emoji: '🎴', tagline: 'Match it. Call OCHO!', path: '/games/ocho', color: 'bg-brand-coral text-brand-black' },
   { id: 'tenten', group: 'arcade', name: 'TEN TEN', emoji: '👆', tagline: 'Point. Catch. Escape.', path: '/games/tenten', color: 'bg-brand-cyan text-brand-black' },
   { id: 'trivia', group: 'arcade', name: 'NAIJA TRIVIA', emoji: '🇳🇬', tagline: 'How well do you know Naija?', path: '/games/trivia', color: 'bg-brand-black text-brand-cream' },
-  { id: 'chopchop', group: 'arcade', name: 'CHOP CHOP', emoji: '🍢', tagline: 'Match-3 with Naija snacks.', path: '/games/chopchop', color: 'bg-brand-acid text-brand-black' },
+  { id: 'chopchop', group: 'arcade', name: 'CHOP CHOP', emoji: '🍢', tagline: 'Swipe and match Naija snacks. Beat the levels.', path: '/games/chopchop', color: 'bg-brand-acid text-brand-black' },
   { id: 'minesweeper', group: 'arcade', name: 'MINESWEEPER', emoji: '💣', tagline: 'Clear the field.', path: '/games/minesweeper', color: 'bg-brand-cyan text-brand-black' },
   { id: 'connect4', group: 'arcade', name: 'CONNECT 4', emoji: '🔴', tagline: 'Four in a row.', path: '/games/connect4', color: 'bg-brand-coral text-brand-black' },
   { id: 'tictactoe', group: 'arcade', name: 'ENDLESS TIC TAC TOE', emoji: '⭕', tagline: 'Only 3 pieces. Oldest vanishes.', path: '/games/tictactoe', color: 'bg-brand-purple text-brand-cream' },
