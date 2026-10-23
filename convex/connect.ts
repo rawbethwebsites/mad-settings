@@ -90,6 +90,8 @@ export const deck = query({ args: { ...identity, mode: connectMode }, handler: a
   const u = await usage(ctx.db, playerId);
   const limits = { logsLeft: 100 - (u?.logs ?? 0), marshmallowsLeft: 3 - (u?.marshmallows ?? 0), backtracksLeft: 3 - (u?.backtracks ?? 0), canLog: !!p && active(p) && p.verified && ready(p) && p.visibility !== 'paused' && p.modes.includes(mode) };
   if (!p || !active(p) || p.visibility === 'paused') return { cards: [], ...limits };
+  // Only show a deck for modes you have switched on in your profile
+  if (!p.modes.includes(mode)) return { cards: [], modeOff: true, ...limits };
   const swiped = await ctx.db.query('connectSwipes').withIndex('by_from_mode', q => q.eq('from', p._id).eq('mode', mode)).take(2000);
   const seen = new Set(swiped.filter(s => !s.undone).map(s => s.to));
   const candidates = await ctx.db.query('connectProfiles').take(1000);
@@ -106,7 +108,9 @@ export const deck = query({ args: { ...identity, mode: connectMode }, handler: a
 export const swipe = mutation({ args: { ...identity, target: v.id('connectProfiles'), mode: connectMode, kind: v.union(v.literal('log'), v.literal('pass'), v.literal('marshmallow')) }, handler: async (ctx, { playerId, target, mode, kind }) => {
   const p = await requireProfile(ctx.db, playerId);
   const peer = await ctx.db.get(target);
-  if (!peer || peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || p.visibility === 'paused' || !peer.modes.includes(mode) || !p.modes.includes(mode) || !ready(peer) || await blocked(ctx.db, p._id, target)) throw new ConvexError('That camper has left this Trail.');
+  if (p.visibility === 'paused') throw new ConvexError('Your profile is paused. Unpause it in My camp to swipe.');
+  if (!p.modes.includes(mode)) throw new ConvexError(`Turn on ${mode === 'squad' ? 'Squad' : 'Campfire'} in My camp to swipe here.`);
+  if (!peer || peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || !peer.modes.includes(mode) || !ready(peer) || await blocked(ctx.db, p._id, target)) throw new ConvexError('That camper has left this Trail.');
   if (kind !== 'pass' && (!p.verified || !ready(p))) throw new ConvexError('A Ranger must verify you and approve a photo before you can pull up a Log.');
   const previous = await ctx.db.query('connectSwipes').withIndex('by_pair', q => q.eq('from', p._id).eq('to', target).eq('mode', mode)).collect();
   if (previous.some(s => !s.undone)) throw new ConvexError('You already visited this camper. Use Backtrack first.');
