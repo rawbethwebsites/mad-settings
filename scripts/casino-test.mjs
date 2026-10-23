@@ -140,8 +140,56 @@ assert.equal(view.stake, 0);
 await client.mutation(api.matches.resign, { matchId: free, playerId: alice.key });
 ok('Free games are unchanged');
 
+// Camp Chess for chips
+async function chessInvite(stake) {
+  await client.mutation(api.chess.ping, { playerId: alice.key, name: 'Ada', avatar: '🦁', busy: false });
+  await client.mutation(api.chess.ping, { playerId: bob.key, name: 'Bayo', avatar: '🐯', busy: false });
+  const toId = (await client.query(api.chess.online, { playerId: alice.key })).find(p => p.name === 'Bayo').id;
+  const { inviteId, code } = await client.mutation(api.chess.invite, { playerId: alice.key, name: 'Ada', avatar: '🦁', toId, side: 'w', stake });
+  return { inviteId, code };
+}
+const ca = await chips(alice), cb = await chips(bob);
+let inv = await chessInvite(1_000);
+assert.equal(await chips(alice), ca - 1_000);
+assert.equal((await client.query(api.chess.incoming, { playerId: bob.key }))[0].stake, 1_000);
+await client.mutation(api.chess.accept, { inviteId: inv.inviteId, playerId: bob.key, name: 'Bayo', avatar: '🐯' });
+assert.equal(await chips(bob), cb - 1_000);
+for (const [who, from, to] of [[alice, 'f2', 'f3'], [bob, 'e7', 'e5'], [alice, 'g2', 'g4'], [bob, 'd8', 'h4']]) {
+  await client.mutation(api.chess.move, { code: inv.code, playerId: who.key, from, to });
+}
+const cg = await client.query(api.chess.get, { code: inv.code, playerId: bob.key });
+assert.equal(cg.status, 'finished');
+assert.equal(cg.won, 1_900);
+assert.equal(await chips(bob), cb + 900);
+assert.equal(await chips(alice), ca - 1_000);
+await rejects(() => client.mutation(api.chess.rematch, { code: inv.code, playerId: alice.key }), /lobby/);
+ok('Chess for 1,000 each: checkmate pays the winner 1,900; no auto-rematch');
+
+const cc = await chips(alice);
+inv = await chessInvite(500);
+await client.mutation(api.chess.decline, { inviteId: inv.inviteId, playerId: bob.key });
+assert.equal(await chips(alice), cc);
+inv = await chessInvite(500);
+await client.mutation(api.chess.cancel, { inviteId: inv.inviteId, playerId: alice.key });
+assert.equal(await chips(alice), cc);
+inv = await chessInvite(500);
+internal('chess:expireInvite', { inviteId: inv.inviteId });
+assert.equal(await chips(alice), cc);
+inv = await chessInvite(500);
+await chessInvite(200); // a newer invite replaces the old one
+assert.equal(await chips(alice), cc - 200);
+ok('Chess stakes come back when an invite is declined, cancelled, expires or is replaced');
+
+const cd = await chips(alice), ce = await chips(bob);
+inv = await client.query(api.chess.outgoing, { playerId: alice.key });
+await client.mutation(api.chess.accept, { inviteId: inv.id, playerId: bob.key, name: 'Bayo', avatar: '🐯' });
+await client.mutation(api.chess.resign, { code: inv.code, playerId: bob.key });
+assert.equal(await chips(alice), cd + 380);
+assert.equal(await chips(bob), ce - 200);
+ok('Resigning a chess chip game hands the pot (minus 5%) to the other player');
+
 const report = await client.query(api.casino.report, { playerId: head.playerId });
-assert.ok(report.nairaSold >= 10_000 && report.houseKept >= 120);
+assert.ok(report.nairaSold >= 10_000 && report.houseKept >= 240);
 const lobby = await client.query(api.casino.lobby, { playerKey: alice.key });
 assert.ok(lobby.leaderboard.some(r => r.me));
 ok(`Staff report and leaderboard (sold ₦${report.nairaSold.toLocaleString()}, house kept ${report.houseKept} chips)`);

@@ -1,8 +1,10 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader, DatabaseWriter } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
 import { Chess } from "chess.js";
+import { internal } from "./_generated/api";
+import { casino, returnStakes, settlePot, STAKES, takeStake } from "./casinoLib";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const STALE_GAME_MS = 24 * 60 * 60 * 1000;
@@ -67,6 +69,25 @@ async function uniqueCode(db: DatabaseWriter) {
   throw new ConvexError("Could not start a game. Try again.");
 }
 
+/* ---------- chips ---------- */
+
+// An invite that never became a game: hand back any chips already in the pot
+async function callOff(db: DatabaseWriter, code: string) {
+  const game = await byCode(db, code);
+  if (!game || game.status !== "waiting" || !game.stake || !game.staked?.length) return;
+  await returnStakes(db, game.staked, game.stake, "Chess");
+  await db.patch(game._id, { staked: [] });
+}
+
+// Game over: pay the pot to the winner (or split it on a draw)
+async function settle(db: DatabaseWriter, game: Doc<"chessGames">, winner: Seat | "draw") {
+  if (!game.stake || !game.staked?.length || game.payout || !game.white || !game.black) return;
+  const seatIds = [game.white.id, game.black.id];
+  const winnerIds = winner === "draw" ? [] : [winner === "w" ? game.white.id : game.black.id];
+  const payout = await settlePot(db, { stake: game.stake, staked: game.staked, houseCut: game.houseCut, game: "Chess" }, seatIds, winnerIds);
+  await db.patch(game._id, { payout });
+}
+
 /* ---------- presence ---------- */
 
 export const ping = mutation({
@@ -124,9 +145,12 @@ export const invite = mutation({
     avatar: v.string(),
     toId: v.id("chessPresence"),
     side: v.union(v.literal("w"), v.literal("b"), v.literal("random")),
+    stake: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const playerId = cleanId(args.playerId);
+    const stake = args.stake ?? 0;
+    if (stake && !STAKES.includes(stake)) throw new ConvexError("Pick one of the chip stakes.");
     const me = { id: playerId, name: cleanName(args.name), avatar: args.avatar.slice(0, 8) };
 
     const target = await ctx.db.get(args.toId);
@@ -140,8 +164,12 @@ export const invite = mutation({
       .withIndex("by_from", (q) => q.eq("fromPlayerId", playerId))
       .collect();
     for (const inv of mine) {
-      if (inv.status === "pending") await ctx.db.patch(inv._id, { status: "cancelled" });
+      if (inv.status === "pending") {
+        await ctx.db.patch(inv._id, { status: "cancelled" });
+        await callOff(ctx.db, inv.code);
+      }
     }
+    if (stake) await takeStake(ctx.db, playerId, stake, "Chess");
 
     const hostSide: Seat = args.side === "random" ? (Math.random() < 0.5 ? "w" : "b") : args.side;
     const code = await uniqueCode(ctx.db);
@@ -153,6 +181,7 @@ export const invite = mutation({
       status: "waiting",
       moves: [],
       ...(hostSide === "w" ? { white: me } : { black: me }),
+      ...(stake ? { stake, staked: [playerId], houseCut: (await casino(ctx.db)).houseCut } : {}),
       createdAt: now,
       updatedAt: now,
     });
@@ -164,8 +193,11 @@ export const invite = mutation({
       toName: target.name,
       code,
       status: "pending",
+      ...(stake ? { stake } : {}),
       createdAt: now,
     });
+    // Nobody answered in time: give the chips back
+    if (stake) await ctx.scheduler.runAfter(INVITE_MS + 2000, internal.chess.expireInvite, { inviteId });
     return { inviteId, code };
   },
 });
@@ -181,7 +213,7 @@ export const incoming = query({
       .collect();
     return rows
       .filter((r) => r.createdAt > cutoff)
-      .map((r) => ({ id: r._id, fromName: r.fromName, fromAvatar: r.fromAvatar, createdAt: r.createdAt }));
+      .map((r) => ({ id: r._id, fromName: r.fromName, fromAvatar: r.fromAvatar, createdAt: r.createdAt, stake: r.stake ?? 0 }));
   },
 });
 
@@ -219,8 +251,10 @@ export const accept = mutation({
     if (!game || game.status !== "waiting") throw new ConvexError("That game is no longer available.");
 
     const guest = { id: playerId, name: cleanName(args.name), avatar: args.avatar.slice(0, 8) };
+    if (game.stake) await takeStake(ctx.db, playerId, game.stake, "Chess");
     await ctx.db.patch(game._id, {
       ...(game.white ? { black: guest } : { white: guest }),
+      ...(game.stake ? { staked: [...(game.staked ?? []), playerId] } : {}),
       status: "playing",
       updatedAt: Date.now(),
     });
@@ -235,6 +269,7 @@ export const decline = mutation({
     const inv = await ctx.db.get(args.inviteId);
     if (!inv || inv.toPlayerId !== args.playerId || inv.status !== "pending") return null;
     await ctx.db.patch(inv._id, { status: "declined" });
+    await callOff(ctx.db, inv.code);
     return null;
   },
 });
@@ -245,6 +280,19 @@ export const cancel = mutation({
     const inv = await ctx.db.get(args.inviteId);
     if (!inv || inv.fromPlayerId !== args.playerId || inv.status !== "pending") return null;
     await ctx.db.patch(inv._id, { status: "cancelled" });
+    await callOff(ctx.db, inv.code);
+    return null;
+  },
+});
+
+export const expireInvite = internalMutation({
+  args: { inviteId: v.id("chessInvites") },
+  returns: v.null(),
+  handler: async (ctx, { inviteId }): Promise<null> => {
+    const inv = await ctx.db.get(inviteId);
+    if (!inv || inv.status !== "pending") return null;
+    await ctx.db.patch(inv._id, { status: "cancelled" });
+    await callOff(ctx.db, inv.code);
     return null;
   },
 });
@@ -290,6 +338,12 @@ export const get = query({
       black: pub(game.black),
       lastMove: game.lastMove ?? null,
       result: game.result ?? null,
+      stake: game.stake ?? 0,
+      pot: (game.stake ?? 0) * 2,
+      won: (() => {
+        const seat = seatOf(game, args.playerId);
+        return game.payout && seat ? game.payout.seats[seat === "w" ? 0 : 1] ?? 0 : null;
+      })(),
     };
   },
 });
@@ -337,6 +391,7 @@ export const move = mutation({
       patch.result = { winner: "draw", reason: drawReason(chess) };
     }
     await ctx.db.patch(game._id, patch);
+    if (patch.result) await settle(ctx.db, game, patch.result.winner);
     return null;
   },
 });
@@ -354,6 +409,7 @@ export const resign = mutation({
       result: { winner: seat === "w" ? "b" : "w", reason: "Resigned." },
       updatedAt: Date.now(),
     });
+    await settle(ctx.db, game, seat === "w" ? "b" : "w");
     return null;
   },
 });
@@ -366,6 +422,8 @@ export const rematch = mutation({
     if (!game) throw new ConvexError("No game with that code.");
     if (game.status !== "finished") return null;
     if (!seatOf(game, args.playerId)) throw new ConvexError("You are not in this game.");
+    // Each chip game is its own bet: start a new one from the lobby
+    if (game.stake) throw new ConvexError("Go back to the lobby to play for chips again.");
     await ctx.db.patch(game._id, {
       round: game.round + 1,
       status: "playing",

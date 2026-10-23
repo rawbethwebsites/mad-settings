@@ -29,6 +29,11 @@ export default defineSchema({
     white: v.optional(v.object({ id: v.string(), name: v.string(), avatar: v.string() })),
     black: v.optional(v.object({ id: v.string(), name: v.string(), avatar: v.string() })),
     lastMove: v.optional(v.object({ from: v.string(), to: v.string() })),
+    // Play for chips: same shape as online matches (seats in payout are [white, black])
+    stake: v.optional(v.number()),
+    staked: v.optional(v.array(v.string())),
+    houseCut: v.optional(v.number()),
+    payout: v.optional(v.object({ house: v.number(), seats: v.array(v.number()) })),
     result: v.optional(
       v.object({
         winner: v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
@@ -59,6 +64,7 @@ export default defineSchema({
     toPlayerId: v.string(),
     toName: v.string(),
     code: v.string(),
+    stake: v.optional(v.number()),
     status: v.union(
       v.literal("pending"),
       v.literal("accepted"),
