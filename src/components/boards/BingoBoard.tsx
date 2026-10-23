@@ -2,6 +2,16 @@
 
 import { useReducedMotion } from '@/components/three/useReducedMotion';
 
+// Long words shrink so they stay inside their square on a phone.
+function wordSize(word: string) {
+  const longest = Math.max(...word.split(' ').map(w => w.length));
+  if (longest >= 9) return 'text-[clamp(7px,2.2vw,8px)] sm:text-xs md:text-sm';
+  if (longest === 8) return 'text-[clamp(7px,2.5vw,9px)] sm:text-xs md:text-sm';
+  if (longest === 7) return 'text-[clamp(8px,2.8vw,10px)] sm:text-xs md:text-sm';
+  if (longest === 6) return 'text-[clamp(9px,3vw,11px)] sm:text-xs md:text-sm';
+  return 'text-xs md:text-sm';
+}
+
 export function BingoBoard({
   grid,
   marked,
@@ -26,18 +36,18 @@ export function BingoBoard({
       {/* Called word announcer */}
       {currentCall && (
         <div className="mb-4 flex items-center justify-center gap-3">
-          <div className={`w-10 h-10 rounded-full bg-brand-black/20 flex items-center justify-center ${!reduced ? 'animate-[flipCall_600ms_ease-in-out]' : ''}`}>
+          <div key={currentCall} className={`px-5 py-2 rounded-full bg-brand-black/10 flex items-center justify-center ${!reduced ? 'animate-[flipCall_600ms_ease-in-out]' : ''}`}>
             <span className="font-display font-black text-xl text-brand-black">{currentCall}</span>
           </div>
         </div>
       )}
 
       {/* Bingo Card - printed paper style */}
-      <div className="relative inline-block p-4 bg-white poster-border poster-shadow shadow-[8px_8px_0_0_#0A0A0A] rounded-[4px]">
+      <div className="relative block p-2 sm:p-4 bg-white poster-border poster-shadow shadow-[8px_8px_0_0_#0A0A0A] rounded-[4px]">
         {/* paper grain */}
         <div className="absolute inset-0 rounded-[2px] opacity-[0.08] pointer-events-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22 opacity=%220.5%22/></svg>')]" />
 
-        <div className="grid grid-cols-5 gap-[6px] relative z-10">
+        <div className="grid grid-cols-5 gap-1 sm:gap-[6px] relative z-10">
           {grid.map((word, i) => {
             const isMarked = marked.has(i);
             const isCalled = called.has(word) || word === 'FREE';
@@ -50,7 +60,7 @@ export function BingoBoard({
                 onClick={() => onToggle(i)}
                 disabled={won || !isCalled || isFree}
                 aria-label={`${word}${isMarked ? ' marked' : ''}`}
-                className={`relative aspect-square flex items-center justify-center text-center font-display font-black text-xs md:text-sm uppercase p-1 border-[3px] transition-all ${isFree ? 'bg-brand-cream text-brand-black border-brand-black cursor-default' : isMarked ? 'bg-brand-purple text-brand-cream border-brand-purple' : isCalled ? 'bg-brand-acid text-brand-black border-brand-black' : 'bg-white text-brand-black/40 border-brand-black/20'} ${!reduced && isMarked ? 'animate-[stamp_350ms_cubic-bezier(.2,.8,.2,1)]' : ''} ${!reduced && isWinCell ? 'animate-[bingoGlow_800ms_ease-in-out_infinite]' : ''}`}
+                className={`relative aspect-square min-w-0 flex items-center justify-center text-center font-display font-black ${wordSize(word)} leading-tight uppercase p-0 border-2 sm:border-[3px] [overflow-wrap:anywhere] transition-all ${isFree ? 'bg-brand-cream text-brand-black border-brand-black cursor-default' : isMarked ? 'bg-brand-purple text-brand-cream border-brand-purple' : isCalled ? 'bg-brand-acid text-brand-black border-brand-black' : 'bg-white text-brand-black/40 border-brand-black/20'} ${!reduced && isMarked ? 'animate-[stamp_350ms_cubic-bezier(.2,.8,.2,1)]' : ''} ${!reduced && isWinCell ? 'animate-[bingoGlow_800ms_ease-in-out_infinite]' : ''}`}
               >
                 {word}
                 {/* ink dab splash */}

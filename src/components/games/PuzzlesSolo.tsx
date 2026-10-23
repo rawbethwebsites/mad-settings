@@ -119,16 +119,8 @@ export default function PuzzlesGame() {
   if (!mounted || !player) return null;
 
   return (
-    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
-            ← BACK
-          </button>
-          <h1 className="font-display font-black text-3xl uppercase italic">🧩 PUZZLE RUSH</h1>
-          <div className="font-display font-black text-xl">{player.avatar}</div>
-        </div>
+    <div>
+      <div>
 
         {/* Timer + Score */}
         <div className="flex gap-4 mb-6">
@@ -257,6 +249,6 @@ export default function PuzzlesGame() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

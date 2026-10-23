@@ -73,16 +73,8 @@ export default function SearchGame() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-purple">
-            ← BACK
-          </button>
-          <h1 className="font-display font-black text-3xl uppercase italic">🔍 ULTIMATE SEARCH</h1>
-          <div className="font-display font-black text-xl">{player.avatar}</div>
-        </div>
+    <div>
+      <div>
 
         {/* Progress */}
         <div className="mb-6 flex items-center gap-2">
@@ -183,6 +175,6 @@ export default function SearchGame() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

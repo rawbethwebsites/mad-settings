@@ -52,16 +52,8 @@ export default function VaultGame() {
   ).join(' ');
 
   return (
-    <main className="min-h-screen bg-brand-black text-brand-cream p-4 md:p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => router.push('/games')} className="font-display font-bold text-sm uppercase hover:text-brand-acid">
-            ← BACK
-          </button>
-          <h1 className="font-display font-black text-3xl uppercase italic">🔐 THE VAULT</h1>
-          <div className="font-display font-black text-xl">{player.avatar}</div>
-        </div>
+    <div className="bg-brand-black text-brand-cream p-4 poster-border">
+      <div>
 
         {/* Vault visual */}
         <div className="mb-8 text-center">
@@ -74,17 +66,17 @@ export default function VaultGame() {
         </div>
 
         {/* Code pieces display */}
-        <div className="mb-8 p-6 poster-border bg-brand-cream/5 border-brand-cream/20">
+        <div className="mb-8 p-4 poster-border bg-brand-cream/5 border-brand-cream/20">
           <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-acid mb-4 text-center">
             CODE PIECES
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             {VAULT_PIECES.map(vp => {
               const collected = player.vaultPieces.includes(vp.piece);
               return (
                 <div
                   key={vp.id}
-                  className={`p-4 border-4 text-center transition-all ${
+                  className={`px-1 py-3 border-4 text-center transition-all ${
                     collected
                       ? 'bg-brand-acid text-brand-black border-brand-acid'
                       : 'border-brand-cream/20 text-brand-cream/30'
@@ -93,8 +85,8 @@ export default function VaultGame() {
                   <div className="font-display font-black text-3xl">
                     {collected ? vp.piece : '?'}
                   </div>
-                  <div className="font-display font-bold text-[10px] uppercase tracking-widest mt-1">
-                    {collected ? vp.game : 'LOCKED'}
+                  <div className="font-display font-bold text-[9px] uppercase mt-1 max-[359px]:hidden">
+                    {collected ? vp.id : 'LOCKED'}
                   </div>
                 </div>
               );
@@ -180,6 +172,6 @@ export default function VaultGame() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
