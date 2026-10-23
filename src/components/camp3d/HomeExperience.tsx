@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import Navigation from "@/components/Navigation";
 import ScrollProgress from "@/components/ScrollProgress";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
-import FloatingCTA from "@/components/FloatingCTA";
 import AutoScroll from "@/components/AutoScroll";
 import Hero from "@/components/Hero";
 import EventChapter from "@/components/EventChapter";
@@ -27,7 +26,6 @@ export default function HomeExperience() {
       <Navigation night />
       <ScrollProgress />
       <ScrollProgressBar />
-      <FloatingCTA />
       <AutoScroll />
 
       <Hero night />

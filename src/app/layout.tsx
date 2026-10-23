@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import type { Viewport } from "next";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import RoomLayer from "@/components/room/RoomLayer";
 import ConnectLayer from "@/components/connect/ConnectLayer";
@@ -14,6 +15,9 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Lets the bottom dock sit above the iPhone home bar
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: "MAD SETTINGS — Pop-Up • Bonfire • Sleepover",
