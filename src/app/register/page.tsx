@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { STAY_OPTIONS, type Stay } from "@/lib/registration";
+import { CAMP_DATE, CAMP_START, TICKETS, naira, type TicketId } from "@/data/tickets";
 
 type Status = "idle" | "submitting" | "done" | "error";
 
@@ -11,12 +11,17 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [guests, setGuests] = useState(1);
-  const [stay, setStay] = useState<Stay>("sleepover");
+  const [ticketId, setTicketId] = useState<TicketId>("attendee");
   const [notes, setNotes] = useState("");
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [savedEmail, setSavedEmail] = useState("");
+
+  const ticket = TICKETS.find((t) => t.id === ticketId)!;
+  // Attendee is priced per person; a tent is one price for the people it sleeps.
+  const people = ticket.id === "attendee" ? guests : ticket.people;
+  const total = ticket.id === "attendee" ? ticket.price * guests : ticket.price;
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -26,7 +31,15 @@ export default function RegisterPage() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, guests, stay, notes, website }),
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          guests: people,
+          stay: ticket.stay,
+          notes: [`Ticket: ${ticket.name} × ${ticket.id === "attendee" ? guests : 1} = ${naira(total)}`, notes.trim()].filter(Boolean).join(" · ").slice(0, 400),
+          website,
+        }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string; email?: string };
       if (!res.ok || !data.ok) {
@@ -46,21 +59,21 @@ export default function RegisterPage() {
     <main className="min-h-screen bg-brand-cream text-brand-black flex items-center justify-center p-6 py-16">
       <div className="w-full max-w-lg">
         <p className="font-display font-bold text-xs tracking-widest uppercase text-brand-purple mb-3">
-          MAD SETTINGS · NEXT CAMP
+          MAD SETTINGS · {CAMP_DATE} · FROM {CAMP_START.toUpperCase()}
         </p>
         <h1 className="font-display font-black text-5xl md:text-6xl uppercase italic leading-none">
           Register<br />
           <span className="text-brand-purple">for camp.</span>
         </h1>
         <p className="mt-4 font-body text-lg text-brand-black/70">
-          Save your spot for the next pop-up · bonfire · sleepover. We will contact you on WhatsApp or email with the date and details.
+          Pick your ticket and save your spot for the pop-up · bonfire · sleepover. We will send you how to pay on WhatsApp.
         </p>
 
         {status === "done" ? (
           <div className="mt-10 p-8 poster-border poster-shadow bg-brand-black text-brand-cream" role="status">
             <div className="font-display font-black text-3xl uppercase italic mb-3">You are in.</div>
             <p className="font-body text-lg">
-              Registration saved for <strong>{savedEmail}</strong>. Watch that inbox — and your WhatsApp.
+              {ticket.name} · <strong>{naira(total)}</strong> saved for <strong>{savedEmail}</strong>. We will send you how to pay on WhatsApp.
             </p>
             <Link
               href="/"
@@ -119,7 +132,35 @@ export default function RegisterPage() {
               />
             </Field>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <fieldset>
+              <legend className="block font-display font-black text-xs uppercase tracking-widest mb-2">Ticket</legend>
+              <div className="grid gap-3">
+                {TICKETS.map((t) => (
+                  <label
+                    key={t.id}
+                    className={`flex items-center justify-between gap-3 p-4 poster-border cursor-pointer ${
+                      ticketId === t.id ? "bg-brand-acid" : "bg-brand-cream"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="ticket"
+                      value={t.id}
+                      checked={ticketId === t.id}
+                      onChange={() => setTicketId(t.id)}
+                      className="sr-only"
+                    />
+                    <span>
+                      <span className="block font-display font-black uppercase text-lg leading-tight">{t.name}</span>
+                      <span className="block font-body text-sm text-brand-black/60">{t.note}</span>
+                    </span>
+                    <span className="font-display font-black text-xl whitespace-nowrap">{naira(t.price)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {ticket.id === "attendee" && (
               <Field label="How many people" htmlFor="reg-guests">
                 <select
                   id="reg-guests"
@@ -135,21 +176,11 @@ export default function RegisterPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Stay" htmlFor="reg-stay">
-                <select
-                  id="reg-stay"
-                  name="stay"
-                  value={stay}
-                  onChange={(e) => setStay(e.target.value as Stay)}
-                  className="reg-input"
-                >
-                  {STAY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+            )}
+
+            <div className="flex items-baseline justify-between p-4 bg-brand-black text-brand-cream poster-border">
+              <span className="font-display font-black uppercase text-sm tracking-widest">Total</span>
+              <span className="font-display font-black text-2xl">{naira(total)}</span>
             </div>
 
             <Field label="Anything we should know" htmlFor="reg-notes" hint="Optional">
@@ -175,7 +206,7 @@ export default function RegisterPage() {
               disabled={status === "submitting"}
               className="w-full min-h-12 py-4 bg-brand-purple text-brand-cream font-display font-black uppercase tracking-tighter text-xl poster-border poster-shadow disabled:opacity-50"
             >
-              {status === "submitting" ? "Saving…" : "Register for camp"}
+              {status === "submitting" ? "Saving…" : `Book my spot · ${naira(total)}`}
             </button>
             <p className="text-center font-body text-sm text-brand-black/50">
               Already playing tonight?{" "}

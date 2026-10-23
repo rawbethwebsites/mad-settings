@@ -1,5 +1,7 @@
 'use client';
 
+import { CAMP_DATE, CAMP_START, FROM_PRICE } from '@/data/tickets';
+
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -141,6 +143,9 @@ export default function Hero({ night = false }: { night?: boolean }) {
 
         <div className={`hero-subtitle mt-6 font-display font-bold tracking-widest text-sm md:text-lg uppercase ${night ? "text-brand-cream/70" : "text-brand-black/60"}`}>
           POP-UP • BONFIRE • SLEEPOVER
+        </div>
+        <div className={`hero-subtitle mt-3 font-display font-black tracking-widest text-sm md:text-lg uppercase ${night ? "text-brand-acid" : "text-brand-purple"}`}>
+          {CAMP_DATE} • {CAMP_START} • FROM {FROM_PRICE}
         </div>
 
         <h2 className={`hero-headline mt-12 font-display font-black text-4xl md:text-6xl uppercase leading-tight max-w-2xl mx-auto ${night ? "text-brand-cream" : ""}`}>

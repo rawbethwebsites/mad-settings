@@ -72,7 +72,7 @@ function smooth(edge0: number, edge1: number, x: number) {
 }
 
 /**
- * Time of day along the scroll: afternoon at 4:30, sunset over the ice-breakers,
+ * Time of day along the scroll: afternoon from noon, sunset over the ice-breakers,
  * full night through the bonfire, sunrise for the morning, bright for the pitch.
  * day: 0 night → 1 full daylight. glow: golden-hour strength. sun: sun height.
  */
