@@ -14,6 +14,7 @@ import { useResultSound, useTurnSound } from '@/lib/useGameSounds';
 import { Btn } from './ui';
 import SoundToggle, { buttonTap } from './SoundControls';
 import TurnCountdown from './TurnCountdown';
+import PayGate from '@/components/wallet/PayGate';
 
 export interface ShellApi {
   player: Player;
@@ -184,7 +185,7 @@ export default function GameShell({
             onError={setError}
           />
         ) : (
-          children({ player, award })
+          <PayGate game={id}>{children({ player, award })}</PayGate>
         )}
       </div>
     </main>

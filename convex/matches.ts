@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import { v, ConvexError } from "convex/values";
 import { RULES } from "../src/lib/rules";
 import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
+import { chargeEntry, refundEntries } from "./walletLib";
 
 const INVITE_MS = 15 * 60 * 1000;
 
@@ -130,10 +131,12 @@ export const create = mutation({
       .query("matches")
       .withIndex("by_room", (q) => q.eq("roomId", room._id).eq("status", "waiting"))
       .collect();
-    for (const m of waiting) if (m.creatorId === args.playerId) await ctx.db.patch(m._id, { status: "cancelled" });
+    for (const m of waiting) if (m.creatorId === args.playerId) { await ctx.db.patch(m._id, { status: "cancelled" }); await refundEntries(ctx.db, m); }
 
+    const paid = await chargeEntry(ctx.db, args.playerId, args.game, `${args.game} online game`);
     const now = Date.now();
     return ctx.db.insert("matches", {
+      paid,
       roomId: room._id,
       game: args.game,
       creatorId: args.playerId,
@@ -203,10 +206,11 @@ export const join = mutation({
     const rules = rulesFor(match.game);
     if (match.seats.length >= rules.max) throw new ConvexError("That game is full.");
     const seats = [...match.seats, { playerId: args.playerId, name: me.name, avatar: me.avatar }];
-    const next = { ...match, seats };
+    const paid = [...(match.paid ?? []), ...await chargeEntry(ctx.db, args.playerId, match.game, `${match.game} online game`)];
+    const next = { ...match, seats, paid };
     // Everyone invited is in: deal and go
     const everyone = seats.length === match.invited.length + 1;
-    await ctx.db.patch(match._id, everyone ? { seats, ...await start(ctx, next) } : { seats, updatedAt: Date.now() });
+    await ctx.db.patch(match._id, everyone ? { seats, paid, ...await start(ctx, next) } : { seats, paid, updatedAt: Date.now() });
     return null;
   },
 });
@@ -222,6 +226,7 @@ export const decline = mutation({
     if (match.seats.length + pending < rules.min) {
       // Not enough campers left to play: call it off
       await ctx.db.patch(match._id, { invited, status: "cancelled", updatedAt: Date.now() });
+      await refundEntries(ctx.db, match);
     } else if (pending === 0) {
       // Everyone else already joined: deal
       await ctx.db.patch(match._id, { invited, ...await start(ctx, match) });
@@ -251,6 +256,7 @@ export const cancel = mutation({
     const match = await load(ctx.db, args.matchId);
     if (match.status === "waiting" && match.creatorId === args.playerId) {
       await ctx.db.patch(match._id, { status: "cancelled", updatedAt: Date.now() });
+      await refundEntries(ctx.db, match);
     }
     return null;
   },
