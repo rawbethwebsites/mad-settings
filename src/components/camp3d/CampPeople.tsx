@@ -160,11 +160,22 @@ const GEO = {
   shoe: new THREE.BoxGeometry(0.105, 0.075, 0.25),
   sole: new THREE.BoxGeometry(0.115, 0.03, 0.26),
   hips: new THREE.CylinderGeometry(0.165, 0.155, 0.18, 12),
-  chest: new THREE.CylinderGeometry(0.19, 0.155, 0.5, 12),
+  chest: new THREE.CylinderGeometry(0.19, 0.165, 0.28, 14),
+  belly: new THREE.CylinderGeometry(0.165, 0.155, 0.24, 14),
+  bust: new THREE.SphereGeometry(0.075, 14, 10),
+  band: new THREE.CylinderGeometry(0.196, 0.196, 0.075, 18),
+  shortsTop: new THREE.CylinderGeometry(0.09, 0.08, 0.17, 10),
   shoulderCap: new THREE.SphereGeometry(0.075, 10, 8),
   neck: new THREE.CylinderGeometry(0.048, 0.056, 0.12, 10),
   head: new THREE.SphereGeometry(0.12, 16, 12),
-  eye: new THREE.SphereGeometry(0.013, 6, 4),
+  sclera: new THREE.SphereGeometry(0.032, 14, 10),
+  iris: new THREE.SphereGeometry(0.026, 12, 10),
+  shine: new THREE.SphereGeometry(0.009, 6, 4),
+  mouth: new THREE.BoxGeometry(0.034, 0.007, 0.01),
+  bang: new THREE.ConeGeometry(0.038, 0.12, 5),
+  spike: new THREE.ConeGeometry(0.05, 0.17, 5),
+  longHair: new THREE.CylinderGeometry(0.135, 0.17, 0.5, 14),
+  tail: new THREE.CylinderGeometry(0.055, 0.02, 0.44, 8),
   nose: new THREE.ConeGeometry(0.022, 0.05, 6),
   ear: new THREE.SphereGeometry(0.026, 6, 5),
   upperArm: new THREE.CylinderGeometry(0.054, 0.046, 0.28, 10),
@@ -197,7 +208,7 @@ function buildRig() {
   const hip = SIDES.map((side) => node(body, [side * 0.1, 0.9, 0]));
   const knee = hip.map((h) => node(h, [0, -0.45, 0]));
   const torso = node(body, [0, 0.9, 0]);
-  const head = node(torso, [0, 0.66, 0]);
+  const head = node(torso, [0, 0.66, 0], undefined, [1.15, 1.15, 1.15]); // anime proportions: a bigger head
   const shoulder = SIDES.map((side) => node(torso, [side * 0.235, 0.52, 0]));
   const elbow = shoulder.map((s) => node(s, [0, -0.28, 0]));
 
@@ -207,18 +218,31 @@ function buildRig() {
     shoe: knee.map((k) => node(k, [0, -0.415, 0.05])),
     sole: knee.map((k) => node(k, [0, -0.455, 0.05])),
     hips: [node(torso, [0, 0.05, 0], undefined, [1, 1, 0.66])],
-    chest: [node(torso, [0, 0.33, 0], undefined, [1, 1, 0.62])],
+    chest: [node(torso, [0, 0.44, 0], undefined, [1, 1, 0.62])],
+    belly: [node(torso, [0, 0.2, 0], undefined, [1, 1, 0.62])],
+    bust: SIDES.map((side) => node(torso, [side * 0.075, 0.43, 0.085], undefined, [1, 0.9, 0.75])),
+    band: [node(torso, [0, 0.43, 0], undefined, [1, 1, 0.66])],
+    pec: SIDES.map((side) => node(torso, [side * 0.08, 0.48, 0.06], undefined, [1.45, 0.8, 0.28])),
+    shortsTop: hip.map((h) => node(h, [0, -0.08, 0])),
     shoulderCap: SIDES.map((side) => node(torso, [side * 0.2, 0.53, 0], undefined, [1, 0.8, 0.9])),
     neck: [node(torso, [0, 0.62, 0])],
     head: [node(head, [0, 0.11, 0.01], undefined, [0.92, 1.12, 1])],
-    eye: SIDES.map((side) => node(head, [side * 0.042, 0.13, 0.115])),
+    sclera: SIDES.map((side) => node(head, [side * 0.045, 0.1, 0.108], undefined, [1, 1.2, 0.35])),
+    iris: SIDES.map((side) => node(head, [side * 0.045, 0.094, 0.117], undefined, [0.85, 1.12, 0.35])),
+    shine: SIDES.map((side) => node(head, [side * 0.053, 0.112, 0.127])),
+    mouth: [node(head, [0, 0.042, 0.121])],
     ear: SIDES.map((side) => node(head, [side * 0.11, 0.11, 0], undefined, [0.5, 1, 0.8])),
-    nose: [node(head, [0, 0.095, 0.128], [Math.PI / 2, 0, 0])],
+    nose: [node(head, [0, 0.07, 0.124], [Math.PI / 2, 0, 0], [0.45, 0.45, 0.45])],
+    bang: [-0.075, -0.035, 0.005, 0.045, 0.08].map((x) => node(head, [x, 0.175, 0.1], [Math.PI - 0.55, 0, x * 2.2])),
+    spike: ([[0, 0.27, -0.01], [0.075, 0.24, -0.03], [-0.075, 0.24, -0.03], [0.045, 0.22, -0.09], [-0.045, 0.22, -0.09], [0.11, 0.17, 0], [-0.11, 0.17, 0]] as const).map(
+      ([x, y, z]) => node(head, [x, y, z], [z * -7, 0, x * -7]),
+    ),
+    longHair: [node(head, [0, 0.02, -0.055], undefined, [1, 1, 0.62])],
+    tail: SIDES.map((side) => node(head, [side * 0.15, 0.02, -0.04], [0, 0, side * 0.18])),
     hairShort: [node(head, [0, 0.13, -0.01], [-0.25, 0, 0])],
     afro: [node(head, [0, 0.19, -0.03], undefined, [1, 0.85, 1])],
     brim: [node(head, [0, 0.17, 0.13], [-0.15, 0, 0])],
     bun: [node(head, [0, 0.26, -0.08])],
-    braid: [-0.07, -0.025, 0.025, 0.07].map((x) => node(head, [x, 0.02, -0.09], [0.25, 0, x * 1.5])),
     upperArm: shoulder.map((s) => node(s, [0, -0.14, 0])),
     forearm: elbow.map((e) => node(e, [0, -0.13, 0])),
     hand: elbow.map((e) => node(e, [0, -0.29, 0])),
@@ -238,35 +262,90 @@ type PartDef = {
   has?: (p: PersonSpec) => boolean;
   roughness?: number;
   pickable?: boolean;
+  flat?: boolean; // unlit and no outline: eyes and mouth
 };
 
 const hairColor = (l: Look) => l.hairColor ?? "#120c08";
 const hasHair = (...kinds: Look["hair"][]) => (p: PersonSpec) => kinds.includes(p.look.hair);
+const female = (p: PersonSpec) => p.look.shape === "curvy" || p.look.shape === "slim";
+const male = (p: PersonSpec) => p.look.shape === "broad" || p.look.shape === "athletic";
+
+// What the outfit covers: crop tops and bikinis show the waist, shorts show the legs
+const sleeves = (l: Look) => (!l.top || l.top === "tee" ? l.shirt : l.skin);
+const chestTone = (l: Look) => (l.top === "bikini" || l.top === "shirtless" ? l.skin : l.shirt);
+const bellyTone = (l: Look) => (!l.top || l.top === "tee" || l.top === "tank" ? l.shirt : l.skin);
+const legTone = (l: Look) => (l.bottom === "shorts" ? l.skin : l.pants);
 
 const PARTS: PartDef[] = [
-  { key: "thigh", geo: GEO.thigh, color: (l) => l.pants, pickable: true },
-  { key: "shin", geo: GEO.shin, color: (l) => l.pants },
+  { key: "thigh", geo: GEO.thigh, color: legTone, pickable: true },
+  { key: "shortsTop", geo: GEO.shortsTop, color: (l) => l.pants },
+  { key: "shin", geo: GEO.shin, color: legTone },
   { key: "shoe", geo: GEO.shoe, color: () => "#111015" },
-  { key: "sole", geo: GEO.sole, color: () => "#ECE8E0", roughness: 0.6 },
+  { key: "sole", geo: GEO.sole, color: () => "#ECE8E0" },
   { key: "hips", geo: GEO.hips, color: (l) => l.pants },
-  { key: "chest", geo: GEO.chest, color: (l) => l.shirt, roughness: 0.7, pickable: true },
-  { key: "shoulderCap", geo: GEO.shoulderCap, color: (l) => l.shirt, roughness: 0.7 },
-  { key: "neck", geo: GEO.neck, color: (l) => l.skin, roughness: 0.6 },
-  { key: "head", geo: GEO.head, color: (l) => l.skin, roughness: 0.6, pickable: true },
-  { key: "eye", geo: GEO.eye, color: () => "#0b0705", roughness: 0.3 },
-  { key: "ear", geo: GEO.ear, color: (l) => l.skin, roughness: 0.6 },
-  { key: "nose", geo: GEO.nose, color: (l) => l.skin, roughness: 0.6 },
-  { key: "hairShort", geo: GEO.hairShort, color: hairColor, has: hasHair("short", "cap", "bun", "braids"), roughness: 0.95 },
-  { key: "afro", geo: GEO.afro, color: hairColor, has: hasHair("afro"), roughness: 0.95 },
-  { key: "brim", geo: GEO.brim, color: hairColor, has: hasHair("cap"), roughness: 0.95 },
-  { key: "bun", geo: GEO.bun, color: hairColor, has: hasHair("bun"), roughness: 0.95 },
-  { key: "braid", geo: GEO.braid, color: hairColor, has: hasHair("braids"), roughness: 0.95 },
-  { key: "upperArm", geo: GEO.upperArm, color: (l) => l.shirt, roughness: 0.7 },
-  { key: "forearm", geo: GEO.forearm, color: (l) => l.skin, roughness: 0.6 },
-  { key: "hand", geo: GEO.hand, color: (l) => l.skin, roughness: 0.6 },
-  { key: "mic", geo: GEO.mic, color: () => "#0A0A0A", has: (p) => !!p.mic, roughness: 0.4 },
-  { key: "micHead", geo: GEO.micHead, color: () => "#c9c9d1", has: (p) => !!p.mic, roughness: 0.3 },
+  { key: "belly", geo: GEO.belly, color: bellyTone },
+  { key: "chest", geo: GEO.chest, color: chestTone, pickable: true },
+  { key: "bust", geo: GEO.bust, color: (l) => l.shirt, has: female },
+  { key: "band", geo: GEO.band, color: (l) => l.shirt, has: (p) => p.look.top === "bikini" },
+  { key: "pec", geo: GEO.bust, color: chestTone, has: male },
+  { key: "shoulderCap", geo: GEO.shoulderCap, color: sleeves },
+  { key: "neck", geo: GEO.neck, color: (l) => l.skin },
+  { key: "head", geo: GEO.head, color: (l) => l.skin, pickable: true },
+  { key: "sclera", geo: GEO.sclera, color: () => "#ffffff", flat: true },
+  { key: "iris", geo: GEO.iris, color: () => "#2a1a2e", flat: true },
+  { key: "shine", geo: GEO.shine, color: () => "#ffffff", flat: true },
+  { key: "mouth", geo: GEO.mouth, color: () => "#8a2f3a", flat: true },
+  { key: "ear", geo: GEO.ear, color: (l) => l.skin },
+  { key: "nose", geo: GEO.nose, color: (l) => l.skin },
+  { key: "hairShort", geo: GEO.hairShort, color: hairColor, has: hasHair("short", "cap", "bun", "braids", "long") },
+  { key: "bang", geo: GEO.bang, color: hairColor, has: hasHair("short", "bun", "braids", "long") },
+  { key: "spike", geo: GEO.spike, color: hairColor, has: hasHair("short") },
+  { key: "longHair", geo: GEO.longHair, color: hairColor, has: hasHair("long") },
+  { key: "tail", geo: GEO.tail, color: hairColor, has: hasHair("braids") },
+  { key: "afro", geo: GEO.afro, color: hairColor, has: hasHair("afro") },
+  { key: "brim", geo: GEO.brim, color: hairColor, has: hasHair("cap") },
+  { key: "bun", geo: GEO.bun, color: hairColor, has: hasHair("bun") },
+  { key: "upperArm", geo: GEO.upperArm, color: sleeves },
+  { key: "forearm", geo: GEO.forearm, color: (l) => l.skin },
+  { key: "hand", geo: GEO.hand, color: (l) => l.skin },
+  { key: "mic", geo: GEO.mic, color: () => "#0A0A0A", has: (p) => !!p.mic },
+  { key: "micHead", geo: GEO.micHead, color: () => "#c9c9d1", has: (p) => !!p.mic },
 ];
+
+// Body shapes: shoulders, chest, waist, hips, thighs, bust
+type Shape = { sh: number; ch: number; wa: number; hp: number; th: number; bu: number };
+const SHAPES: Record<NonNullable<Look["shape"]>, Shape> = {
+  curvy: { sh: 0.95, ch: 0.96, wa: 0.78, hp: 1.28, th: 1.2, bu: 1.08 },
+  slim: { sh: 0.92, ch: 0.92, wa: 0.84, hp: 1.06, th: 0.98, bu: 0.92 },
+  broad: { sh: 1.24, ch: 1.26, wa: 0.98, hp: 1.02, th: 1.1, bu: 1 },
+  athletic: { sh: 1.1, ch: 1.1, wa: 0.9, hp: 1, th: 1.02, bu: 0.85 },
+};
+const shapeOf = (l: Look): Shape => {
+  if (l.shape) return SHAPES[l.shape];
+  const b = l.build ?? 1;
+  return { sh: b, ch: b, wa: b, hp: b, th: b, bu: 1 };
+};
+
+// Cel shading: three hard bands of light, like anime
+const TOON_RAMP = (() => {
+  const t = new THREE.DataTexture(new Uint8Array([110, 190, 255]), 3, 1, THREE.RedFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.needsUpdate = true;
+  return t;
+})();
+
+// Ink outline: the same shape pushed out along its normals, drawn inside-out in dark ink
+function inflate(geo: THREE.BufferGeometry, by: number) {
+  const g = geo.clone();
+  const pos = g.attributes.position;
+  const nor = g.attributes.normal;
+  for (let i = 0; i < pos.count; i += 1) {
+    pos.setXYZ(i, pos.getX(i) + nor.getX(i) * by, pos.getY(i) + nor.getY(i) * by, pos.getZ(i) + nor.getZ(i) * by);
+  }
+  return g;
+}
+const OUTLINE = new THREE.MeshBasicMaterial({ color: "#140c18", side: THREE.BackSide });
+const OUTLINE_GEO = new Map(PARTS.filter((d) => !d.flat).map((d) => [d.key, inflate(d.geo, 0.009)]));
 
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 const frustum = new THREE.Frustum();
@@ -274,7 +353,7 @@ const viewProj = new THREE.Matrix4();
 const probe = new THREE.Sphere(new THREE.Vector3(), 1.3);
 const tmpColor = new THREE.Color();
 
-function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
+export function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
   const rig = useMemo(buildRig, []);
   const meshes = useRef<(THREE.InstancedMesh | null)[]>([]);
 
@@ -292,7 +371,7 @@ function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
   );
 
   const materials = useMemo(
-    () => PARTS.map((def) => new THREE.MeshStandardMaterial({ roughness: def.roughness ?? 0.78 })),
+    () => PARTS.map((def) => (def.flat ? new THREE.MeshBasicMaterial() : new THREE.MeshToonMaterial({ gradientMap: TOON_RAMP }))),
     [],
   );
 
@@ -353,7 +432,6 @@ function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
 
     for (let i = 0; i < PEOPLE.length; i += 1) {
       const p = PEOPLE[i];
-      const build = p.look.build ?? 1;
       let px = p.x;
       let pz = p.z;
       let ry = p.ry;
@@ -377,16 +455,22 @@ function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
       root.scale.setScalar(PERSON_SCALE);
 
       // Body shape for this camper.
-      hip[0].position.x = -0.1 * build;
-      hip[1].position.x = 0.1 * build;
-      shoulder[0].position.x = -0.235 * build;
-      shoulder[1].position.x = 0.235 * build;
-      parts.chest[0].scale.x = build;
-      parts.hips[0].scale.x = build;
-      parts.shoulderCap[0].position.x = -0.2 * build;
-      parts.shoulderCap[1].position.x = 0.2 * build;
-      parts.thigh[0].scale.set(build, 1, build);
-      parts.thigh[1].scale.set(build, 1, build);
+      const sh = shapeOf(p.look);
+      for (let s = 0; s < 2; s += 1) {
+        const side = SIDES[s];
+        hip[s].position.x = 0.1 * sh.hp * side;
+        shoulder[s].position.x = 0.235 * sh.sh * side;
+        parts.shoulderCap[s].position.x = 0.2 * sh.sh * side;
+        parts.thigh[s].scale.set(sh.th, 1, sh.th);
+        parts.shortsTop[s].scale.set(sh.th * 1.06, 1, sh.th * 1.06);
+        parts.bust[s].position.x = 0.075 * sh.ch * side;
+        parts.bust[s].scale.set(sh.bu, 0.88 * sh.bu, 0.62 * sh.bu);
+        parts.pec[s].position.x = 0.085 * sh.ch * side;
+      }
+      parts.chest[0].scale.x = sh.ch;
+      parts.band[0].scale.x = sh.ch;
+      parts.belly[0].scale.x = sh.wa;
+      parts.hips[0].scale.x = sh.hp;
 
       const t = time + p.phase;
       poseAt(p.pose, t, J);
@@ -419,6 +503,15 @@ function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
     }
   });
 
+  // Outlines share each part's instance matrices, so they move for free
+  const outlines = useRef<(THREE.InstancedMesh | null)[]>([]);
+  useLayoutEffect(() => {
+    outlines.current.forEach((o, m) => {
+      const mesh = meshes.current[m];
+      if (o && mesh) o.instanceMatrix = mesh.instanceMatrix;
+    });
+  }, [layout]);
+
   return (
     <group>
       {layout.map(({ def, count }, m) => (
@@ -431,6 +524,18 @@ function Crowd({ people: PEOPLE }: { people: PersonSpec[] }) {
           frustumCulled={false}
         />
       ))}
+      {layout.map(({ def, count }, m) =>
+        OUTLINE_GEO.has(def.key) && count > 0 ? (
+          <instancedMesh
+            key={`ink-${def.key}`}
+            ref={(mesh) => {
+              outlines.current[m] = mesh;
+            }}
+            args={[OUTLINE_GEO.get(def.key)!, OUTLINE, count]}
+            frustumCulled={false}
+          />
+        ) : null,
+      )}
     </group>
   );
 }
@@ -471,7 +576,7 @@ function MatchBall() {
 export default function CampPeople() {
   const people = useSyncExternalStore(campPeople.subscribe, campPeople.get, campPeople.server);
   // Rebuild the instanced meshes when the mix of hair styles (and so part counts) changes
-  const key = useMemo(() => people.map((p) => p.look.hair).join(""), [people]);
+  const key = useMemo(() => people.map((p) => `${p.look.hair}${p.look.shape ?? ""}`).join(""), [people]);
   return (
     <group>
       <FireLogs />

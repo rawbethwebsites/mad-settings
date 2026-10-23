@@ -31,7 +31,7 @@ export const walletTables = {
     founderNo: v.optional(v.number()), // Founding Camper number, by approval order
     // Their avatar walking round the homepage camp, and what it says
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
-    look: v.optional(v.object({ skin: v.number(), hair: v.string(), shirt: v.number(), pants: v.number() })),
+    look: v.optional(v.object({ skin: v.number(), hair: v.string(), shirt: v.number(), pants: v.number(), hairColor: v.optional(v.number()), shape: v.optional(v.string()), top: v.optional(v.string()), bottom: v.optional(v.string()) })),
     shout: v.optional(v.string()),
   }).index('by_phone', ['phone']).index('by_player_key', ['playerKey']).index('by_created', ['createdAt'])
     .index('by_chips', ['chips']).index('by_founder', ['founderNo']),
