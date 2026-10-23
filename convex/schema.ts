@@ -1,7 +1,9 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { connectTables } from "./connectSchema";
 
 export default defineSchema({
+  ...connectTables,
   registrations: defineTable({
     name: v.string(),
     email: v.string(),
@@ -90,7 +92,8 @@ export default defineSchema({
     total: v.number(),
   })
     .index("by_room", ["roomId"])
-    .index("by_room_player", ["roomId", "playerId"]),
+    .index("by_room_player", ["roomId", "playerId"])
+    .index("by_player", ["playerId"]),
 
   // Live games between campers in a room. `state` is the full game state from
   // src/lib/rules; clients only ever get rules.view(state, theirSeat).

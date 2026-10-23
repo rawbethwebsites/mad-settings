@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import RoomLayer from "@/components/room/RoomLayer";
+import ConnectLayer from "@/components/connect/ConnectLayer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,6 +40,7 @@ export default function RootLayout({
         <ConvexClientProvider>
           {children}
           <RoomLayer />
+          <ConnectLayer />
         </ConvexClientProvider>
       </body>
     </html>
