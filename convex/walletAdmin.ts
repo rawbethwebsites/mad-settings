@@ -7,6 +7,7 @@ import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { checkPassword, hashPassword, randomHex } from './accounts';
 import { bank, cleanAmount, credit, requireStaff, staffRole } from './walletLib';
+import { FOUNDER_CHIPS, FOUNDERS, moveChips } from './casinoLib';
 
 const staffArg = { playerId: v.string() };
 
@@ -66,7 +67,16 @@ export const review = mutation({
     const landed = amount === undefined ? p.amount : cleanAmount(amount);
     await ctx.db.patch(p._id, { status: approve ? 'approved' : 'rejected', amount: landed, reviewer, reviewedAt: Date.now(), note: note?.trim().slice(0, 200) || undefined });
     if (!approve) return null;
-    if (p.kind === 'registration') await ctx.db.patch(a._id, { status: 'approved' });
+    if (p.kind === 'registration') {
+      await ctx.db.patch(a._id, { status: 'approved' });
+      // The first 100 campers approved become Founding Campers, with bonus chips
+      const last = await ctx.db.query('accounts').withIndex('by_founder', q => q.gt('founderNo', 0)).order('desc').first();
+      const next = (last?.founderNo ?? 0) + 1;
+      if (!a.founderNo && next <= FOUNDERS) {
+        await ctx.db.patch(a._id, { founderNo: next });
+        await moveChips(ctx.db, (await ctx.db.get(a._id))!, FOUNDER_CHIPS, 'bonus', `Founding Camper #${next} bonus`);
+      }
+    }
     else await credit(ctx.db, a, landed, 'topup', 'Wallet top-up (bank transfer)', reviewer);
     return null;
   },

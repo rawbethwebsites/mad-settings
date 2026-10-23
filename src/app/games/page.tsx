@@ -128,6 +128,11 @@ export default function GamesHub() {
           )}
         </div>
 
+        <button onClick={() => router.push('/casino')} className="w-full min-h-14 mb-6 p-5 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] shadow-[6px_6px_0_#000] font-display font-black text-xl uppercase text-left flex items-center justify-between gap-3">
+          <span>🎰 Casino Night<span className="block font-body font-normal normal-case text-sm text-[#f3efe2]/80">Play your friends for chips. Winner takes the pot.</span></span>
+          <span aria-hidden="true">→</span>
+        </button>
+
         <h1 className="font-display font-black text-4xl uppercase italic mb-4">Pick a game</h1>
         <button onClick={() => router.push('/games/tictactoe')} className="w-full min-h-14 mb-6 p-5 poster-border poster-shadow bg-brand-purple text-brand-cream font-display font-black text-xl">
           ▶ Play now · Tic tac toe
