@@ -121,6 +121,11 @@ export default function GamesHub() {
           )}
         </div>
 
+        <button onClick={() => router.push('/connect')} className="w-full mb-8 p-6 poster-border poster-shadow bg-brand-black text-brand-cream text-left">
+          <span className="font-display font-black text-2xl uppercase block">Campfire Connect</span>
+          <span className="block mt-2">Friends, teammates and a seat around the fire. Walk the Trail →</span>
+        </button>
+
         {/* Game Cards */}
         {GROUPS.map(group => (
           <section key={group.id} className="mb-8">
