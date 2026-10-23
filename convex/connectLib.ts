@@ -11,7 +11,8 @@ export async function own(db: DatabaseReader, playerId: string) {
   return db.query('connectProfiles').withIndex('by_player', q => q.eq('playerId', playerId)).unique();
 }
 export function active(p: Doc<'connectProfiles'>) { return !p.banned && !p.suspended && !p.hidden; }
-export const ready = (p: Doc<'connectProfiles'>) => p.photos.some(p => p.status === 'approved');
+// Every camper with a profile can be seen and liked; others only see their photos once a Ranger approves them
+export const ready = (_p: Doc<'connectProfiles'>) => true;
 export async function requireProfile(db: DatabaseReader, playerId: string, allowRestricted = false) {
   const p = await own(db, playerId);
   if (!p) throw new ConvexError('Create your camp profile first.');

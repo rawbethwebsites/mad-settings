@@ -96,7 +96,7 @@ export const deck = query({ args: { ...identity, mode: connectMode }, handler: a
   if (!p.modes.includes(mode)) return { cards: [], modeOff: true, ...limits };
   const swiped = await ctx.db.query('connectSwipes').withIndex('by_from_mode', q => q.eq('from', p._id).eq('mode', mode)).take(2000);
   const seen = new Set(swiped.filter(s => !s.undone).map(s => s.to));
-  const candidates = await ctx.db.query('connectProfiles').take(1000);
+  const candidates = await ctx.db.query('connectProfiles').order('desc').take(1000); // newest campers first
   const cards = [];
   for (const peer of candidates) {
     if (peer._id === p._id || !active(peer) || peer.visibility !== 'everyone' || !peer.modes.includes(mode) || seen.has(peer._id) || await blocked(ctx.db, p._id, peer._id)) continue;
