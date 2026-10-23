@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getPlayer, getTotalScore, clearPlayer, Player } from '@/lib/player';
 import { VAULT_PIECES } from '@/data/gameContent';
+import WalletChip from '@/components/wallet/WalletChip';
 
 const GAMES = [
   // Camp games
@@ -78,6 +79,8 @@ export default function GamesHub() {
               <div className="font-display font-black text-4xl text-brand-acid">{totalScore}</div>
             </div>
           </div>
+
+          <WalletChip />
 
           {/* Individual scores stay available without crowding the game picker. */}
           <details className="mt-4"><summary className="min-h-11 flex items-center cursor-pointer font-display font-bold">＋ Your scores</summary>

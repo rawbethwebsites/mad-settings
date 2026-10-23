@@ -1,9 +1,11 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { connectTables } from "./connectSchema";
+import { walletTables } from "./walletSchema";
 
 export default defineSchema({
   ...connectTables,
+  ...walletTables,
   registrations: defineTable({
     name: v.string(),
     email: v.string(),
@@ -109,6 +111,8 @@ export default defineSchema({
     turnDeadline: v.optional(v.number()),
     moveNo: v.optional(v.number()),
     result: v.optional(v.object({ winners: v.array(v.number()), reason: v.string() })),
+    // Campers charged an entry fee for this match (refunded if it never starts)
+    paid: v.optional(v.array(v.object({ playerId: v.string(), amount: v.number() }))),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_room", ["roomId", "status"]),

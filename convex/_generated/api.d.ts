@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accounts from "../accounts.js";
 import type * as chess from "../chess.js";
 import type * as connect from "../connect.js";
 import type * as connectConstants from "../connectConstants.js";
@@ -23,6 +24,9 @@ import type * as registrations from "../registrations.js";
 import type * as roomLib from "../roomLib.js";
 import type * as rooms from "../rooms.js";
 import type * as rounds from "../rounds.js";
+import type * as walletAdmin from "../walletAdmin.js";
+import type * as walletLib from "../walletLib.js";
+import type * as walletSchema from "../walletSchema.js";
 
 import type {
   ApiFromModules,
@@ -31,6 +35,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accounts: typeof accounts;
   chess: typeof chess;
   connect: typeof connect;
   connectConstants: typeof connectConstants;
@@ -46,6 +51,9 @@ declare const fullApi: ApiFromModules<{
   roomLib: typeof roomLib;
   rooms: typeof rooms;
   rounds: typeof rounds;
+  walletAdmin: typeof walletAdmin;
+  walletLib: typeof walletLib;
+  walletSchema: typeof walletSchema;
 }>;
 
 /**
