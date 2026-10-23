@@ -49,7 +49,7 @@ async function camper(label) {
   await payReceipt(r.playerKey, 'registration', 10_000);
   const lobby = await client.query(api.casino.lobby, { playerKey: r.playerKey });
   if (before.foundersLeft > 0) {
-    assert.equal(lobby.me.founderNo, 100 - before.foundersLeft + 1);
+    assert.equal(lobby.me.founderNo, before.founders - before.foundersLeft + 1);
     assert.equal(lobby.me.chips, 2_000);
   }
   return { key: r.playerKey, name: `DEV ${label} ${run}`, founder: before.foundersLeft > 0 };
@@ -58,9 +58,12 @@ async function camper(label) {
 const chips = async (c) => (await client.query(api.casino.lobby, { playerKey: c.key })).me.chips;
 const wallet = async (c) => (await client.query(api.casino.lobby, { playerKey: c.key })).me.balance;
 
+const tentsBefore = await client.query(api.accounts.tents, {});
+assert.equal(tentsBefore.total, 70);
 const alice = await camper('Ada');
 const bob = await camper('Bayo');
-ok('Founding Campers get a number and 2,000 chips when their fee is approved');
+assert.equal((await client.query(api.casino.lobby, { playerKey: '' })).founders, 10);
+ok('Founding Campers (first 10) get a number and 2,000 chips; tents counter starts from 70');
 
 // Buying chips
 await payReceipt(alice.key, 'topup', 5_000);
@@ -191,7 +194,7 @@ ok('Resigning a chess chip game hands the pot (minus 5%) to the other player');
 const report = await client.query(api.casino.report, { playerId: head.playerId });
 assert.ok(report.nairaSold >= 10_000 && report.houseKept >= 240);
 const lobby = await client.query(api.casino.lobby, { playerKey: alice.key });
-assert.ok(lobby.leaderboard.some(r => r.me));
+assert.ok(lobby.leaderboard.length > 0 && lobby.leaderboard.every((r, i, l) => i === 0 || l[i - 1].chips >= r.chips));
 ok(`Staff report and leaderboard (sold ₦${report.nairaSold.toLocaleString()}, house kept ${report.houseKept} chips)`);
 
 await client.mutation(api.connect.deleteProfile, { playerId: head.playerId });

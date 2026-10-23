@@ -248,7 +248,7 @@ function Casino({ data, me, run }: TabProps) {
           ['Chip games played', report.chipGames.toLocaleString()],
           ['Chips the house kept', report.houseKept.toLocaleString()],
           ['Chips campers hold', report.chipsHeld.toLocaleString()],
-          ['Founding Campers', `${report.founders} of 100`],
+          ['Founding Campers', `${report.founders} of ${report.foundersTotal}`],
           ['House cut', `${report.houseCut}%`],
         ] as const).map(([k, v]) => (
           <div key={k} className="p-2 border-2 border-brand-black/15"><dt className="text-xs uppercase opacity-60">{k}</dt><dd className="font-display font-black text-xl">{v}</dd></div>

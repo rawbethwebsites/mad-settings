@@ -43,6 +43,8 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
   const register = useAction(api.accounts.register);
   const login = useAction(api.accounts.login);
   const casino = useQuery(api.casino.lobby, { playerKey: '' });
+  const tents = useQuery(api.accounts.tents, {});
+  const tentsGone = tents?.left === 0;
   const [f, setF] = useState({ name: '', phone: '', password: '', email: '', guests: '1' });
   const [ticketId, setTicketId] = useState<TicketId>('attendee');
   const ticket = TICKETS.find(t => t.id === ticketId)!;
@@ -78,7 +80,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
       {mode === 'signup' && !!casino?.foundersLeft && (
         <p data-founders-left className="mb-4 p-3 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] font-display font-black uppercase text-sm">
           ★ Founding spots left: {casino.foundersLeft}
-          <span className="block font-body font-normal normal-case text-[#f3efe2]/85">The first 100 paid campers get {casino.founderChips.toLocaleString()} free casino chips and a gold badge.</span>
+          <span className="block font-body font-normal normal-case text-[#f3efe2]/85">The first {casino.founders} paid campers get {casino.founderChips.toLocaleString()} free casino chips and a gold badge.</span>
         </p>
       )}
       <form onSubmit={submit} className="space-y-4">
@@ -92,14 +94,22 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
             <div><label className={label} htmlFor="email">Email (optional)</label><input id="email" type="email" className={field} value={f.email} onChange={set('email')} autoComplete="email" /></div>
             <fieldset>
               <legend className={label}>Ticket · {CAMP_DATE} from {CAMP_START}</legend>
+              {tents && (
+                <p data-tents-left className={`mb-2 p-2 poster-border font-display font-black uppercase text-sm ${tentsGone ? 'bg-brand-coral' : 'bg-brand-black text-brand-acid'}`}>
+                  {tentsGone ? '⛺ Tents sold out' : `⛺ Only ${tents.left} of ${tents.total} tents left`}
+                </p>
+              )}
               <div className="grid gap-2">
-                {TICKETS.map(t => (
-                  <label key={t.id} className={`flex items-center justify-between gap-3 p-3 poster-border cursor-pointer ${ticketId === t.id ? 'bg-brand-acid' : 'bg-brand-cream'}`}>
-                    <input type="radio" name="ticket" value={t.id} checked={ticketId === t.id} onChange={() => setTicketId(t.id)} className="sr-only" />
+                {TICKETS.map(t => {
+                  const off = tentsGone && t.stay === 'sleepover';
+                  return (
+                  <label key={t.id} className={`flex items-center justify-between gap-3 p-3 poster-border ${off ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${ticketId === t.id ? 'bg-brand-acid' : 'bg-brand-cream'}`}>
+                    <input type="radio" name="ticket" value={t.id} checked={ticketId === t.id} disabled={off} onChange={() => setTicketId(t.id)} className="sr-only" />
                     <span><span className="block font-display font-black uppercase leading-tight">{t.name}</span><span className="block font-body text-sm text-brand-black/60">{t.note}</span></span>
-                    <span className="font-display font-black whitespace-nowrap">{naira(t.price)}</span>
+                    <span className="font-display font-black whitespace-nowrap">{off ? 'Sold out' : naira(t.price)}</span>
                   </label>
-                ))}
+                  );
+                })}
               </div>
             </fieldset>
             {ticket.id === 'attendee' && (
