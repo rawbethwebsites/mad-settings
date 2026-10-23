@@ -101,6 +101,9 @@ function JoinForm() {
           className="mt-4 w-full min-h-11 font-display font-bold text-sm flex items-center justify-center gap-2 hover:text-brand-purple disabled:opacity-50">
           {mode === 'join' ? 'Start a room instead' : 'Join a room instead'} <ArrowRight aria-hidden="true" size={18} />
         </button>
+        <a href="/account?mode=login" className="mt-1 w-full min-h-11 font-body text-sm flex items-center justify-center hover:text-brand-purple">
+          Already registered for camp? Log in to your account
+        </a>
       </div>
     </main>
   );
