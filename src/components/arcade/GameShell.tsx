@@ -15,6 +15,7 @@ import { Btn } from './ui';
 import SoundToggle, { buttonTap } from './SoundControls';
 import TurnCountdown from './TurnCountdown';
 import PayGate from '@/components/wallet/PayGate';
+import { ChipBanner, StakePicker } from '@/components/wallet/Chips';
 import { serverMessage } from '@/lib/account';
 
 export interface ShellApi {
@@ -326,61 +327,6 @@ function OnlineArena({
   );
 }
 
-type Casino = ReturnType<typeof useQuery<typeof api.casino.lobby>>;
-
-// Play for fun, or put chips on it. Only campers with an approved account see the chips.
-function StakePicker({ casino, stake, setStake }: { casino: Casino; stake: number; setStake: (n: number) => void }) {
-  const me = casino?.me;
-  if (!casino || !me || me.status !== 'approved') return null;
-  if (casino.paused) return <p className="font-body text-sm text-brand-black/60 mb-4">🎰 Chip games are paused right now.</p>;
-  if (!me.adult || me.chips < casino.stakes[0]) {
-    return (
-      <a href="/casino" className="block mb-4 p-3 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] font-display font-black uppercase text-sm">
-        🎰 Play for chips? Get chips in the Casino →
-      </a>
-    );
-  }
-  return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2 font-display font-bold text-xs uppercase tracking-widest">
-        <span>🎰 Play for chips?</span>
-        <span>You have {me.chips.toLocaleString()}</span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {[0, ...casino.stakes].map(n => (
-          <button
-            key={n}
-            type="button"
-            aria-pressed={stake === n}
-            disabled={n > me.chips}
-            onClick={() => setStake(n)}
-            className={`min-h-11 px-3 border-4 font-display font-black text-sm disabled:opacity-30 ${
-              stake === n ? 'border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e]' : 'border-brand-black/15 bg-white'
-            }`}
-          >
-            {n ? n.toLocaleString() : 'Free'}
-          </button>
-        ))}
-      </div>
-      {stake > 0 && (
-        <p className="font-body text-xs text-brand-black/60 mt-2">
-          Everyone puts in {stake.toLocaleString()}. Winner takes the pot, minus the camp&apos;s {casino.houseCut}%.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ChipBanner({ match }: { match: MatchData }) {
-  if (!match.stake) return null;
-  return (
-    <div data-chip-pot className="flex items-center justify-between gap-2 mb-2 px-3 py-2 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] font-display font-black uppercase text-sm">
-      <span>🎰 {match.stake.toLocaleString()} each</span>
-      <span>Pot {match.pot.toLocaleString()}</span>
-    </div>
-  );
-}
-
 interface MatchData {
   id: Id<'matches'>;
   game: string;
@@ -423,7 +369,7 @@ function WaitingRoom({
       <div className="text-center">
         <div className="text-5xl mb-3 animate-pulse">⏳</div>
         <h2 className="font-display font-black text-2xl uppercase mb-4">GAME ROUND {match.round}</h2>
-        <ChipBanner match={match} />
+        <ChipBanner stake={match.stake} pot={match.pot} />
 
         <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-black/50 mb-2">IN THE GAME</div>
         <ul className="space-y-2 mb-4">
@@ -516,7 +462,7 @@ function LiveMatch({
 
   return (
     <div>
-      <ChipBanner match={match} />
+      <ChipBanner stake={match.stake} pot={match.pot} />
       {/* Player strips */}
       <div className="grid grid-cols-2 gap-2 mb-2" aria-label="Players">
         {match.seats.map((s, i) => (

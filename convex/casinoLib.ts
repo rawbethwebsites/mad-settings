@@ -47,24 +47,37 @@ async function giveChips(db: DatabaseWriter, playerId: string, amount: number, k
 }
 
 // Game called off before it started: every stake goes back in full
+export async function returnStakes(db: DatabaseWriter, staked: string[], stake: number, game: string) {
+  for (const playerId of staked) await giveChips(db, playerId, stake, 'refund', `${game} called off`);
+}
+
+// Game over: the house keeps its cut, the winners share the rest (a draw shares it among everyone).
+// seatIds are the players in seat order; returns what each seat got.
+export async function settlePot(
+  db: DatabaseWriter,
+  pot: { stake: number; staked: string[]; houseCut?: number; game: string },
+  seatIds: string[],
+  winnerIds: string[],
+) {
+  const total = pot.stake * pot.staked.length;
+  const cut = Math.floor((total * (pot.houseCut ?? DEFAULT_CUT)) / 100);
+  const takers = (winnerIds.length ? winnerIds : seatIds).filter(id => pot.staked.includes(id));
+  const share = takers.length ? Math.floor((total - cut) / takers.length) : 0;
+  for (const id of takers) {
+    await giveChips(db, id, share, winnerIds.length ? 'win' : 'refund', `${winnerIds.length ? 'Won' : 'Draw in'} ${pot.game}`);
+  }
+  return { house: total - share * takers.length, seats: seatIds.map(id => (takers.includes(id) ? share : 0)) };
+}
+
 export async function refundStakes(db: DatabaseWriter, match: Doc<'matches'>) {
   if (!match.stake || !match.staked?.length) return;
-  for (const playerId of match.staked) await giveChips(db, playerId, match.stake, 'refund', `${match.game} called off`);
+  await returnStakes(db, match.staked, match.stake, match.game);
   await db.patch(match._id, { staked: [] });
 }
 
-// Game over: the house keeps its cut, the winners share the rest (a draw shares it among everyone)
 export async function payPot(db: DatabaseWriter, match: Doc<'matches'>, winners: number[]) {
   if (!match.stake || !match.staked?.length || match.payout) return;
-  const pot = match.stake * match.staked.length;
-  const cut = Math.floor((pot * (match.houseCut ?? DEFAULT_CUT)) / 100);
-  const takers = (winners.length ? winners : match.seats.map((_, i) => i))
-    .filter(i => match.staked!.includes(match.seats[i].playerId));
-  const share = takers.length ? Math.floor((pot - cut) / takers.length) : 0;
-  const seats = match.seats.map((_, i) => (takers.includes(i) ? share : 0));
-  const house = pot - share * takers.length;
-  for (const i of takers) {
-    await giveChips(db, match.seats[i].playerId, share, winners.length ? 'win' : 'refund', `${winners.length ? 'Won' : 'Draw in'} ${match.game}`);
-  }
-  await db.patch(match._id, { payout: { house, seats } });
+  const seatIds = match.seats.map(s => s.playerId);
+  const payout = await settlePot(db, { stake: match.stake, staked: match.staked, houseCut: match.houseCut, game: match.game }, seatIds, winners.map(i => seatIds[i]));
+  await db.patch(match._id, { payout });
 }

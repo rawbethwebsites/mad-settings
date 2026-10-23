@@ -12,6 +12,7 @@ import { DRAW_POINTS, ONLINE_WIN_POINTS, SIDES } from '@/data/chessPieces';
 import ChessBoard, { PlayerStrip, capturedBy } from './ChessBoard';
 import { play } from '@/lib/sfx';
 import { useResultSound, useTurnSound } from '@/lib/useGameSounds';
+import { ChipBanner, StakePicker } from '@/components/wallet/Chips';
 
 const btn = 'font-display font-black uppercase poster-border';
 
@@ -44,6 +45,7 @@ function Online({ player }: { player: Player }) {
   const [localCode, setLocalCode] = useState<string | null>(null);
   const [leftCodes, setLeftCodes] = useState<string[]>([]);
   const [side, setSide] = useState<Color | 'random'>('random');
+  const [stake, setStake] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const ping = useMutation(api.chess.ping);
@@ -53,6 +55,7 @@ function Online({ player }: { player: Player }) {
   const cancel = useMutation(api.chess.cancel);
 
   const online = useQuery(api.chess.online, { playerId });
+  const casino = useQuery(api.casino.lobby, { playerKey: playerId });
   const incoming = useQuery(api.chess.incoming, { playerId });
   const heardInvites = useRef(new Set<string>());
   useEffect(() => {
@@ -123,6 +126,9 @@ function Online({ player }: { player: Player }) {
               <div className="font-display font-black uppercase text-lg">
                 {inv.fromAvatar} {inv.fromName} wants to play chess!
               </div>
+              {inv.stake > 0 && (
+                <div className="mt-1 font-display font-black uppercase text-sm">🎰 For {inv.stake.toLocaleString()} chips each</div>
+              )}
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <button
                   onClick={() =>
@@ -172,6 +178,8 @@ function Online({ player }: { player: Player }) {
           ))}
         </div>
 
+        <StakePicker casino={casino} stake={stake} setStake={setStake} />
+
         <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-black/50 mb-2">
           CAMPERS ONLINE NOW
         </div>
@@ -202,13 +210,14 @@ function Online({ player }: { player: Player }) {
                           avatar: player.avatar,
                           toId: c.id as Id<'chessPresence'>,
                           side,
+                          stake: stake || undefined,
                         });
                         setLocalCode(r.code);
                       })
                     }
                     className={`${btn} px-4 py-2 bg-brand-purple text-brand-cream text-sm shrink-0`}
                   >
-                    INVITE →
+                    {stake ? `INVITE · ${stake.toLocaleString()}` : 'INVITE →'}
                   </button>
                 )}
               </li>
@@ -328,12 +337,14 @@ function Game({
           <>
             <div className="text-5xl mb-3">🙈</div>
             <h2 className="font-display font-black text-2xl uppercase mb-4">They can&apos;t play right now</h2>
+            {game.stake > 0 && <p className="font-body mb-4">Your {game.stake.toLocaleString()} chips are back.</p>}
             <button onClick={onLeave} className={`${btn} px-6 py-3 bg-brand-black text-brand-cream`}>BACK TO LOBBY</button>
           </>
         ) : (
           <>
             <div className="text-5xl mb-3 animate-pulse">⏳</div>
             <h2 className="font-display font-black text-2xl uppercase mb-2">Invite sent</h2>
+            <ChipBanner stake={game.stake} pot={game.pot} />
             <p className="font-body text-lg mb-6">Waiting for them to say yes…</p>
             <button
               onClick={() => {
@@ -384,6 +395,7 @@ function Game({
 
   return (
     <>
+      <ChipBanner stake={game.stake} pot={game.pot} />
       <div className="mb-2">
         <PlayerStrip color={top} label={who(top)} active={game.status === 'playing' && turn === top} captured={captured[top]} />
       </div>
@@ -450,15 +462,26 @@ function Game({
           {(iWon || result.winner === 'draw') && (
             <p className="font-display font-black text-xl">+{result.winner === 'draw' ? DRAW_POINTS : ONLINE_WIN_POINTS} PTS</p>
           )}
+          {game.stake > 0 && game.won !== null && (
+            <p className="font-display font-black text-xl">
+              🎰 {game.won > 0 ? `+${game.won.toLocaleString()} CHIPS` : `−${game.stake.toLocaleString()} CHIPS`}
+            </p>
+          )}
           <p className="font-body text-sm opacity-70 mt-1">{SIDES[you].name} · {player.name}</p>
           <div className="flex gap-3 mt-4">
             <button onClick={onLeave} className={`${btn} flex-1 py-3 bg-brand-cream text-brand-black`}>LOBBY</button>
-            <button
-              onClick={() => rematch({ code, playerId }).catch(() => {})}
-              className={`${btn} flex-1 py-3 bg-brand-black text-brand-cream`}
-            >
-              REMATCH →
-            </button>
+            {game.stake > 0 ? (
+              <button onClick={onLeave} className={`${btn} flex-1 py-3 bg-[#0f3d2e] text-[#f5d76e]`}>
+                🎰 NEW CHIP GAME
+              </button>
+            ) : (
+              <button
+                onClick={() => rematch({ code, playerId }).catch(() => {})}
+                className={`${btn} flex-1 py-3 bg-brand-black text-brand-cream`}
+              >
+                REMATCH →
+              </button>
+            )}
           </div>
         </div>
       )}
