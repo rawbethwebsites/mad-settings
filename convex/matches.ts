@@ -6,6 +6,7 @@ import { v, ConvexError } from "convex/values";
 import { RULES } from "../src/lib/rules";
 import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
 import { chargeEntry, refundEntries } from "./walletLib";
+import { casino, payPot, refundStakes, STAKES, takeStake } from "./casinoLib";
 
 const INVITE_MS = 15 * 60 * 1000;
 
@@ -48,6 +49,12 @@ async function start(ctx: MutationCtx, match: Doc<"matches">) {
   };
 }
 
+// Game never started: entry fees and chip stakes go back
+async function callOff(db: DatabaseWriter, match: Doc<"matches">) {
+  await refundEntries(db, match);
+  await refundStakes(db, match);
+}
+
 async function load(db: DatabaseReader, matchId: Id<"matches">) {
   const match = await db.get(matchId);
   if (!match) throw new ConvexError("That game is gone.");
@@ -61,6 +68,7 @@ async function forfeit(db: DatabaseWriter, match: Doc<"matches">, seat: number, 
   await db.patch(match._id, {
     status: "finished", result: { winners, reason }, turnDeadline: undefined, updatedAt: Date.now(),
   });
+  await payPot(db, match, winners);
   for (const i of winners) {
     const row = await memberOf(db, match.roomId, match.seats[i].playerId);
     if (row && !row.kicked) await addPoints(db, row, match.game, rules.points.win);
@@ -85,6 +93,7 @@ async function applyMove(ctx: MutationCtx, match: Doc<"matches">, seat: number, 
   await ctx.db.patch(match._id, {
     state, status: "finished", result: outcome, turnDeadline: undefined, updatedAt: Date.now(),
   });
+  await payPot(ctx.db, match, outcome.winners);
   // Points go straight onto the room leaderboard
   const draw = outcome.winners.length === 0;
   for (let i = 0; i < match.seats.length; i++) {
@@ -113,9 +122,12 @@ export const create = mutation({
     playerId: v.string(),
     game: v.string(),
     invite: v.array(v.id("roomPlayers")),
+    stake: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const rules = rulesFor(args.game);
+    const stake = args.stake ?? 0;
+    if (stake && !STAKES.includes(stake)) throw new ConvexError("Pick one of the chip stakes.");
     const { room, me } = await requireMember(ctx.db, args.code, args.playerId);
     if (args.invite.length < 1) throw new ConvexError("Pick who to play with.");
     if (args.invite.length > rules.max - 1) throw new ConvexError(`Up to ${rules.max} players in this game.`);
@@ -131,12 +143,14 @@ export const create = mutation({
       .query("matches")
       .withIndex("by_room", (q) => q.eq("roomId", room._id).eq("status", "waiting"))
       .collect();
-    for (const m of waiting) if (m.creatorId === args.playerId) { await ctx.db.patch(m._id, { status: "cancelled" }); await refundEntries(ctx.db, m); }
+    for (const m of waiting) if (m.creatorId === args.playerId) { await ctx.db.patch(m._id, { status: "cancelled" }); await callOff(ctx.db, m); }
 
     const paid = await chargeEntry(ctx.db, args.playerId, args.game, `${args.game} online game`);
+    if (stake) await takeStake(ctx.db, args.playerId, stake, args.game);
     const now = Date.now();
     return ctx.db.insert("matches", {
       paid,
+      ...(stake ? { stake, staked: [args.playerId], houseCut: (await casino(ctx.db)).houseCut } : {}),
       roomId: room._id,
       game: args.game,
       creatorId: args.playerId,
@@ -167,7 +181,7 @@ export const invites = query({
     const cutoff = Date.now() - INVITE_MS;
     return waiting
       .filter((m) => m.createdAt > cutoff && m.invited.includes(args.playerId) && seatOf(m, args.playerId) === null)
-      .map((m) => ({ id: m._id, game: m.game, from: m.seats[0].name, fromAvatar: m.seats[0].avatar }));
+      .map((m) => ({ id: m._id, game: m.game, from: m.seats[0].name, fromAvatar: m.seats[0].avatar, stake: m.stake ?? 0 }));
   },
 });
 
@@ -206,11 +220,13 @@ export const join = mutation({
     const rules = rulesFor(match.game);
     if (match.seats.length >= rules.max) throw new ConvexError("That game is full.");
     const seats = [...match.seats, { playerId: args.playerId, name: me.name, avatar: me.avatar }];
+    if (match.stake) await takeStake(ctx.db, args.playerId, match.stake, match.game);
+    const staked = match.stake ? [...(match.staked ?? []), args.playerId] : match.staked;
     const paid = [...(match.paid ?? []), ...await chargeEntry(ctx.db, args.playerId, match.game, `${match.game} online game`)];
-    const next = { ...match, seats, paid };
+    const next = { ...match, seats, paid, staked };
     // Everyone invited is in: deal and go
     const everyone = seats.length === match.invited.length + 1;
-    await ctx.db.patch(match._id, everyone ? { seats, paid, ...await start(ctx, next) } : { seats, paid, updatedAt: Date.now() });
+    await ctx.db.patch(match._id, everyone ? { seats, paid, staked, ...await start(ctx, next) } : { seats, paid, staked, updatedAt: Date.now() });
     return null;
   },
 });
@@ -226,7 +242,7 @@ export const decline = mutation({
     if (match.seats.length + pending < rules.min) {
       // Not enough campers left to play: call it off
       await ctx.db.patch(match._id, { invited, status: "cancelled", updatedAt: Date.now() });
-      await refundEntries(ctx.db, match);
+      await callOff(ctx.db, match);
     } else if (pending === 0) {
       // Everyone else already joined: deal
       await ctx.db.patch(match._id, { invited, ...await start(ctx, match) });
@@ -256,7 +272,7 @@ export const cancel = mutation({
     const match = await load(ctx.db, args.matchId);
     if (match.status === "waiting" && match.creatorId === args.playerId) {
       await ctx.db.patch(match._id, { status: "cancelled", updatedAt: Date.now() });
-      await refundEntries(ctx.db, match);
+      await callOff(ctx.db, match);
     }
     return null;
   },
@@ -316,6 +332,8 @@ export const rematch = mutation({
     const match = await load(ctx.db, args.matchId);
     if (match.status !== "finished") return null;
     if (seatOf(match, args.playerId) === null) throw new ConvexError("You are not in this game.");
+    // Each chip game is its own bet: everyone agrees to a new stake by starting a new game
+    if (match.stake) throw new ConvexError("Start a new game to play for chips again.");
     const seats = [...match.seats.slice(1), match.seats[0]];
     await ctx.db.patch(match._id, { seats, round: match.round + 1, ...await start(ctx, { ...match, seats }) });
     return null;
@@ -358,6 +376,10 @@ export const get = query({
       view: match.state === undefined ? null : rules.view(match.state, seat),
       result: match.result ?? null,
       points: rules.points,
+      stake: match.stake ?? 0,
+      pot: (match.stake ?? 0) * Math.max(match.staked?.length ?? 0, match.seats.length),
+      houseCut: match.houseCut ?? 0,
+      won: match.payout && seat !== null ? match.payout.seats[seat] ?? 0 : null,
     };
   },
 });

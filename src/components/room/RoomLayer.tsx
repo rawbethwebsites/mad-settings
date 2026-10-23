@@ -121,7 +121,7 @@ export default function RoomLayer() {
       if (dismissed.includes(key)) continue;
       toasts.push({
         key,
-        title: `${i.fromAvatar} ${i.from} INVITES YOU TO ${i.game.toUpperCase()}!`,
+        title: `${i.fromAvatar} ${i.from} INVITES YOU TO ${i.game.toUpperCase()}${i.stake ? ` FOR ${i.stake.toLocaleString()} CHIPS` : ''}!`,
         act: {
           label: '✓ JOIN',
           run: () => {

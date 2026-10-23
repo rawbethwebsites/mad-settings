@@ -113,6 +113,11 @@ export default defineSchema({
     result: v.optional(v.object({ winners: v.array(v.number()), reason: v.string() })),
     // Campers charged an entry fee for this match (refunded if it never starts)
     paid: v.optional(v.array(v.object({ playerId: v.string(), amount: v.number() }))),
+    // Play for chips: everyone puts in the same stake, the winner takes the pot minus the house cut
+    stake: v.optional(v.number()),
+    staked: v.optional(v.array(v.string())), // playerIds whose stake is in the pot
+    houseCut: v.optional(v.number()), // percent, fixed when the game was set up
+    payout: v.optional(v.object({ house: v.number(), seats: v.array(v.number()) })),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_room", ["roomId", "status"]),

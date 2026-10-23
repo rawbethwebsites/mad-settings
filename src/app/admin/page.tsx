@@ -10,7 +10,7 @@ import { camperId } from '@/lib/camper';
 import { naira, serverMessage } from '@/lib/account';
 
 type Overview = NonNullable<FunctionReturnType<typeof api.walletAdmin.overview>>;
-const TABS = ['Payments', 'Campers', 'Prices', 'Shop', 'Settings'] as const;
+const TABS = ['Payments', 'Campers', 'Prices', 'Shop', 'Casino', 'Settings'] as const;
 const GAMES = ['ludo', 'whot', 'ocho', 'ayo', 'connect4', 'tictactoe', 'dots', 'chopchop', 'minesweeper', 'tenten', 'trivia', 'bingo', 'search', 'puzzles', 'same', 'vault'];
 const input = 'p-2 border-[3px] border-brand-black bg-white font-body';
 const btn = 'px-3 py-2 poster-border font-display font-black uppercase text-sm disabled:opacity-40';
@@ -57,6 +57,7 @@ export default function AdminPage() {
             {tab === 'Campers' && <Campers data={data} me={me} run={run} />}
             {tab === 'Prices' && <Prices data={data} me={me} run={run} />}
             {tab === 'Shop' && <Shop data={data} me={me} run={run} />}
+            {tab === 'Casino' && <Casino data={data} me={me} run={run} />}
             {tab === 'Settings' && <Settings data={data} me={me} run={run} />}
           </>
         )}
@@ -229,6 +230,43 @@ function Settings({ data, me, run }: TabProps) {
           <ul className="font-body text-sm">{data.cashiers.map((c, i) => <li key={i}>{c.name} · {c.phone}</li>)}</ul>
         </div>
       )}
+    </Section>
+  );
+}
+
+function Casino({ data, me, run }: TabProps) {
+  const report = useQuery(api.casino.report, { playerId: me });
+  const set = useMutation(api.casino.setCasino);
+  const [cut, setCut] = useState('');
+  if (!report) return null;
+  const head = data.role === 'head';
+  return (
+    <Section title="Casino (last 30 days)">
+      <dl className="grid grid-cols-2 gap-3 font-body mb-4">
+        {([
+          ['Chips sold', naira(report.nairaSold)],
+          ['Chip games played', report.chipGames.toLocaleString()],
+          ['Chips the house kept', report.houseKept.toLocaleString()],
+          ['Chips campers hold', report.chipsHeld.toLocaleString()],
+          ['Founding Campers', `${report.founders} of 100`],
+          ['House cut', `${report.houseCut}%`],
+        ] as const).map(([k, v]) => (
+          <div key={k} className="p-2 border-2 border-brand-black/15"><dt className="text-xs uppercase opacity-60">{k}</dt><dd className="font-display font-black text-xl">{v}</dd></div>
+        ))}
+      </dl>
+      <p className="font-body text-sm mb-3">Chips can&apos;t be cashed out or swapped for prizes. The camp earns from chips sold.</p>
+      {head ? (
+        <div className="flex flex-wrap gap-2 items-end">
+          <button className={`${btn} ${report.paused ? 'bg-brand-acid' : 'bg-brand-coral'}`}
+            onClick={() => run(() => set({ playerId: me, paused: !report.paused }), report.paused ? 'Chip games are back on.' : 'Chip games paused.')}>
+            {report.paused ? '▶ Resume chip games' : '⏸ Pause chip games'}
+          </button>
+          <form className="flex gap-2 items-end" onSubmit={e => { e.preventDefault(); void run(() => set({ playerId: me, houseCut: Number(cut) }), 'House cut saved. It applies to new games.'); }}>
+            <label className="font-body text-sm">House cut %<input className={`${input} block w-24`} inputMode="numeric" value={cut} placeholder={String(report.houseCut)} onChange={e => setCut(e.target.value)} /></label>
+            <button className={`${btn} bg-white`} disabled={!cut}>Save</button>
+          </form>
+        </div>
+      ) : <p className="font-body text-sm opacity-70">Only the Head Ranger can pause chip games or change the house cut.</p>}
     </Section>
   );
 }

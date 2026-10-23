@@ -42,6 +42,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
   const [mode, setMode] = useState<'signup' | 'login'>('signup');
   const register = useAction(api.accounts.register);
   const login = useAction(api.accounts.login);
+  const casino = useQuery(api.casino.lobby, { playerKey: '' });
   const [f, setF] = useState({ name: '', phone: '', password: '', email: '', guests: '1' });
   const [ticketId, setTicketId] = useState<TicketId>('attendee');
   const ticket = TICKETS.find(t => t.id === ticketId)!;
@@ -74,6 +75,12 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
           </button>
         ))}
       </div>
+      {mode === 'signup' && !!casino?.foundersLeft && (
+        <p data-founders-left className="mb-4 p-3 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] font-display font-black uppercase text-sm">
+          ★ Founding spots left: {casino.foundersLeft}
+          <span className="block font-body font-normal normal-case text-[#f3efe2]/85">The first 100 paid campers get {casino.founderChips.toLocaleString()} free casino chips and a gold badge.</span>
+        </p>
+      )}
       <form onSubmit={submit} className="space-y-4">
         {mode === 'signup' && (
           <div><label className={label} htmlFor="name">Your name</label><input id="name" className={field} value={f.name} onChange={set('name')} autoComplete="name" required /></div>
@@ -216,6 +223,9 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
             <p className="font-body text-sm mb-3 text-brand-black/70">Use your wallet for paid games and the camp shop. Wallet money can&apos;t be withdrawn.</p>
             <SendReceipt playerKey={playerKey} kind="topup" bank={me.bank} cta="Send top-up receipt →" />
           </Card>
+          <Link href="/casino" className="block mb-5 p-4 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] shadow-[6px_6px_0_#000] font-display font-black uppercase">
+            🎰 Casino Night: buy chips and play friends →
+          </Link>
           {!!me.shop?.length && (
             <Card>
               <h2 className="font-display font-black text-xl uppercase mb-3">Camp shop</h2>

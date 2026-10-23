@@ -25,7 +25,12 @@ export const walletTables = {
     failedLogins: v.number(),
     lockedUntil: v.number(),
     createdAt: v.number(),
-  }).index('by_phone', ['phone']).index('by_player_key', ['playerKey']).index('by_created', ['createdAt']),
+    // Casino chips: bought with the wallet, play-only, never turned back into naira or prizes
+    chips: v.optional(v.number()),
+    adult: v.optional(v.boolean()), // ticked "I'm 18 or older" before buying chips
+    founderNo: v.optional(v.number()), // Founding Camper #1–#100, by approval order
+  }).index('by_phone', ['phone']).index('by_player_key', ['playerKey']).index('by_created', ['createdAt'])
+    .index('by_chips', ['chips']).index('by_founder', ['founderNo']),
 
   payments: defineTable({
     accountId: v.id('accounts'),
@@ -42,7 +47,7 @@ export const walletTables = {
   walletEntries: defineTable({
     accountId: v.id('accounts'),
     amount: v.number(), // + money in, - money spent
-    kind: v.union(v.literal('topup'), v.literal('play'), v.literal('shop'), v.literal('adjust'), v.literal('refund')),
+    kind: v.union(v.literal('topup'), v.literal('play'), v.literal('shop'), v.literal('adjust'), v.literal('refund'), v.literal('chips')),
     label: v.string(),
     by: v.optional(v.string()),
     createdAt: v.number(),
@@ -68,6 +73,17 @@ export const walletTables = {
     accountNumber: v.string(),
     priceNote: v.string(),
   }).index('by_key', ['key']),
+
+  chipEntries: defineTable({
+    accountId: v.id('accounts'),
+    amount: v.number(), // + chips in, - chips out
+    kind: v.union(v.literal('buy'), v.literal('stake'), v.literal('win'), v.literal('refund'), v.literal('bonus'), v.literal('adjust')),
+    label: v.string(),
+    createdAt: v.number(),
+  }).index('by_account', ['accountId', 'createdAt']).index('by_kind', ['kind', 'createdAt']),
+
+  // House cut and the pause switch for chip games
+  casinoSettings: defineTable({ key: v.literal('casino'), houseCut: v.number(), paused: v.boolean() }).index('by_key', ['key']),
 
   // Cashiers can review payments and run the wallet; the Head Ranger can do everything here too
   staff: defineTable({ playerId: v.string(), role: v.literal('cashier'), createdAt: v.number() }).index('by_player', ['playerId']),
