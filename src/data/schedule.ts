@@ -16,7 +16,7 @@ export const schedule: ScheduleEvent[] = [
   },
   {
     id: 'arrival',
-    time: '4:30 PM – 7:30 PM',
+    time: '12:00 PM – 7:30 PM',
     title: 'Arrival & Settling In',
     description: 'Background Music Active',
   },

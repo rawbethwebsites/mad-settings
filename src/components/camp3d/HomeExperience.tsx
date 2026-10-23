@@ -35,7 +35,7 @@ export default function HomeExperience() {
       <EventChapter
         overlay
         id="arrival"
-        time="4:30 PM"
+        time="12 NOON"
         headline="WE OUTSIDE."
         subheadline="ARRIVAL & SETTLING IN"
       >
