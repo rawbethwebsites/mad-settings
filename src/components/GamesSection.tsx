@@ -62,25 +62,25 @@ export default function GamesSection() {
   }, []);
 
   return (
-    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
       {games.map((game) => (
         <a
           key={game.id}
           href={game.path}
-          className="game-card group relative p-8 poster-border poster-shadow bg-brand-cream text-brand-black transition-all hover:-translate-y-2 hover:-translate-x-2 overflow-hidden block"
+          className="game-card group relative p-5 md:p-8 poster-border poster-shadow bg-brand-cream text-brand-black transition-all hover:-translate-y-2 hover:-translate-x-2 overflow-hidden block"
         >
-          <div className="game-number absolute top-0 right-0 font-display font-black text-8xl opacity-10 group-hover:opacity-20 transition-opacity leading-none">
+          <div className="game-number absolute top-0 right-0 font-display font-black text-6xl md:text-8xl opacity-10 group-hover:opacity-20 transition-opacity leading-none">
             {game.number}
           </div>
 
           <div className="relative z-10">
-            <h3 className="font-display font-black text-3xl md:text-5xl uppercase italic mb-2 group-hover:text-brand-purple transition-colors">
+            <h3 className="font-display font-black text-2xl md:text-5xl uppercase italic mb-1 md:mb-2 group-hover:text-brand-purple transition-colors">
               {game.name}
             </h3>
-            <div className="font-display font-bold text-lg uppercase tracking-tighter mb-4 text-brand-black/60">
+            <div className="font-display font-bold text-sm md:text-lg uppercase tracking-tighter mb-3 md:mb-4 text-brand-black/60">
               {game.tagline}
             </div>
-            <p className="font-body text-lg leading-relaxed mb-6 max-w-sm">
+            <p className="font-body text-base md:text-lg leading-relaxed mb-4 md:mb-6 max-w-sm">
               {game.description}
             </p>
             <div className="inline-block px-4 py-2 bg-brand-black text-brand-cream font-display font-bold text-xs uppercase tracking-widest group-hover:bg-brand-purple transition-colors">
@@ -108,12 +108,12 @@ export default function GamesSection() {
         </div>
       </div>
 
-      <div className="game-cta-block md:col-span-2 mt-12 text-center">
-        <div className="inline-block p-12 poster-border poster-shadow bg-brand-purple text-brand-cream">
-          <div className="font-display font-black text-4xl md:text-6xl uppercase italic mb-6">
+      <div className="game-cta-block md:col-span-2 mt-8 md:mt-12 text-center">
+        <div className="inline-block p-6 md:p-12 poster-border poster-shadow bg-brand-purple text-brand-cream">
+          <div className="font-display font-black text-3xl md:text-6xl uppercase italic mb-5 md:mb-6">
             READY? <br /> SCAN. JOIN. PLAY.
           </div>
-          <a href="/join" id="join" className="inline-block px-10 py-5 bg-brand-cream text-brand-purple font-display font-black uppercase tracking-tighter text-2xl poster-border poster-shadow hover:-translate-y-1 transition-transform">
+          <a href="/join" id="join" className="inline-block px-6 py-4 md:px-10 md:py-5 bg-brand-cream text-brand-purple font-display font-black uppercase tracking-tighter text-lg md:text-2xl poster-border poster-shadow hover:-translate-y-1 transition-transform">
             ENTER GAME ROOM →
           </a>
         </div>

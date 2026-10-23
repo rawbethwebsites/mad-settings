@@ -101,6 +101,9 @@ body.camp-night {
 }
 
 @media (max-width: 767px) {
+  /* Compact chapter chips on phones */
+  .night-rail { gap: 6px; padding: 6px 10px; bottom: 84px; }
+  .night-rail-chip { min-height: 40px; padding: 8px 10px; font-size: 10px; border-width: 2px; box-shadow: 3px 3px 0 #0A0A0A; }
   .chapter-overlay {
     justify-content: flex-end;
     padding-bottom: 9rem;

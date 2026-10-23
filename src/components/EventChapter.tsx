@@ -108,16 +108,16 @@ export default function EventChapter({ id, time, headline, subheadline, children
       id={id}
       ref={sectionRef}
       className={cn(
-        "relative min-h-screen w-full py-24 px-6 flex flex-col justify-center transition-colors duration-700 overflow-hidden",
+        "relative min-h-screen w-full py-20 px-5 md:py-24 md:px-6 flex flex-col justify-center transition-colors duration-700 overflow-hidden",
         overlay ? "chapter-overlay text-brand-cream" : cn(bgColor, textColor),
         className
       )}
     >
       <div className="max-w-5xl mx-auto w-full relative z-10">
-        <div className="chapter-time font-display font-black text-2xl md:text-4xl mb-4 opacity-60">
+        <div className="chapter-time font-display font-black text-lg md:text-4xl mb-2 md:mb-4 opacity-60">
           {time}
         </div>
-        <h2 className="font-display font-black text-6xl md:text-9xl uppercase italic leading-none mb-6 flex flex-wrap gap-x-4">
+        <h2 className="font-display font-black text-[clamp(2.25rem,11vw,3.5rem)] md:text-9xl uppercase italic leading-[0.95] md:leading-none mb-4 md:mb-6 flex flex-wrap gap-x-3 md:gap-x-4">
           {words.map((word, i) => (
             <span key={i} className="chapter-headline-word inline-block">
               {word}
@@ -125,7 +125,7 @@ export default function EventChapter({ id, time, headline, subheadline, children
           ))}
         </h2>
         {subheadline && (
-          <div className="chapter-subheadline font-display font-bold text-xl md:text-2xl uppercase tracking-widest mb-12 border-l-8 border-brand-purple pl-4">
+          <div className="chapter-subheadline font-display font-bold text-sm md:text-2xl uppercase tracking-wider md:tracking-widest mb-8 md:mb-12 border-l-4 md:border-l-8 border-brand-purple pl-4">
             {subheadline}
           </div>
         )}
