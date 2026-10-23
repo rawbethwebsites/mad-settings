@@ -40,6 +40,12 @@ export default function AccountPage() {
 
 function SignIn({ onDone }: { onDone: (key: string) => void }) {
   const [mode, setMode] = useState<'signup' | 'login'>('signup');
+  // Links like /account?mode=login open straight on Log in
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') !== 'login') return;
+    const t = setTimeout(() => setMode('login'), 0);
+    return () => clearTimeout(t);
+  }, []);
   const register = useAction(api.accounts.register);
   const login = useAction(api.accounts.login);
   const casino = useQuery(api.casino.lobby, { playerKey: '' });
@@ -73,7 +79,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
         {(['signup', 'login'] as const).map(m => (
           <button key={m} type="button" onClick={() => { setMode(m); setError(''); }}
             className={`py-3 poster-border font-display font-black uppercase ${mode === m ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
-            {m === 'signup' ? 'Sign up' : 'Log in'}
+            {m === 'signup' ? 'New? Sign up' : 'Registered? Log in'}
           </button>
         ))}
       </div>
