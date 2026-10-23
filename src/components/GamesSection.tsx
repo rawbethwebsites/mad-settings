@@ -3,13 +3,12 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { games, GAMES } from '@/data/games';
+import { GAMES } from '@/data/games';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Every other game, so the homepage always matches what campers can actually play
-const FEATURED = new Set(games.map(g => g.path));
-const MORE = GAMES.filter(g => !FEATURED.has(g.path));
+// Frosted glass: the camp shows through, the words stay crisp
+const glass = 'game-card flex items-center gap-3 min-h-16 px-4 py-3 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md text-white shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:bg-white/20 transition-colors';
 
 export default function GamesSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,65 +46,24 @@ export default function GamesSection() {
         },
         ease: 'back.out(1.4)',
       });
-
-      // Number badges float
-      gsap.to('.game-number', {
-        y: -10,
-        duration: 2,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-        stagger: 0.3,
-      });
     }, containerRef);
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
-      {games.map((game) => (
-        <a
-          key={game.id}
-          href={game.path}
-          className="game-card group relative p-5 md:p-8 poster-border poster-shadow bg-brand-cream text-brand-black transition-all hover:-translate-y-2 hover:-translate-x-2 overflow-hidden block"
-        >
-          <div className="game-number absolute top-0 right-0 font-display font-black text-6xl md:text-8xl opacity-10 group-hover:opacity-20 transition-opacity leading-none">
-            {game.number}
-          </div>
-
-          <div className="relative z-10">
-            <h3 className="font-display font-black text-2xl md:text-5xl uppercase italic mb-1 md:mb-2 group-hover:text-brand-purple transition-colors">
-              {game.name}
-            </h3>
-            <div className="font-display font-bold text-sm md:text-lg uppercase tracking-tighter mb-3 md:mb-4 text-brand-black/60">
-              {game.tagline}
-            </div>
-            <p className="font-body text-base md:text-lg leading-relaxed mb-4 md:mb-6 max-w-sm">
-              {game.description}
-            </p>
-            <div className="inline-block px-4 py-2 bg-brand-black text-brand-cream font-display font-bold text-xs uppercase tracking-widest group-hover:bg-brand-purple transition-colors">
-              Enter Game
-            </div>
-          </div>
-        </a>
-      ))}
-
-      <div className="md:col-span-2" data-more-games>
-        <h3 className="font-display font-black text-2xl md:text-3xl uppercase italic mb-4">
-          Plus {MORE.length} more games
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {MORE.map(g => (
-            <a key={g.id} href={g.path} className="game-card flex items-center gap-2 min-h-14 p-3 poster-border bg-brand-cream text-brand-black hover:bg-brand-acid transition-colors">
-              <span className="text-2xl" aria-hidden="true">{g.emoji}</span>
-              <span className="font-display font-black text-sm uppercase leading-tight">{g.name}</span>
-            </a>
-          ))}
-          <a href="/casino" className="game-card col-span-2 sm:col-span-1 flex items-center gap-2 min-h-14 p-3 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e]">
-            <span className="text-2xl" aria-hidden="true">🎰</span>
-            <span className="font-display font-black text-sm uppercase leading-tight">Casino Night</span>
+    <div ref={containerRef}>
+      {/* Every game campers can play, straight from the shared list */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" data-more-games>
+        {GAMES.map(g => (
+          <a key={g.id} href={g.path} className={glass}>
+            <span className="text-2xl" aria-hidden="true">{g.emoji}</span>
+            <span className="font-display font-black text-sm uppercase leading-tight [text-shadow:0_1px_6px_rgba(0,0,0,0.45)]">{g.name}</span>
           </a>
-        </div>
+        ))}
+        <a href="/casino" className={`${glass} col-span-2 sm:col-span-1 border-[#d4a017]/70 bg-[#0f3d2e]/45 text-[#f5d76e]`}>
+          <span className="text-2xl" aria-hidden="true">🎰</span>
+          <span className="font-display font-black text-sm uppercase leading-tight">Casino Night</span>
+        </a>
       </div>
 
       <div className="game-cta-block md:col-span-2 mt-8 md:mt-12 text-center">
