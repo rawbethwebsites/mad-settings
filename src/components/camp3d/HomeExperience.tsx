@@ -38,40 +38,58 @@ export default function HomeExperience() {
         subheadline="ARRIVAL & SETTLING IN"
       >
         <div className="font-body text-lg md:text-3xl space-y-4 max-w-2xl font-medium italic">
-          <p>Pull up.</p>
-          <p>Find your tent.</p>
-          <p>Meet the crew.</p>
-          <p>Let the night begin.</p>
+          <p>Pull up. Chill.</p>
+          <p>Games. Bicycle rides.</p>
+          <p>Picnic vibes. Music.</p>
+          <p>12:00 PM – 4:30 PM</p>
         </div>
-        <div className="mt-12 p-6 poster-border poster-shadow bg-brand-acid text-brand-black inline-block">
-          <div className="font-display font-black uppercase text-xs tracking-widest mb-1">DJ CHECK</div>
-          <div className="font-display font-black text-2xl uppercase">
-            Deadline: 5:30 PM <span className="text-brand-coral">STRICT</span>
+        <div className="mt-12 flex flex-wrap gap-6">
+          <div className="p-6 poster-border poster-shadow bg-brand-acid text-brand-black inline-block">
+            <div className="font-display font-black uppercase text-xs tracking-widest mb-1">4:30 PM – 7:30 PM</div>
+            <div className="font-display font-black text-2xl uppercase">Intertribe Games</div>
+          </div>
+          <div className="p-6 poster-border poster-shadow bg-brand-black text-brand-cream inline-block">
+            <div className="font-display font-black uppercase text-xs tracking-widest mb-1">7:30 PM – 8:30 PM</div>
+            <div className="font-display font-black text-2xl uppercase">Rest &amp; Get Ready</div>
           </div>
         </div>
       </EventChapter>
 
       <EventChapter
         overlay
+        id="games"
+        time="8:30 PM"
+        headline="GAME ON."
+        subheadline="MAD SETTINGS SOCIAL SPACE"
+      >
+        <div className="mb-12 font-body text-base md:text-xl max-w-xl">
+          Introduction to the Mad Settings Social Space from The Boost Nation, in front of the LED screen.
+          Your phone is your controller. No downloads. Join and play.
+        </div>
+        <GamesSection />
+      </EventChapter>
+
+      <EventChapter
+        overlay
         id="intro"
-        time="7:45 PM"
+        time="9:00 PM"
         headline="STRANGERS? NOT FOR LONG."
         subheadline="ICE BREAKING"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
           <div className="font-body text-base md:text-xl space-y-4 max-w-md">
-            <p>Event Introduction</p>
+            <p>Introduction</p>
             <p>Guest Introductions</p>
-            <p>Ice Breaking Activities</p>
+            <p>Icebreakers</p>
           </div>
           <div className="space-y-8">
             <div>
               <div className="font-display font-black text-xs uppercase opacity-50 tracking-widest mb-2">HOST</div>
-              <div className="font-display font-black text-4xl uppercase">Coach Dan</div>
+              <div className="font-display font-black text-4xl uppercase">MC Sapilo</div>
             </div>
             <div>
-              <div className="font-display font-black text-xs uppercase opacity-50 tracking-widest mb-2">MC</div>
-              <div className="font-display font-black text-4xl uppercase">MC Analog</div>
+              <div className="font-display font-black text-xs uppercase opacity-50 tracking-widest mb-2">HYPEMAN</div>
+              <div className="font-display font-black text-4xl uppercase">Yus</div>
             </div>
             <div>
               <div className="font-display font-black text-xs uppercase opacity-50 tracking-widest mb-2">DJs</div>
@@ -85,37 +103,24 @@ export default function HomeExperience() {
 
       <EventChapter
         overlay
-        id="games"
-        time="8:30 PM"
-        headline="GAME ON."
-        subheadline="YOUR PHONE IS YOUR CONTROLLER"
+        id="karaoke"
+        time="10:00 PM"
+        headline="MIC UP."
+        subheadline="KARAOKE"
       >
-        <div className="mb-12 font-body text-base md:text-xl max-w-xl">
-          No downloads. No complicated setup. Join and play.
-        </div>
-        <GamesSection />
+        <KaraokeScene />
       </EventChapter>
 
       <EventChapter
         overlay
         id="movie"
-        time="9:30 PM"
+        time="11:00 PM"
         headline="LIGHTS DOWN."
         subheadline="MOVIE SCREENING"
       >
         <div className="max-w-xl font-body text-base md:text-2xl italic">
-          The camp screen lights up. Same night. Same crew. Cinematic hour.
+          The camp screen lights up. Same night. Same crew. Popcorn hour.
         </div>
-      </EventChapter>
-
-      <EventChapter
-        overlay
-        id="karaoke"
-        time="10:30 PM"
-        headline="MIC UP."
-        subheadline="KARAOKE"
-      >
-        <KaraokeScene />
       </EventChapter>
 
       <EventChapter
@@ -130,7 +135,7 @@ export default function HomeExperience() {
             12:00 AM → 2:30 AM
           </div>
           <div className="font-body text-base md:text-2xl opacity-80 italic">
-            Music. Fire. Stories. Games. Vibes.
+            We light up the bonfire. The main party begins.
           </div>
         </div>
       </EventChapter>
@@ -157,14 +162,14 @@ export default function HomeExperience() {
         id="morning"
         time="7:30 AM"
         headline="GOOD MORNING."
-        subheadline="SURVIVAL MODE"
+        subheadline="MORNING GLORY"
       >
         <div className="text-center space-y-6">
           <div className="font-display font-black text-3xl md:text-6xl uppercase italic">
             SOMEHOW... <br /> WE SURVIVED.
           </div>
           <div className="font-body text-base md:text-xl max-w-lg mx-auto">
-            Interactive Games & Catching Up.
+            Hosted by Ogogoro Settings. Cruise, praise &amp; gyration, interactive games and socializing.
             <br /> 7:30 AM – 8:30 AM
           </div>
         </div>
@@ -211,11 +216,11 @@ export default function HomeExperience() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left font-body">
               <div>
                 <div className="font-display font-bold text-xs uppercase opacity-50 mb-2">HOST</div>
-                <div className="font-display font-black uppercase">Coach Dan</div>
+                <div className="font-display font-black uppercase">MC Sapilo</div>
               </div>
               <div>
-                <div className="font-display font-bold text-xs uppercase opacity-50 mb-2">MC</div>
-                <div className="font-display font-black uppercase">MC Analog</div>
+                <div className="font-display font-bold text-xs uppercase opacity-50 mb-2">HYPEMAN</div>
+                <div className="font-display font-black uppercase">Yus</div>
               </div>
               <div>
                 <div className="font-display font-bold text-xs uppercase opacity-50 mb-2">DJs</div>
