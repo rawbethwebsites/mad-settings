@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { schedule } from '@/data/schedule';
+import { lineup, schedule } from '@/data/schedule';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -74,9 +74,23 @@ export default function ProgramTimeline() {
   return (
     <section id="program" ref={sectionRef} className="py-24 px-6 bg-brand-black text-brand-cream overflow-hidden">
       <div className="max-w-4xl mx-auto">
-        <h2 className="program-title font-display font-black text-4xl md:text-7xl uppercase italic mb-10 md:mb-16 text-center">
+        <h2 className="program-title font-display font-black text-4xl md:text-7xl uppercase italic mb-6 md:mb-8 text-center">
           PROGRAM OF EVENTS
         </h2>
+        <div className="program-title flex flex-wrap justify-center gap-x-8 gap-y-3 mb-12 md:mb-16 font-display font-black uppercase text-center">
+          <div>
+            <div className="text-xs tracking-widest opacity-50">Host</div>
+            <div className="text-lg md:text-2xl">{lineup.host}</div>
+          </div>
+          <div>
+            <div className="text-xs tracking-widest opacity-50">Hypeman</div>
+            <div className="text-lg md:text-2xl">{lineup.hypeman}</div>
+          </div>
+          <div>
+            <div className="text-xs tracking-widest opacity-50">DJs</div>
+            <div className="text-lg md:text-2xl">{lineup.djs.join(' / ')}</div>
+          </div>
+        </div>
         <div className="timeline-list relative">
           {/* Vertical line */}
           <div className="timeline-line absolute left-0 top-0 bottom-0 w-1 bg-brand-purple" />

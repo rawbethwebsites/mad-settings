@@ -1,4 +1,3 @@
-
 export interface ScheduleEvent {
   time: string;
   title: string;
@@ -7,57 +6,71 @@ export interface ScheduleEvent {
   id: string;
 }
 
+export const lineup = {
+  host: 'MC Sapilo',
+  hypeman: 'Yus',
+  djs: ['Sarz', 'Virgin Sticks', 'Emzzy'],
+};
+
 export const schedule: ScheduleEvent[] = [
   {
-    id: 'setup',
-    time: '4:00 PM – 5:30 PM',
-    title: 'DJ Equipment Setup',
-    detail: 'Strict deadline: 5:30 PM',
+    id: 'arrival',
+    time: '12:00 PM – 4:30 PM',
+    title: 'Arrival & Chilling',
+    description: 'Games, Riding Bicycles, Picnic Vibes & Music',
   },
   {
-    id: 'arrival',
-    time: '12:00 PM – 7:30 PM',
-    title: 'Arrival & Settling In',
-    description: 'Background Music Active',
+    id: 'intertribe',
+    time: '4:30 PM – 7:30 PM',
+    title: 'Intertribe Games',
+    detail: '3 hours',
+  },
+  {
+    id: 'rest',
+    time: '7:30 PM – 8:30 PM',
+    title: 'Rest & Get Ready',
+    description: 'Freshen up for the evening activities',
+  },
+  {
+    id: 'social-space',
+    time: '8:30 PM – 9:00 PM',
+    title: 'Mad Settings Social Space',
+    description: 'Introduction from The Boost Nation',
+    detail: 'In front of the LED screen',
   },
   {
     id: 'intro',
-    time: '7:45 PM – 8:20 PM',
+    time: '9:00 PM – 9:50 PM',
     title: 'Introductions',
-    description: 'Event Introduction, Guest Introductions & Icebreakers',
-  },
-  {
-    id: 'games',
-    time: '8:30 PM – 9:20 PM',
-    title: 'Featured Games & Activities',
-    description: 'Your phone is your controller',
-  },
-  {
-    id: 'movie',
-    time: '9:30 PM – 10:20 PM',
-    title: 'Movie Screening',
+    description: 'Introduction, Guest Introductions & Icebreakers',
   },
   {
     id: 'karaoke',
-    time: '10:30 PM – 12:00 AM',
+    time: '10:00 PM – 10:50 PM',
     title: 'Karaoke',
+  },
+  {
+    id: 'movie',
+    time: '11:00 PM – 11:50 PM',
+    title: 'Movie Screening',
   },
   {
     id: 'bonfire',
     time: '12:00 AM – 2:30 AM',
     title: 'Bonfire Party',
-    description: 'Music. Fire. Stories. Games. Vibes.',
+    description: 'Light up the bonfire. Main party begins.',
   },
   {
     id: 'chill',
     time: '2:30 AM – 7:30 AM',
     title: 'Low-Tempo Music',
-    description: 'Conversations go up',
   },
   {
     id: 'morning',
     time: '7:30 AM – 8:30 AM',
-    title: 'Interactive Games & Socializing',
+    title: 'Morning Glory',
+    description: 'Cruise, Praise & Gyration, Interactive Games and Socializing',
+    detail: 'Hosted by Ogogoro Settings',
   },
   {
     id: 'football',
