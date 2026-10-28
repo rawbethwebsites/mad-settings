@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
 import { play, buzz } from '@/lib/sfx';
 import {
-  COLOR_NAMES, HOME, LAST_TRACK, SAFE, START, YARD, aiSeed, dieRoll, finished, fresh, legalSeeds, move, roll, square,
+  COLOR_NAMES, HOME, LAST_TRACK, SAFE, START, YARD, aiMove, dieRoll, finished, fresh, legalSeeds, move, playableDice, roll, square,
   type Action, type State,
 } from '@/lib/rules/ludo';
 
@@ -43,7 +43,7 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[28, 26], [72, 26], [28, 50], [72, 50], [28, 74], [72, 74]],
 };
 
-function Die({ value, rolling, active, color, onRoll }: { value: number | null; rolling: boolean; active: boolean; color: string; onRoll: () => void }) {
+function Die({ value, rolling, active, color, onRoll, label, picked = false, used = false }: { value: number | null; rolling: boolean; active: boolean; color: string; onRoll: () => void; label: string; picked?: boolean; used?: boolean }) {
   const [face, setFace] = useState(value ?? 6);
   useEffect(() => {
     if (!rolling) return;
@@ -56,8 +56,9 @@ function Die({ value, rolling, active, color, onRoll }: { value: number | null; 
       type="button"
       onClick={onRoll}
       disabled={!active}
-      aria-label={active ? 'Roll the die' : `Die shows ${shown}`}
-      className={`relative w-20 h-20 rounded-2xl bg-white border-4 border-brand-black shadow-[4px_4px_0_0_#0A0A0A] ${rolling ? 'animate-[ldShake_120ms_linear_infinite]' : ''} ${active ? 'ring-4 ring-offset-2' : 'opacity-90'}`}
+      aria-label={label}
+      aria-pressed={picked}
+      className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white border-4 border-brand-black shadow-[4px_4px_0_0_#0A0A0A] transition-[opacity,transform] ${rolling ? 'animate-[ldShake_120ms_linear_infinite]' : ''} ${active || picked ? 'ring-4 ring-offset-2' : ''} ${picked ? '-translate-y-1' : ''} ${used ? 'opacity-30' : ''}`}
       style={{ ['--tw-ring-color' as string]: color }}
     >
       {PIPS[shown].map(([x, y], i) => (
@@ -101,14 +102,14 @@ function useShownPositions(s: State) {
   const [moving, setMoving] = useState(false);
   const seen = useRef<string>('');
   useEffect(() => {
-    const key = s.last ? `${s.rolls}:${s.last.seat}:${s.last.seed}:${s.last.to}` : `${s.rolls}`;
+    const key = s.last ? `${s.rolls}:${s.dice.length}:${s.last.seat}:${s.last.seed}:${s.last.to}` : `${s.rolls}`;
     if (key === seen.current) return;
     seen.current = key;
     const last = s.last;
     if (!last) { const t = setTimeout(() => setShown(s.pos), 0); return () => clearTimeout(t); }
     const path: number[] = [];
     if (last.from === YARD) path.push(0);
-    else for (let p = last.from + 1; p <= last.to; p++) path.push(p);
+    else for (let p = last.from + 1; p <= last.landed; p++) path.push(p);
     const timers: number[] = [];
     timers.push(window.setTimeout(() => setMoving(true), 0));
     path.forEach((p, i) => timers.push(window.setTimeout(() => {
@@ -195,19 +196,59 @@ function Players({ s, mySeat }: { s: State; mySeat: number | null }) {
   );
 }
 
-function Controls({ s, mySeat, rolling, shake, onRoll, message }: { s: State; mySeat: number | null; rolling: boolean; shake: boolean; onRoll: () => void; message: string }) {
+// Which rolled dice are still to play, face by face (equal faces are interchangeable)
+function diceLeft(s: State) {
+  const left = [...s.dice];
+  return (s.lastRoll ?? [6, 6]).map(v => {
+    const i = left.indexOf(v);
+    if (i < 0) return false;
+    left.splice(i, 1);
+    return true;
+  });
+}
+
+function Controls({ s, mySeat, rolling, shake, onRoll, message, pick, onPick }: { s: State; mySeat: number | null; rolling: boolean; shake: boolean; onRoll: () => void; message: string; pick: number | null; onPick: (value: number) => void }) {
   const myTurn = mySeat !== null && s.turn === mySeat && !finished(s);
-  const canRoll = myTurn && s.die === null && !rolling;
+  const canRoll = myTurn && !s.dice.length && !rolling;
+  const faces = s.lastRoll ?? [6, 6];
+  const left = diceLeft(s);
+  const choosing = myTurn && !rolling && playableDice(s, mySeat!).length > 1 && s.dice[0] !== s.dice[1];
   return (
-    <div className="flex items-center gap-4 mt-4">
-      <Die value={s.lastRoll} rolling={rolling} active={canRoll} color={COLORS[s.colors[s.turn]]} onRoll={onRoll} />
+    <div className="flex items-center gap-3 mt-4">
+      {faces.map((v, i) => {
+        const playable = myTurn && left[i] && !!legalSeeds(s, mySeat!, v).length;
+        return (
+          <Die key={i} value={v} rolling={rolling} color={COLORS[s.colors[s.turn]]}
+            active={canRoll} picked={choosing && pick === v} used={!!s.dice.length && !left[i]}
+            label={canRoll ? 'Roll the dice' : playable ? `Play the ${v}` : `Die shows ${v}`}
+            onRoll={() => (canRoll ? onRoll() : playable ? onPick(v) : undefined)} />
+        );
+      })}
       <p className="font-body text-sm flex-1" aria-live="polite">
         {message}
-        {canRoll && <span className="block font-display font-black uppercase">{shake ? 'Shake your phone or tap the die' : 'Tap the die to roll'}</span>}
+        {canRoll && <span className="block font-display font-black uppercase">{shake ? 'Shake your phone or tap the dice' : 'Tap the dice to roll'}</span>}
+        {choosing && <span className="block font-display font-black uppercase">Tap a die, then a glowing seed</span>}
       </p>
     </div>
   );
 }
+
+// The die value a camper is playing: the one they tapped if it can still move, else the first that can
+function useDiePick(s: State, seat: number | null) {
+  const [pick, setPick] = useState<number | null>(null);
+  const options = seat === null ? [] : playableDice(s, seat).map(i => s.dice[i]);
+  const value = pick !== null && options.includes(pick) ? pick : options[0] ?? null;
+  return { value, setPick, options };
+}
+
+/** Every (die, seed) move open to this seat */
+const allMoves = (s: State, seat: number) => playableDice(s, seat).flatMap(i => legalSeeds(s, seat, s.dice[i]).map(seed => ({ die: i, seed })));
+const sameMove = (s: State, seat: number) => {
+  const moves = allMoves(s, seat);
+  // Equal dice on the same seed are one move
+  const distinct = new Set(moves.map(m => `${s.dice[m.die]}:${m.seed}`));
+  return distinct.size === 1 ? moves[0] : null;
+};
 
 function useRolling(s: State) {
   const [rolling, setRolling] = useState(false);
@@ -238,10 +279,11 @@ export default function Ludo({ award }: { award: (n: number) => void }) {
   if (!s) {
     return (
       <div className="p-5 poster-border poster-shadow bg-white">
-        <p className="font-body text-lg mb-3">Roll a 6 to bring a seed out. Race all four round the board and into the middle. Land on someone to send them home.</p>
+        <p className="font-body text-lg mb-3">Two dice. A 6 brings a seed out. Race all four round the board and into the middle.</p>
         <ul className="font-body text-sm mb-4 list-disc pl-5 space-y-1">
+          <li>Play each die on any seed, or both on the same one</li>
+          <li>Land on someone: their seed goes back home and yours finishes straight away</li>
           <li>A 6, a capture, or getting a seed home = roll again</li>
-          <li>★ and start squares are safe</li>
           <li>You need the exact number to get home</li>
         </ul>
         <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-black/50 mb-2">Computer players</div>
@@ -266,14 +308,16 @@ function LudoSolo({ s, setS, award, points, setPoints, shake, setShake, onReset 
   const over = finished(s);
   const busy = moving || rolling;
   const mine = s.turn === 0 && !over;
-  const movable = mine && s.die !== null && !busy ? legalSeeds(s, 0, s.die) : [];
+  const { value: pickValue, setPick } = useDiePick(s, mine ? 0 : null);
+  const movable = mine && pickValue !== null && !busy ? legalSeeds(s, 0, pickValue) : [];
 
   const doRoll = () => {
-    if (!mine || s.die !== null || busy) return;
+    if (!mine || s.dice.length || busy) return;
     buzz(30);
-    setS(roll(s, dieRoll()));
+    setPick(null);
+    setS(roll(s, dieRoll(), dieRoll()));
   };
-  useShake(shake && mine && s.die === null && !busy, doRoll);
+  useShake(shake && mine && !s.dice.length && !busy, doRoll);
 
   const tapDie = () => {
     if (!shake && hasMotion()) { setShake(true); void allowMotion(); }
@@ -286,18 +330,18 @@ function LudoSolo({ s, setS, award, points, setPoints, shake, setShake, onReset 
     award(pts);
     setPoints(pts);
   };
-  const moveSeed = (seed: number) => {
-    const next = move(s, seed);
+  const moveSeed = (seed: number, die = s.dice.indexOf(pickValue ?? s.dice[0])) => {
+    const next = move(s, seed, die);
     setS(next);
     settle(next);
   };
 
-  // Only one seed can move: move it for you
+  // Only one move open: make it for you
   useEffect(() => {
-    if (!mine || s.die === null || busy) return;
-    const options = legalSeeds(s, 0, s.die);
-    if (options.length !== 1) return;
-    const t = window.setTimeout(() => moveSeed(options[0]), 450);
+    if (!mine || !s.dice.length || busy) return;
+    const only = sameMove(s, 0);
+    if (!only) return;
+    const t = window.setTimeout(() => moveSeed(only.seed, only.die), 450);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, busy, mine]);
@@ -306,22 +350,22 @@ function LudoSolo({ s, setS, award, points, setPoints, shake, setShake, onReset 
   useEffect(() => {
     if (over || s.turn === 0 || busy) return;
     const t = window.setTimeout(() => {
-      if (s.die === null) setS(roll(s, dieRoll()));
-      else moveSeed(aiSeed(s, s.turn));
-    }, s.die === null ? 650 : 350);
+      if (!s.dice.length) setS(roll(s, dieRoll(), dieRoll()));
+      else { const m = aiMove(s, s.turn); moveSeed(m.seed, m.die); }
+    }, !s.dice.length ? 650 : 350);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, busy, over]);
 
   const message = over ? '' : s.note || (s.turn === 0
-    ? s.die === null ? 'Your turn.' : movable.length > 1 ? `You rolled ${s.die}. Tap a glowing seed.` : `You rolled ${s.die}.`
+    ? !s.dice.length ? 'Your turn.' : `Play your ${s.dice.join(' and ')}.`
     : `${s.names[s.turn]} is playing…`);
 
   return (
     <div>
       <Players s={s} mySeat={0} />
-      <Board s={s} shown={shown} mySeat={0} movable={movable} onSeed={moveSeed} />
-      <Controls s={s} mySeat={0} rolling={rolling} shake={shake} onRoll={tapDie} message={message} />
+      <Board s={s} shown={shown} mySeat={0} movable={movable} onSeed={seed => moveSeed(seed)} />
+      <Controls s={s} mySeat={0} rolling={rolling} shake={shake} onRoll={tapDie} message={message} pick={pickValue} onPick={setPick} />
       {over && (
         <Result
           tone={s.winner === 0 ? 'win' : 'lose'}
@@ -348,7 +392,8 @@ export function LudoOnline({ view, seat, act }: { view: State; seat: number | nu
   const over = finished(s);
   const busy = moving || rolling || sending;
   const mine = seat !== null && s.turn === seat && !over;
-  const movable = mine && s.die !== null && !busy ? legalSeeds(s, seat, s.die) : [];
+  const { value: pickValue, setPick } = useDiePick(s, mine ? seat : null);
+  const movable = mine && pickValue !== null && !busy ? legalSeeds(s, seat, pickValue) : [];
 
   const send = async (a: Action) => {
     setErr(''); setSending(true);
@@ -356,32 +401,32 @@ export function LudoOnline({ view, seat, act }: { view: State; seat: number | nu
     catch (e) { setErr((e instanceof Error ? e.message : String(e)).replace(/^Uncaught Error: /, '').split('\n')[0]); play('error'); }
     finally { setSending(false); }
   };
-  const doRoll = () => { if (mine && s.die === null && !busy) { buzz(30); void send({ kind: 'roll' }); } };
-  useShake(shake && mine && s.die === null && !busy, doRoll);
+  const doRoll = () => { if (mine && !s.dice.length && !busy) { buzz(30); setPick(null); void send({ kind: 'roll' }); } };
+  useShake(shake && mine && !s.dice.length && !busy, doRoll);
   const tapDie = () => {
     if (!shake && hasMotion()) { setShake(true); void allowMotion(); }
     doRoll();
   };
 
   useEffect(() => {
-    if (!mine || s.die === null || busy || seat === null) return;
-    const options = legalSeeds(s, seat, s.die);
-    if (options.length !== 1) return;
-    const t = window.setTimeout(() => void send({ kind: 'move', seed: options[0] }), 450);
+    if (!mine || !s.dice.length || busy || seat === null) return;
+    const only = sameMove(s, seat);
+    if (!only) return;
+    const t = window.setTimeout(() => void send({ kind: 'move', seed: only.seed, die: only.die }), 450);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, busy, mine]);
 
   const message = over ? '' : s.note || (mine
-    ? s.die === null ? 'Your turn.' : movable.length > 1 ? `You rolled ${s.die}. Tap a glowing seed.` : `You rolled ${s.die}.`
+    ? !s.dice.length ? 'Your turn.' : `Play your ${s.dice.join(' and ')}.`
     : `${s.names[s.turn]} is playing…`);
 
   return (
     <div data-online-board="ludo">
       {seat !== null && <p className="mb-2 text-center font-body text-xs text-brand-black/60">You are {COLOR_NAMES[s.colors[seat]]}.</p>}
       <Players s={s} mySeat={seat} />
-      <Board s={s} shown={shown} mySeat={seat} movable={movable} onSeed={seed => void send({ kind: 'move', seed })} />
-      <Controls s={s} mySeat={seat} rolling={rolling} shake={shake} onRoll={tapDie} message={message} />
+      <Board s={s} shown={shown} mySeat={seat} movable={movable} onSeed={seed => void send({ kind: 'move', seed, die: s.dice.indexOf(pickValue ?? s.dice[0]) })} />
+      <Controls s={s} mySeat={seat} rolling={rolling} shake={shake} onRoll={tapDie} message={message} pick={pickValue} onPick={setPick} />
       {err && <p role="alert" className="mt-2 text-center font-body text-sm text-brand-coral">{err}</p>}
       <style>{LUDO_CSS}</style>
     </div>
