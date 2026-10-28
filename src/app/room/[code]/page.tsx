@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
@@ -168,30 +168,35 @@ export default function RoomPage() {
           </button>
         )}
 
-        {/* Roster + leaderboard (room.get returns players sorted by total) */}
+        {/* Roster: online campers first (room.get sorts them), then by score */}
         <div className="p-6 poster-border poster-shadow bg-white mb-6">
           <h2 className="font-display font-black text-xl uppercase mb-4">🏕️ {room.camp ? `All ${room.players.length} campers & scores` : 'Players & scores'}</h2>
           <ul className="space-y-2">
-            {room.players.map((p, i) => (
-              <li
-                key={p.id}
-                className={`admin-slide flex items-center gap-3 p-3 border-4 ${i === 0 && p.total > 0 ? 'border-brand-acid bg-brand-acid/10' : 'border-brand-black/10'}`}
-              >
-                <span className="font-display font-black text-lg w-6 text-brand-black/40">{i + 1}</span>
-                <span
-                  className={`w-3 h-3 rounded-full shrink-0 ${p.online ? 'bg-brand-acid' : 'bg-brand-black/20'}`}
-                  title={p.online ? 'Online' : 'Away'}
-                />
-                <span className="text-3xl">{p.avatar}</span>
-                <span className="font-display font-black uppercase truncate flex-1">
-                  {p.name}
-                  {p.isHost && (
-                    <span className="ml-2 px-2 py-0.5 bg-brand-purple text-brand-cream text-xs align-middle">HOST</span>
-                  )}
-                </span>
-                <span className="font-display font-black text-2xl text-brand-purple">{p.total}</span>
-              </li>
-            ))}
+            {room.players.map((p, i) => {
+              const top = Math.max(...room.players.map(x => x.total));
+              const leader = p.total > 0 && p.total === top;
+              const firstAway = !p.online && (i === 0 || room.players[i - 1].online);
+              return (
+                <Fragment key={p.id}>
+                  {i === 0 && p.online && <li className="flex items-center gap-2 font-display font-black uppercase text-xs tracking-widest"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Online now ({onlineCount})</li>}
+                  {firstAway && <li className="pt-2 font-display font-black uppercase text-xs tracking-widest text-brand-black/50">Away</li>}
+                  <li className={`admin-slide flex items-center gap-3 p-3 border-4 ${leader ? 'border-brand-acid bg-brand-acid/10' : 'border-brand-black/10'}`}>
+                    <span
+                      className={`w-3 h-3 rounded-full shrink-0 ${p.online ? 'bg-green-500' : 'bg-brand-black/20'}`}
+                      title={p.online ? 'Online' : 'Away'}
+                    />
+                    <span className="text-3xl">{p.avatar}</span>
+                    <span className="font-display font-black uppercase truncate flex-1">
+                      {p.name}
+                      {p.isHost && (
+                        <span className="ml-2 px-2 py-0.5 bg-brand-purple text-brand-cream text-xs align-middle">HOST</span>
+                      )}
+                    </span>
+                    <span className="font-display font-black text-2xl text-brand-purple">{leader ? '👑 ' : ''}{p.total}</span>
+                  </li>
+                </Fragment>
+              );
+            })}
           </ul>
         </div>
 

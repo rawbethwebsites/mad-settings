@@ -18,6 +18,7 @@ import ShuffleBar from './Shuffle';
 import PayGate from '@/components/wallet/PayGate';
 import { ChipBanner, StakePicker } from '@/components/wallet/Chips';
 import { serverMessage } from '@/lib/account';
+import ShareCard, { GameInfo } from './ShareCard';
 
 export interface ShellApi {
   player: Player;
@@ -103,6 +104,7 @@ export default function GameShell({
   };
 
   return (
+    <GameInfo.Provider value={{ title, emoji }}>
     <main onClick={buttonTap} className={`min-h-screen bg-brand-cream text-brand-black ${playingOnline ? 'p-3 md:p-6' : 'p-4 md:p-6'}`}>
       <div className="max-w-xl mx-auto">
         <div className={`flex justify-between items-center gap-2 ${playingOnline ? 'mb-2' : 'mb-4'}`}>
@@ -203,6 +205,7 @@ export default function GameShell({
         )}
       </div>
     </main>
+    </GameInfo.Provider>
   );
 }
 
@@ -246,6 +249,7 @@ function OnlineArena({
   const casino = useQuery(api.casino.lobby, { playerKey: playerId });
 
   const [picked, setPicked] = useState<Id<'roomPlayers'>[]>([]);
+  const [search, setSearch] = useState('');
   const [stake, setStake] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -262,7 +266,9 @@ function OnlineArena({
     // Everyone in the room can be invited; the invite waits for them on any page
     const others = (room?.players ?? [])
       .filter(p => p.id !== room?.me?.id)
-      .sort((a, b) => Number(b.online) - Number(a.online));
+      .sort((a, b) => Number(b.online) - Number(a.online) || a.name.localeCompare(b.name));
+    const term = search.trim().toLowerCase();
+    const shown = term ? others.filter(p => p.name.toLowerCase().includes(term)) : others;
     const maxPick = rules.max - 1;
     const minNeeded = rules.min - 1;
     const toggle = (pid: Id<'roomPlayers'>) => {
@@ -270,10 +276,31 @@ function OnlineArena({
         s.includes(pid) ? s.filter(x => x !== pid) : s.length < maxPick ? [...s, pid] : s,
       );
     };
+    const row = (p: (typeof others)[number]) => {
+      const on = picked.includes(p.id);
+      return (
+        <li key={p.id}>
+          <button
+            onClick={() => toggle(p.id)}
+            aria-pressed={on}
+            className={`w-full flex items-center gap-3 p-3 border-4 transition-colors ${
+              on ? 'border-brand-purple bg-brand-purple/10' : 'border-brand-black/15 bg-white'
+            }`}
+          >
+            <Face name={p.name} avatar={p.avatar} online={p.online} />
+            <span className="font-display font-black uppercase flex-1 text-left truncate">{p.name}</span>
+            <span className={`w-6 h-6 border-4 border-brand-black flex items-center justify-center font-display font-black ${on ? 'bg-brand-acid' : 'bg-white'}`}>
+              {on ? '✓' : ''}
+            </span>
+          </button>
+        </li>
+      );
+    };
+    const online = shown.filter(p => p.online), away = shown.filter(p => !p.online);
     return (
       <Arena>
         <h2 className="font-display font-black text-xl uppercase mb-1">Pick a friend</h2>
-        {others.length > 0 && <p className="font-body text-sm text-brand-black/60 mb-4">
+        {others.length > 0 && <p className="font-body text-sm text-brand-black/60 mb-3">
           {rules.min === rules.max
             ? `Pick ${minNeeded}, then tap Invite.`
             : `Pick ${minNeeded}–${maxPick}, then tap Invite.`}
@@ -283,31 +310,26 @@ function OnlineArena({
             Share room code <b>{code}</b> with a friend.
           </p>
         ) : (
-          <ul className="space-y-2 mb-4">
-            {others.map(p => {
-              const on = picked.includes(p.id);
-              return (
-                <li key={p.id}>
-                  <button
-                    onClick={() => toggle(p.id)}
-                    aria-pressed={on}
-                    className={`w-full flex items-center gap-3 p-3 border-4 transition-colors ${
-                      on ? 'border-brand-purple bg-brand-purple/10' : 'border-brand-black/15 bg-white'
-                    }`}
-                  >
-                    <span className="text-3xl">{p.avatar}</span>
-                    <span className="font-display font-black uppercase flex-1 text-left truncate">
-                      {p.name}
-                      {!p.online && <span className="ml-2 font-body font-normal normal-case text-xs text-brand-black/50">away</span>}
-                    </span>
-                    <span className={`w-6 h-6 border-4 border-brand-black flex items-center justify-center font-display font-black ${on ? 'bg-brand-acid' : 'bg-white'}`}>
-                      {on ? '✓' : ''}
-                    </span>
+          <>
+            {others.length > 5 && (
+              <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search a camper's name"
+                aria-label="Search campers" className="w-full min-h-12 px-3 mb-3 border-4 border-brand-black bg-white font-display font-bold focus:outline-none focus:bg-brand-acid/20" />
+            )}
+            {picked.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3" aria-label="Picked">
+                {picked.map(id => { const p = others.find(o => o.id === id); return p && (
+                  <button key={id} type="button" onClick={() => toggle(id)} className="admin-rise px-2 py-1 bg-brand-purple text-brand-cream font-display font-black uppercase text-xs">
+                    {p.name} ✕
                   </button>
-                </li>
-              );
-            })}
-          </ul>
+                ); })}
+              </div>
+            )}
+            {!shown.length && <p className="font-body mb-4">No camper called &ldquo;{search}&rdquo;.</p>}
+            {!!online.length && <h3 className="flex items-center gap-2 font-display font-black uppercase text-xs tracking-widest mb-2"><span className="w-2 h-2 rounded-full bg-green-500" /> Online now ({online.length})</h3>}
+            <ul className="space-y-2 mb-4">{online.map(row)}</ul>
+            {!!away.length && <h3 className="font-display font-black uppercase text-xs tracking-widest text-brand-black/50 mb-2">Away · they get your invite when they come back</h3>}
+            <ul className="space-y-2 mb-4">{away.map(row)}</ul>
+          </>
         )}
         {others.length > 0 && <StakePicker casino={casino} stake={stake} setStake={setStake} />}
         <Btn
@@ -336,6 +358,18 @@ function OnlineArena({
   // Playing / finished
   return (
     <LiveMatch match={match} playerId={playerId} render={render} clearMatch={clearMatch} onError={onError} />
+  );
+}
+
+// A camper's face in lists: their emoji, or a coloured initial when everyone has the default 🔥
+const FACE_COLORS = ['#6D28D9', '#FB7185', '#22D3EE', '#BEF264', '#F59E0B', '#10B981', '#3B82F6', '#EC4899'];
+function Face({ name, avatar, online }: { name: string; avatar: string; online: boolean }) {
+  const hue = FACE_COLORS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % FACE_COLORS.length];
+  return (
+    <span className="relative shrink-0 w-10 h-10 grid place-items-center rounded-full border-[3px] border-brand-black font-display font-black text-lg text-brand-black" style={{ background: avatar === '🔥' ? hue : '#fff' }}>
+      {avatar === '🔥' ? name.trim().charAt(0).toUpperCase() || '?' : <span className="text-2xl">{avatar}</span>}
+      <span aria-label={online ? 'Online' : 'Away'} className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${online ? 'bg-green-500' : 'bg-brand-black/25'}`} />
+    </span>
   );
 }
 
@@ -559,6 +593,15 @@ function LiveMatch({
             <p className="font-display font-black text-xl">
               🎰 {match.won > 0 ? `+${match.won.toLocaleString()} CHIPS` : `−${match.stake.toLocaleString()} CHIPS`}
             </p>
+          )}
+          {match.seat !== null && (
+            <ShareCard result={{
+              tone: draw ? 'draw' : iWon ? 'win' : 'lose',
+              emoji: draw ? '🤝' : iWon ? '🏆' : '🔥',
+              headline: draw ? 'Draw' : iWon ? 'I won!' : 'Good game',
+              detail: `vs ${names.filter((_, i) => i !== match.seat).join(', ')} · ${match.result.reason}`,
+              points: myPoints,
+            }} />
           )}
           <div className="flex gap-3 mt-4">
             <button onClick={clearMatch} className={`${btn} flex-1 py-3 bg-brand-cream`}>
