@@ -40,7 +40,7 @@ export default function AdminPage() {
         </div>
         {data === undefined ? null : data === null ? (
           <Section title="Staff only">
-            <p className="font-body">This page is for camp staff. Log in with a staff account, or ask the Head Ranger to make you a Cashier.</p>
+            <p className="font-body">This page is for camp staff. Log in with a staff account, or ask an admin to make you a Cashier or admin.</p>
           </Section>
         ) : (
           <>
@@ -125,6 +125,7 @@ function Campers({ data, me, run }: TabProps) {
   const adjust = useMutation(api.walletAdmin.adjust);
   const setStatus = useMutation(api.walletAdmin.setAccountStatus);
   const setCashier = useMutation(api.walletAdmin.setCashier);
+  const setAdmin = useMutation(api.walletAdmin.setAdmin);
   const reset = useAction(api.walletAdmin.resetPassword);
   return (
     <Section title="Campers">
@@ -134,16 +135,17 @@ function Campers({ data, me, run }: TabProps) {
           <article key={c.id} className="p-3 border-[3px] border-brand-black">
             <div className="flex justify-between gap-2 flex-wrap">
               <div>
-                <div className="font-display font-black uppercase">{c.name}{c.cashier ? ' · Cashier' : ''}</div>
-                <div className="font-body text-sm">{c.phone} · {c.status === 'approved' ? 'paid ✓' : c.status}</div>
+                <div className="font-display font-black uppercase">{c.name}{c.admin ? ' · Admin' : c.cashier ? ' · Cashier' : ''}</div>
+                <div className="font-body text-sm">{c.phone} · {c.status === 'approved' ? 'registered ✓' : c.status}</div>
               </div>
               <div className="font-display font-black text-xl">{naira(c.balance)}</div>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               <button type="button" className={`${btn} bg-white`} onClick={() => { const v = prompt(`Add money to ${c.name}'s wallet (use - to take away), in naira:`); if (!v) return; const reason = prompt('Reason (for the record):') ?? ''; void run(() => adjust({ playerId: me, accountId: c.id, amount: Number(v.replace(/[^\d-]/g, '')), reason }), 'Wallet updated.'); }}>± Money</button>
-              {c.status !== 'approved' && <button type="button" className={`${btn} bg-brand-acid`} onClick={() => run(() => setStatus({ playerId: me, accountId: c.id, status: 'approved' }), `${c.name} marked as paid.`)}>Mark paid</button>}
+              {c.status !== 'approved' && <button type="button" className={`${btn} bg-brand-acid`} onClick={() => run(() => setStatus({ playerId: me, accountId: c.id, status: 'approved' }), `${c.name} is back on.`)}>Take off hold</button>}
               <button type="button" className={`${btn} bg-white`} onClick={() => { if (confirm(`Reset ${c.name}'s password?`)) void run(async () => { const temp = await reset({ playerId: me, accountId: c.id }); alert(`New password for ${c.name}: ${temp}\nTell them to change it after logging in.`); }); }}>Reset password</button>
-              {data.role === 'head' && <button type="button" className={`${btn} bg-white`} onClick={() => run(() => setCashier({ playerId: me, accountId: c.id, on: !c.cashier }), c.cashier ? 'Cashier removed.' : `${c.name} is now a Cashier.`)}>{c.cashier ? 'Remove cashier' : 'Make cashier'}</button>}
+              {data.role === 'head' && !c.admin && <button type="button" className={`${btn} bg-white`} onClick={() => run(() => setCashier({ playerId: me, accountId: c.id, on: !c.cashier }), c.cashier ? 'Cashier removed.' : `${c.name} is now a Cashier.`)}>{c.cashier ? 'Remove cashier' : 'Make cashier'}</button>}
+              {data.role === 'head' && <button type="button" className={`${btn} ${c.admin ? 'bg-brand-coral' : 'bg-brand-purple text-brand-cream'}`} onClick={() => { if (confirm(c.admin ? `Remove ${c.name} as an admin?` : `Make ${c.name} an admin? They can do everything you can, including adding admins.`)) void run(() => setAdmin({ playerId: me, accountId: c.id, on: !c.admin }), c.admin ? `${c.name} is no longer an admin.` : `${c.name} is now an admin.`); }}>{c.admin ? 'Remove admin' : 'Make admin'}</button>}
             </div>
           </article>
         ))}
@@ -225,6 +227,11 @@ function Settings({ data, me, run }: TabProps) {
         <label className="block font-body text-sm">What to pay (shown to campers)<textarea className={`${input} block w-full`} rows={3} value={f.priceNote} onChange={e => setF({ ...f, priceNote: e.target.value })} /></label>
         <button className={`${btn} bg-brand-acid`}>Save</button>
       </form>
+      <div className="mt-5">
+        <h3 className="font-display font-black uppercase mb-1">Admins</h3>
+        <ul className="font-body text-sm">{data.admins.map((c, i) => <li key={i}>{c.name} · {c.phone}{c.you ? ' (you)' : ''}</li>)}</ul>
+        <p className="font-body text-xs opacity-70 mt-1">To add an admin, find them in Campers and tap Make admin.</p>
+      </div>
       {!!data.cashiers.length && (
         <div className="mt-5">
           <h3 className="font-display font-black uppercase mb-1">Cashiers</h3>

@@ -48,7 +48,8 @@
 .connect-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
 .connect-actions .primary { grid-column:1/-1; grid-row:1; min-height:58px; font-size:20px; }
 .connect-actions .connect-undo { grid-column:1/-1; }
-.connect-card .connect-photo-wrap { aspect-ratio:5/2; }
+.connect-card .connect-photo-wrap { aspect-ratio:4/5; max-height:min(68svh,620px); width:100%; }
+.connect-card .connect-photo { object-position:center 25%; }
 .connect-steps { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:12px; margin:12px 0; border:1px solid var(--cc-edge); border-radius:12px; background:var(--cc-surface); }
 .connect-steps ol { display:flex; gap:8px; align-items:center; font-size:14px; font-weight:800; }
 .connect-steps summary { min-height:44px; }

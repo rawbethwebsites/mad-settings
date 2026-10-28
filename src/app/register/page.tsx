@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// Registering is now part of the camp account: sign up, pay by transfer, upload the receipt.
+// Registering is part of the camp account: sign up free on /account.
 export default function RegisterPage() {
   redirect('/account');
 }

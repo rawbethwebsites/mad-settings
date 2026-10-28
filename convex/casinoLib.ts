@@ -31,6 +31,16 @@ export async function moveChips(db: DatabaseWriter, account: Doc<'accounts'>, am
   return chips;
 }
 
+// The first campers approved become Founding Campers, with bonus chips
+export async function makeFounder(db: DatabaseWriter, account: Doc<'accounts'>) {
+  if (account.founderNo) return;
+  const last = await db.query('accounts').withIndex('by_founder', q => q.gt('founderNo', 0)).order('desc').first();
+  const next = (last?.founderNo ?? 0) + 1;
+  if (next > FOUNDERS) return;
+  await db.patch(account._id, { founderNo: next });
+  await moveChips(db, (await db.get(account._id))!, FOUNDER_CHIPS, 'bonus', `Founding Camper #${next} bonus`);
+}
+
 // A camper sits down at a chip game: their stake goes into the pot
 export async function takeStake(db: DatabaseWriter, playerId: string, stake: number, game: string) {
   const { paused } = await casino(db);

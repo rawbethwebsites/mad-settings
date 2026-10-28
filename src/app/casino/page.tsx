@@ -76,7 +76,7 @@ export default function CasinoPage() {
                   ★ Founding spots left: <span className={gold}>{data.foundersLeft}</span>
                 </p>
                 <p className="font-body text-sm opacity-80 mt-1">
-                  The first {data.founders} campers whose camp fee is approved get {data.founderChips.toLocaleString()} free chips and a gold Founding Camper badge.
+                  The first {data.founders} campers to sign up get {data.founderChips.toLocaleString()} free chips and a gold Founding Camper badge.
                 </p>
               </Panel>
             )}
@@ -88,7 +88,7 @@ export default function CasinoPage() {
               </Panel>
             ) : !approved ? (
               <Panel title="Almost there">
-                <p className="font-body">Your camp fee is being checked. You can buy chips once staff approve it.</p>
+                <p className="font-body">Your camp account is on hold. Ask camp staff about it.</p>
               </Panel>
             ) : data.paused ? (
               <Panel title="Casino paused">
