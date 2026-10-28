@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Btn, Result } from '@/components/arcade/ui';
 import { play, buzz } from '@/lib/sfx';
 import {
-  COLOR_NAMES, HOME, LAST_TRACK, SAFE, START, YARD, aiMove, dieRoll, finished, fresh, legalSeeds, move, playableDice, roll, square,
+  BOTH, COLOR_NAMES, HOME, LAST_TRACK, SAFE, START, YARD, aiMove, choices, dieRoll, finished, fresh, legalSeeds, move, roll, square,
   type Action, type State,
 } from '@/lib/rules/ludo';
 
@@ -108,8 +108,7 @@ function useShownPositions(s: State) {
     const last = s.last;
     if (!last) { const t = setTimeout(() => setShown(s.pos), 0); return () => clearTimeout(t); }
     const path: number[] = [];
-    if (last.from === YARD) path.push(0);
-    else for (let p = last.from + 1; p <= last.landed; p++) path.push(p);
+    for (let p = last.from === YARD ? 0 : last.from + 1; p <= last.landed; p++) path.push(p);
     const timers: number[] = [];
     timers.push(window.setTimeout(() => setMoving(true), 0));
     path.forEach((p, i) => timers.push(window.setTimeout(() => {
@@ -198,56 +197,63 @@ function Players({ s, mySeat }: { s: State; mySeat: number | null }) {
 
 // Which rolled dice are still to play, face by face (equal faces are interchangeable)
 function diceLeft(s: State) {
-  const left = [...s.dice];
+  const left = s.dice.map((v, i) => ({ v, i }));
   return (s.lastRoll ?? [6, 6]).map(v => {
-    const i = left.indexOf(v);
-    if (i < 0) return false;
-    left.splice(i, 1);
-    return true;
+    const k = left.findIndex(d => d.v === v);
+    return k < 0 ? null : left.splice(k, 1)[0].i;
   });
 }
 
-function Controls({ s, mySeat, rolling, shake, onRoll, message, pick, onPick }: { s: State; mySeat: number | null; rolling: boolean; shake: boolean; onRoll: () => void; message: string; pick: number | null; onPick: (value: number) => void }) {
+function Controls({ s, mySeat, rolling, shake, onRoll, message, pick, onPick }: { s: State; mySeat: number | null; rolling: boolean; shake: boolean; onRoll: () => void; message: string; pick: number | null; onPick: (die: number) => void }) {
   const myTurn = mySeat !== null && s.turn === mySeat && !finished(s);
   const canRoll = myTurn && !s.dice.length && !rolling;
   const faces = s.lastRoll ?? [6, 6];
   const left = diceLeft(s);
-  const choosing = myTurn && !rolling && playableDice(s, mySeat!).length > 1 && s.dice[0] !== s.dice[1];
+  const open = myTurn && !rolling && s.dice.length ? choices(s, mySeat!) : [];
+  const color = COLORS[s.colors[s.turn]];
   return (
-    <div className="flex items-center gap-3 mt-4">
-      {faces.map((v, i) => {
-        const playable = myTurn && left[i] && !!legalSeeds(s, mySeat!, v).length;
-        return (
-          <Die key={i} value={v} rolling={rolling} color={COLORS[s.colors[s.turn]]}
-            active={canRoll} picked={choosing && pick === v} used={!!s.dice.length && !left[i]}
-            label={canRoll ? 'Roll the dice' : playable ? `Play the ${v}` : `Die shows ${v}`}
-            onRoll={() => (canRoll ? onRoll() : playable ? onPick(v) : undefined)} />
-        );
-      })}
-      <p className="font-body text-sm flex-1" aria-live="polite">
+    <div className="mt-4">
+      <div className="flex items-center gap-3">
+        {faces.map((v, i) => {
+          const die = left[i];
+          const playable = die !== null && open.includes(die);
+          return (
+            <Die key={i} value={v} rolling={rolling} color={color}
+              active={canRoll} picked={playable && pick === die} used={!!s.dice.length && die === null}
+              label={canRoll ? 'Roll the dice' : playable ? `Play the ${v}` : `Die shows ${v}`}
+              onRoll={() => (canRoll ? onRoll() : playable ? onPick(die) : undefined)} />
+          );
+        })}
+        {open.includes(BOTH) && (
+          <button type="button" onClick={() => onPick(BOTH)} aria-pressed={pick === BOTH}
+            className={`h-16 sm:h-20 px-3 rounded-2xl border-4 border-brand-black font-display font-black uppercase text-sm leading-tight shadow-[4px_4px_0_0_#0A0A0A] transition-transform ${pick === BOTH ? 'bg-brand-acid -translate-y-1' : 'bg-white'}`}>
+            Both<span className="block text-2xl">{s.dice[0] + s.dice[1]}</span>
+          </button>
+        )}
+      </div>
+      <p className="font-body text-sm mt-3" aria-live="polite">
         {message}
         {canRoll && <span className="block font-display font-black uppercase">{shake ? 'Shake your phone or tap the dice' : 'Tap the dice to roll'}</span>}
-        {choosing && <span className="block font-display font-black uppercase">Tap a die, then a glowing seed</span>}
+        {open.length > 1 && <span className="block font-display font-black uppercase">Pick a die{open.includes(BOTH) ? ' or Both' : ''}, then tap a glowing seed</span>}
       </p>
     </div>
   );
 }
 
-// The die value a camper is playing: the one they tapped if it can still move, else the first that can
+// The die choice a camper is playing: the one they tapped if it still works, else the first that does
 function useDiePick(s: State, seat: number | null) {
   const [pick, setPick] = useState<number | null>(null);
-  const options = seat === null ? [] : playableDice(s, seat).map(i => s.dice[i]);
-  const value = pick !== null && options.includes(pick) ? pick : options[0] ?? null;
-  return { value, setPick, options };
+  const options = seat === null ? [] : choices(s, seat);
+  const value = pick !== null && options.includes(pick) ? pick : options.find(o => o !== BOTH) ?? options[0] ?? null;
+  return { value, setPick };
 }
 
-/** Every (die, seed) move open to this seat */
-const allMoves = (s: State, seat: number) => playableDice(s, seat).flatMap(i => legalSeeds(s, seat, s.dice[i]).map(seed => ({ die: i, seed })));
+/** The only move open to this seat, if there is just one */
 const sameMove = (s: State, seat: number) => {
-  const moves = allMoves(s, seat);
+  const moves = choices(s, seat).flatMap(die => legalSeeds(s, seat, die).map(seed => ({ die, seed })));
   // Equal dice on the same seed are one move
-  const distinct = new Set(moves.map(m => `${s.dice[m.die]}:${m.seed}`));
-  return distinct.size === 1 ? moves[0] : null;
+  const key = (m: { die: number; seed: number }) => `${m.die === BOTH ? 'b' : s.dice[m.die]}:${m.seed}`;
+  return new Set(moves.map(key)).size === 1 ? moves[0] : null;
 };
 
 function useRolling(s: State) {
@@ -281,9 +287,10 @@ export default function Ludo({ award }: { award: (n: number) => void }) {
       <div className="p-5 poster-border poster-shadow bg-white">
         <p className="font-body text-lg mb-3">Two dice. A 6 brings a seed out. Race all four round the board and into the middle.</p>
         <ul className="font-body text-sm mb-4 list-disc pl-5 space-y-1">
-          <li>Play each die on any seed, or both on the same one</li>
-          <li>Land on someone: their seed goes back home and yours finishes straight away</li>
-          <li>A 6, a capture, or getting a seed home = roll again</li>
+          <li>Pick which die moves which seed, or play both dice on one seed</li>
+          <li>Land on a lone seed: it goes back home and yours finishes straight away</li>
+          <li>Two or more seeds together are a stack: nobody can eat them, and only a 6 can pass them</li>
+          <li>Only 6-6 lets you roll again</li>
           <li>You need the exact number to get home</li>
         </ul>
         <div className="font-display font-bold text-xs uppercase tracking-widest text-brand-black/50 mb-2">Computer players</div>
@@ -330,7 +337,7 @@ function LudoSolo({ s, setS, award, points, setPoints, shake, setShake, onReset 
     award(pts);
     setPoints(pts);
   };
-  const moveSeed = (seed: number, die = s.dice.indexOf(pickValue ?? s.dice[0])) => {
+  const moveSeed = (seed: number, die = pickValue ?? 0) => {
     const next = move(s, seed, die);
     setS(next);
     settle(next);
@@ -425,7 +432,7 @@ export function LudoOnline({ view, seat, act }: { view: State; seat: number | nu
     <div data-online-board="ludo">
       {seat !== null && <p className="mb-2 text-center font-body text-xs text-brand-black/60">You are {COLOR_NAMES[s.colors[seat]]}.</p>}
       <Players s={s} mySeat={seat} />
-      <Board s={s} shown={shown} mySeat={seat} movable={movable} onSeed={seed => void send({ kind: 'move', seed, die: s.dice.indexOf(pickValue ?? s.dice[0]) })} />
+      <Board s={s} shown={shown} mySeat={seat} movable={movable} onSeed={seed => void send({ kind: 'move', seed, die: pickValue ?? 0 })} />
       <Controls s={s} mySeat={seat} rolling={rolling} shake={shake} onRoll={tapDie} message={message} pick={pickValue} onPick={setPick} />
       {err && <p role="alert" className="mt-2 text-center font-body text-sm text-brand-coral">{err}</p>}
       <style>{LUDO_CSS}</style>
