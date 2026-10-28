@@ -23,6 +23,8 @@ import type * as connectSchema from "../connectSchema.js";
 import type * as connectWords from "../connectWords.js";
 import type * as http from "../http.js";
 import type * as matches from "../matches.js";
+import type * as movieSchema from "../movieSchema.js";
+import type * as movies from "../movies.js";
 import type * as registrations from "../registrations.js";
 import type * as roomLib from "../roomLib.js";
 import type * as rooms from "../rooms.js";
@@ -53,6 +55,8 @@ declare const fullApi: ApiFromModules<{
   connectWords: typeof connectWords;
   http: typeof http;
   matches: typeof matches;
+  movieSchema: typeof movieSchema;
+  movies: typeof movies;
   registrations: typeof registrations;
   roomLib: typeof roomLib;
   rooms: typeof rooms;
