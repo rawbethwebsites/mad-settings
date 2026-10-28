@@ -12,6 +12,7 @@ const LINKS = [
   { name: 'Games', href: '/games' },
   { name: 'Casino', href: '/casino' },
   { name: 'Meet campers', href: '/connect' },
+  { name: 'Movie vote', href: '/movies' },
   { name: 'Register', href: '/account' },
 ];
 

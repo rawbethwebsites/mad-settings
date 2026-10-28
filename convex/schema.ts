@@ -2,10 +2,12 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { connectTables } from "./connectSchema";
 import { walletTables } from "./walletSchema";
+import { movieTables } from "./movieSchema";
 
 export default defineSchema({
   ...connectTables,
   ...walletTables,
+  ...movieTables,
   registrations: defineTable({
     name: v.string(),
     email: v.string(),
