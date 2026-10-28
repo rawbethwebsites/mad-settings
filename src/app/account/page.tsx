@@ -7,7 +7,8 @@ import type { FunctionReturnType } from 'convex/server';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { camperId } from '@/lib/camper';
-import { logOutOfThisPhone, naira, serverMessage, signInOnThisPhone, uploadReceipt } from '@/lib/account';
+import { CAMP_ROOM, enterCampRoom, logOutOfThisPhone, naira, serverMessage, signInOnThisPhone, uploadReceipt } from '@/lib/account';
+import { useRouter } from 'next/navigation';
 import { Btn } from '@/components/arcade/ui';
 import { CAMP_DATE, CAMP_START, TICKETS, type TicketId } from '@/data/tickets';
 import AvatarCard from '@/components/wallet/AvatarCard';
@@ -50,6 +51,8 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
   }, []);
   const register = useAction(api.accounts.register);
   const login = useAction(api.accounts.login);
+  const joinCamp = useMutation(api.rooms.joinCamp);
+  const router = useRouter();
   const casino = useQuery(api.casino.lobby, { playerKey: '' });
   const tents = useQuery(api.accounts.tents, {});
   const tentsGone = tents?.left === 0;
@@ -70,6 +73,13 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
         ? await register({ name: f.name, phone: f.phone, password: f.password, email: f.email || undefined, ticket: ticketId, guests: people, playerKey: camperId(), gender: gender ?? undefined })
         : await login({ phone: f.phone, password: f.password });
       signInOnThisPhone(r.playerKey, r.name);
+      // Straight into the camp room with everyone else who registered
+      try {
+        await joinCamp({ playerId: r.playerKey });
+        enterCampRoom(r.name, true);
+        router.push(`/room/${CAMP_ROOM}`);
+        return;
+      } catch { /* on hold or removed: stay on the account page */ }
       onDone(r.playerKey);
     } catch (err) { setError(serverMessage(err)); }
     finally { setBusy(false); }
@@ -205,6 +215,12 @@ function SendReceipt({ playerKey, kind, bank, cta, suggested }: { playerKey: str
 function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogout: () => void }) {
   const a = me.account!;
   const buy = useMutation(api.accounts.buy);
+  const joinCamp = useMutation(api.rooms.joinCamp);
+  const camp = useQuery(api.rooms.get, a.status === 'approved' ? { code: CAMP_ROOM, playerId: playerKey } : 'skip');
+  useEffect(() => {
+    if (a.status !== 'approved') return;
+    joinCamp({ playerId: playerKey }).then(() => enterCampRoom(a.name)).catch(() => {});
+  }, [a.status, a.name, playerKey, joinCamp]);
   const changePassword = useAction(api.accounts.changePassword);
   const [shopMsg, setShopMsg] = useState('');
   const [pw, setPw] = useState({ old: '', next: '' });
@@ -225,6 +241,17 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
         <div className="mt-4 font-display font-bold text-xs uppercase tracking-widest opacity-60">Wallet</div>
         <div className="font-display font-black text-5xl text-brand-acid tabular-nums">{naira(a.balance)}</div>
       </Card>
+
+      {a.status === 'approved' && camp?.me && !camp.me.kicked && (
+        <Link href={`/room/${CAMP_ROOM}`} onClick={() => enterCampRoom(a.name, true)}
+          className="admin-lift block mb-5 p-4 poster-border poster-shadow bg-brand-purple text-brand-cream">
+          <span className="flex items-center gap-2 font-display font-bold text-xs uppercase tracking-widest text-brand-acid">
+            <span className="admin-live w-2.5 h-2.5 rounded-full bg-brand-acid" aria-hidden="true" />{camp.players.filter(p => p.online).length} online now
+          </span>
+          <span className="block font-display font-black text-2xl uppercase mt-1">⛺ Camp room: {camp.players.length} campers →</span>
+          <span className="block font-body text-sm opacity-80">See everyone who registered and play together.</span>
+        </Link>
+      )}
 
       <AvatarCard playerKey={playerKey} name={a.name} gender={a.gender} look={a.look as AvatarLook | null} shout={a.shout} live={a.status === 'approved'} />
 

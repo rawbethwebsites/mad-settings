@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { v, ConvexError } from "convex/values";
 import { TRIVIA } from "../src/data/triviaQuestions";
 import { BINGO_WORDS } from "../src/data/gameContent";
-import { addPoints, memberOf, requireHost, roomByCode } from "./roomLib";
+import { addPoints, isRoomHost, memberOf, requireHost, roomByCode } from "./roomLib";
 
 const QUESTION_MS = 20 * 1000;
 const GRACE_MS = 2 * 1000;
@@ -136,7 +136,7 @@ export const reveal = mutation({
     triviaIndex(round, round.step);
     const room = await ctx.db.get(round.roomId);
     if (!room) throw new ConvexError("That room is gone.");
-    if (room.hostId !== args.playerId) throw new ConvexError("Only the host can do that.");
+    if (!(await isRoomHost(ctx.db, room, args.playerId))) throw new ConvexError("Only the host can do that.");
     if (round.phase !== "question") return null;
 
     const correct = TRIVIA[triviaIndex(round, round.step)].answer;
@@ -165,7 +165,7 @@ export const next = mutation({
     requireLive(round);
     const room = await ctx.db.get(round.roomId);
     if (!room) throw new ConvexError("That room is gone.");
-    if (room.hostId !== args.playerId) throw new ConvexError("Only the host can do that.");
+    if (!(await isRoomHost(ctx.db, room, args.playerId))) throw new ConvexError("Only the host can do that.");
 
     if (round.game === "trivia") {
       if (round.step + 1 >= round.items.length) {
@@ -221,7 +221,7 @@ export const end = mutation({
     const round = await loadRound(ctx.db, args.roundId);
     const room = await ctx.db.get(round.roomId);
     if (!room) throw new ConvexError("That room is gone.");
-    if (room.hostId !== args.playerId) throw new ConvexError("Only the host can do that.");
+    if (!(await isRoomHost(ctx.db, room, args.playerId))) throw new ConvexError("Only the host can do that.");
     await ctx.db.patch(args.roundId, { status: "ended" });
     return null;
   },
@@ -255,7 +255,7 @@ export const get = query({
         .map((e) => ({ name: e.name, avatar: e.avatar, score: e.score }))
         .sort((a, b) => b.score - a.score),
       me: { score: mine?.score ?? 0, myAnswer: myAnswer ? { choice: myAnswer.choice, ms: myAnswer.ms } : null },
-      isHost: room.hostId === args.playerId,
+      isHost: await isRoomHost(ctx.db, room, args.playerId),
     };
 
     if (round.game === "trivia") {

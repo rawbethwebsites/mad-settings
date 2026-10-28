@@ -1,6 +1,6 @@
 // Camp accounts on this phone. Logging in swaps this phone over to the account's camper id,
 // so rooms, chess, Connect and the wallet all follow the camper to any phone.
-import { createPlayer, getPlayer } from './player';
+import { createPlayer, getPlayer, updatePlayer } from './player';
 
 const ID_KEY = 'mad-settings-chess-id';
 const PLAYER_KEY = 'mad-settings-player';
@@ -17,6 +17,16 @@ export function logOutOfThisPhone() {
     localStorage.removeItem(ID_KEY);
     localStorage.removeItem(PLAYER_KEY);
   } catch { /* nothing stored */ }
+}
+
+// Every registered camper is in the camp room; point this phone at it unless they're in another room
+export const CAMP_ROOM = 'CAMP';
+export function enterCampRoom(name: string, force = false) {
+  try {
+    const p = getPlayer();
+    if (!p) createPlayer(name, '🔥', CAMP_ROOM);
+    else if (force || !p.roomCode) updatePlayer({ roomCode: CAMP_ROOM });
+  } catch { /* private browsing */ }
 }
 
 export const naira = (n: number) => `₦${n.toLocaleString('en-NG')}`;

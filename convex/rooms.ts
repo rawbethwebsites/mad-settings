@@ -1,11 +1,14 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import {
   addPoints,
   cleanAvatar,
   cleanId,
   cleanName,
+  addToCamp,
+  CAMP_CODE,
   isOnline,
+  isRoomHost,
   memberOf,
   randomCode,
   requireHost,
@@ -32,7 +35,7 @@ export const create = mutation({
     for (let i = 0; i < 20 && !code; i++) {
       const candidate = randomCode();
       const existing = await roomByCode(ctx.db, candidate);
-      if (!existing || existing.status === "closed") code = candidate;
+      if (candidate !== CAMP_CODE && (!existing || existing.status === "closed")) code = candidate;
     }
     if (!code) throw new ConvexError("Could not make a room. Try again.");
     const now = Date.now();
@@ -66,6 +69,7 @@ export const join = mutation({
     const room = await roomByCode(ctx.db, args.code);
     if (!room) throw new ConvexError("No room with that code. Check it with your host.");
     if (room.status !== "open") throw new ConvexError("That room is closed.");
+    if (room.code === CAMP_CODE) throw new ConvexError("The camp room is for registered campers. Log in to your camp account to join it.");
     const row = { name: cleanName(args.name), avatar: cleanAvatar(args.avatar), lastSeen: Date.now() };
     const existing = await memberOf(ctx.db, room._id, playerId);
     if (existing?.kicked) throw new ConvexError("The host removed you from this room.");
@@ -94,6 +98,29 @@ export const join = mutation({
   },
 });
 
+// A registered camper's way into the camp room (also called on every log in)
+export const joinCamp = mutation({
+  args: { playerId: v.string(), avatar: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.query("accounts").withIndex("by_player_key", (q) => q.eq("playerKey", args.playerId)).unique();
+    if (!account) throw new ConvexError("Log in to your camp account first.");
+    if (account.status !== "approved") throw new ConvexError("Your camp account is on hold. Ask camp staff.");
+    const code = await addToCamp(ctx.db, account, args.avatar);
+    if (!code) throw new ConvexError("Camp staff removed you from the camp room.");
+    return { code, name: account.name };
+  },
+});
+
+// CLI only (npx convex run rooms:fillCamp): put every registered camper in the camp room
+export const fillCamp = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const accounts = (await ctx.db.query("accounts").collect()).filter((a) => a.status === "approved");
+    for (const a of accounts) await addToCamp(ctx.db, a);
+    return { campers: accounts.length };
+  },
+});
+
 // Every 15s from each phone. Tells the phone if it was removed or the room closed.
 export const heartbeat = mutation({
   args: { code: v.string(), playerId: v.string() },
@@ -117,7 +144,7 @@ export const leave = mutation({
     const me = await memberOf(ctx.db, room._id, args.playerId);
     if (me) await forfeitAll(ctx.db, room._id, args.playerId);
     // The host's row stays so the room keeps its host; it just goes offline
-    if (me && !me.isHost) await ctx.db.delete(me._id);
+    if (me && !me.isHost && room.code !== CAMP_CODE) await ctx.db.delete(me._id);
     else if (me) await ctx.db.patch(me._id, { lastSeen: 0 });
     return null;
   },
@@ -149,6 +176,7 @@ export const close = mutation({
   args: { code: v.string(), playerId: v.string() },
   handler: async (ctx, args) => {
     const { room } = await requireHost(ctx.db, args.code, args.playerId);
+    if (room.code === CAMP_CODE) throw new ConvexError("The camp room stays open for every camper.");
     await ctx.db.patch(room._id, { status: "closed", updatedAt: Date.now() });
     return null;
   },
@@ -188,7 +216,8 @@ export const get = query({
       status: room.status,
       currentGame: room.currentGame ?? null,
       round: round ? { id: round._id, game: round.game } : null,
-      me: me ? { id: me._id, isHost: room.hostId === args.playerId, kicked: me.kicked } : null,
+      me: me ? { id: me._id, isHost: await isRoomHost(ctx.db, room, args.playerId), kicked: me.kicked } : null,
+      camp: room.code === CAMP_CODE,
       players: rows
         .filter((r) => !r.kicked)
         .map((r) => ({
@@ -200,7 +229,7 @@ export const get = query({
           total: r.total,
           scores: r.scores,
         }))
-        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+        .sort((a, b) => b.total - a.total || Number(b.online) - Number(a.online) || a.name.localeCompare(b.name)),
     };
   },
 });
