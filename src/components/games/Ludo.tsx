@@ -43,7 +43,7 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[28, 26], [72, 26], [28, 50], [72, 50], [28, 74], [72, 74]],
 };
 
-function Die({ value, rolling, active, color, onRoll, label, picked = false, used = false }: { value: number | null; rolling: boolean; active: boolean; color: string; onRoll: () => void; label: string; picked?: boolean; used?: boolean }) {
+function Die({ value, rolling, active, color, onRoll, label, picked = false, used = false, pickable = false }: { value: number | null; rolling: boolean; active: boolean; color: string; onRoll: () => void; label: string; picked?: boolean; used?: boolean; pickable?: boolean }) {
   const [face, setFace] = useState(value ?? 6);
   useEffect(() => {
     if (!rolling) return;
@@ -55,7 +55,7 @@ function Die({ value, rolling, active, color, onRoll, label, picked = false, use
     <button
       type="button"
       onClick={onRoll}
-      disabled={!active}
+      disabled={!active && !pickable}
       aria-label={label}
       aria-pressed={picked}
       className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white border-4 border-brand-black shadow-[4px_4px_0_0_#0A0A0A] transition-[opacity,transform] ${rolling ? 'animate-[ldShake_120ms_linear_infinite]' : ''} ${active || picked ? 'ring-4 ring-offset-2' : ''} ${picked ? '-translate-y-1' : ''} ${used ? 'opacity-30' : ''}`}
@@ -219,7 +219,7 @@ function Controls({ s, mySeat, rolling, shake, onRoll, message, pick, onPick }: 
           const playable = die !== null && open.includes(die);
           return (
             <Die key={i} value={v} rolling={rolling} color={color}
-              active={canRoll} picked={playable && pick === die} used={!!s.dice.length && die === null}
+              active={canRoll} pickable={playable} picked={playable && pick === die} used={!!s.dice.length && die === null}
               label={canRoll ? 'Roll the dice' : playable ? `Play the ${v}` : `Die shows ${v}`}
               onRoll={() => (canRoll ? onRoll() : playable ? onPick(die) : undefined)} />
           );
