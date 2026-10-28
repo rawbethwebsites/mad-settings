@@ -193,6 +193,11 @@ export default function RoomPage() {
         </div>
 
         <div className="grid gap-3">
+          {room.camp && (
+            <button onClick={() => router.push('/movies')} className={`${btn} w-full py-3 bg-brand-acid text-sm`}>
+              🎬 Vote on movie night →
+            </button>
+          )}
           <button onClick={() => router.push('/connect')} className={`${btn} w-full py-3 bg-white text-sm`}>
             🏕 Meet campers →
           </button>

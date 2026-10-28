@@ -9,9 +9,10 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { camperId } from '@/lib/camper';
 import { naira, serverMessage } from '@/lib/account';
 import Dashboard from '@/components/admin/Dashboard';
+import Movies from '@/components/admin/Movies';
 
 type Overview = NonNullable<FunctionReturnType<typeof api.walletAdmin.overview>>;
-const TABS = ['Dashboard', 'Payments', 'Campers', 'Prices', 'Shop', 'Casino', 'Messages', 'Settings'] as const;
+const TABS = ['Dashboard', 'Payments', 'Campers', 'Movies', 'Prices', 'Shop', 'Casino', 'Messages', 'Settings'] as const;
 const GAMES = ['ludo', 'whot', 'ocho', 'ayo', 'connect4', 'tictactoe', 'dots', 'chopchop', 'minesweeper', 'tenten', 'trivia', 'bingo', 'search', 'puzzles', 'same', 'vault'];
 const input = 'p-2 border-[3px] border-brand-black bg-white font-body';
 const btn = 'admin-lift px-3 py-2 poster-border font-display font-black uppercase text-sm disabled:opacity-40';
@@ -46,7 +47,7 @@ export default function AdminPage() {
         ) : (
           <>
             <div className="flex flex-wrap gap-2 mb-4">
-              {TABS.filter(t => t !== 'Settings' || data.role === 'head').map(t => (
+              {TABS.filter(t => (t !== 'Settings' && t !== 'Movies') || data.role === 'head').map(t => (
                 <button key={t} type="button" onClick={() => { setTab(t); setFlash(''); }}
                   className={`${btn} shrink-0 ${tab === t ? 'bg-brand-purple text-brand-cream' : 'bg-white'}`}>
                   {t}{t === 'Payments' && data.pending.length ? ` (${data.pending.length})` : ''}{t === 'Shop' && data.orders.length ? ` (${data.orders.length})` : ''}
@@ -57,6 +58,7 @@ export default function AdminPage() {
             {tab === 'Dashboard' && <Dashboard me={me} jump={t => { setTab(t); setFlash(''); }} />}
             {tab === 'Payments' && <Payments data={data} me={me} run={run} />}
             {tab === 'Campers' && <Campers data={data} me={me} run={run} />}
+            {tab === 'Movies' && <Movies me={me} run={run} />}
             {tab === 'Prices' && <Prices data={data} me={me} run={run} />}
             {tab === 'Shop' && <Shop data={data} me={me} run={run} />}
             {tab === 'Casino' && <Casino data={data} me={me} run={run} />}
