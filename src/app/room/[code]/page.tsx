@@ -7,6 +7,7 @@ import { api } from '../../../../convex/_generated/api';
 import { getPlayer, updatePlayer } from '@/lib/player';
 import { camperId } from '@/lib/camper';
 import { CAMP_ROOM, enterCampRoom } from '@/lib/account';
+import { ShuffleButton } from '@/components/arcade/Shuffle';
 
 const btn = 'min-h-11 font-display font-black uppercase poster-border';
 
@@ -132,6 +133,8 @@ export default function RoomPage() {
             {error}
           </div>
         )}
+
+        {playerId && <ShuffleButton code={code} playerId={playerId} game="ludo" label="Ludo" />}
 
         {/* Host's picked game */}
         {!room.round && (room.currentGame ? (

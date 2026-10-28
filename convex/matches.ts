@@ -7,6 +7,7 @@ import { RULES } from "../src/lib/rules";
 import { addPoints, isOnline, memberOf, requireMember } from "./roomLib";
 import { chargeEntry, refundEntries } from "./walletLib";
 import { casino, payPot, refundStakes, STAKES, takeStake } from "./casinoLib";
+import { shuffleEnded } from "./shuffleLib";
 
 const INVITE_MS = 15 * 60 * 1000;
 
@@ -37,7 +38,7 @@ async function turnTimer(
   return { moveNo, turnDeadline };
 }
 
-async function start(ctx: MutationCtx, match: Doc<"matches">) {
+export async function start(ctx: MutationCtx, match: Doc<"matches">) {
   const rules = rulesFor(match.game);
   const state = rules.init(match.seats.map((s) => s.name));
   return {
@@ -69,6 +70,7 @@ async function forfeit(db: DatabaseWriter, match: Doc<"matches">, seat: number, 
     status: "finished", result: { winners, reason }, turnDeadline: undefined, updatedAt: Date.now(),
   });
   await payPot(db, match, winners);
+  await shuffleEnded(db, match, winners);
   for (const i of winners) {
     const row = await memberOf(db, match.roomId, match.seats[i].playerId);
     if (row && !row.kicked) await addPoints(db, row, match.game, rules.points.win);
@@ -94,6 +96,7 @@ async function applyMove(ctx: MutationCtx, match: Doc<"matches">, seat: number, 
     state, status: "finished", result: outcome, turnDeadline: undefined, updatedAt: Date.now(),
   });
   await payPot(ctx.db, match, outcome.winners);
+  await shuffleEnded(ctx.db, match, outcome.winners);
   // Points go straight onto the room leaderboard
   const draw = outcome.winners.length === 0;
   for (let i = 0; i < match.seats.length; i++) {
@@ -332,6 +335,8 @@ export const rematch = mutation({
     const match = await load(ctx.db, args.matchId);
     if (match.status !== "finished") return null;
     if (seatOf(match, args.playerId) === null) throw new ConvexError("You are not in this game.");
+    // Shuffle games deal the next round from the queue instead
+    if (match.shuffle) throw new ConvexError("The shuffle is finding your next game.");
     // Each chip game is its own bet: everyone agrees to a new stake by starting a new game
     if (match.stake) throw new ConvexError("Start a new game to play for chips again.");
     const seats = [...match.seats.slice(1), match.seats[0]];
@@ -380,6 +385,7 @@ export const get = query({
       pot: (match.stake ?? 0) * Math.max(match.staked?.length ?? 0, match.seats.length),
       houseCut: match.houseCut ?? 0,
       won: match.payout && seat !== null ? match.payout.seats[seat] ?? 0 : null,
+      shuffle: match.shuffle ?? false,
     };
   },
 });
