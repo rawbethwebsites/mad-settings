@@ -2,6 +2,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { useResultSound } from '@/lib/useGameSounds';
+import ShareCard from './ShareCard';
 
 const VARIANTS = {
   primary: 'bg-brand-purple text-brand-cream',
@@ -60,6 +61,7 @@ export function Result({
       <Btn variant="dark" onClick={onAgain} className="w-full mt-4">
         PLAY AGAIN →
       </Btn>
+      <ShareCard result={{ tone, emoji, headline: title, detail, points }} />
     </div>
   );
 }
