@@ -47,7 +47,7 @@ export async function staffRole(db: DatabaseReader, playerId: string): Promise<'
 
 export async function requireStaff(db: DatabaseReader, playerId: string, head = false) {
   const role = await staffRole(db, playerId);
-  if (!role || (head && role !== 'head')) throw new ConvexError(head ? 'Only the Head Ranger can do that.' : 'Only camp staff can open the admin panel.');
+  if (!role || (head && role !== 'head')) throw new ConvexError(head ? 'Only an admin can do that.' : 'Only camp staff can open the admin panel.');
   return role;
 }
 

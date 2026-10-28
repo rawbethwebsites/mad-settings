@@ -65,7 +65,7 @@ export default function ConnectShell({ title, children }: { title: string; child
     <a href="#connect-main" className="skip-link">Skip to content</a>
     <header className="connect-header">
       <Link href="/" className="connect-wordmark" aria-label="MAD SETTINGS home">MAD SETTINGS<span>Campfire Connect</span></Link>
-      <Link href="https://theboostnation.com" aria-label="Built by The Boost Nation" className="connect-btn"><Image src="/tbn-logo.png" alt="The Boost Nation" width={56} height={32} style={{ width: 56, height: 'auto', objectFit: 'contain' }} /></Link>
+      <Link href="https://theboostnation.space" aria-label="Built by The Boost Nation" className="connect-btn"><Image src="/tbn-logo.png" alt="The Boost Nation" width={56} height={32} style={{ width: 56, height: 'auto', objectFit: 'contain' }} /></Link>
     </header>
     <div className="connect-between"><p className="connect-eyebrow">{ranger ? 'Look after the camp' : 'Friends + teammates'}</p><Link href={ranger ? '/connect' : '/games'} className="connect-btn">{ranger ? 'Meet campers' : 'Games'}</Link></div>
     <nav aria-label={ranger ? 'Ranger tools' : 'Campfire Connect'} className="connect-nav">{links.map(({ href, title, Icon }) => <Link key={href} href={href} aria-current={pathname === href ? 'page' : undefined}><Icon size={18} aria-hidden="true" />{title}</Link>)}</nav>

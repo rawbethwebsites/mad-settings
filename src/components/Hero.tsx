@@ -1,6 +1,6 @@
 'use client';
 
-import { CAMP_DATE, CAMP_START, FROM_PRICE } from '@/data/tickets';
+import { CAMP_DATE, CAMP_START } from '@/data/tickets';
 
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
@@ -145,7 +145,7 @@ export default function Hero({ night = false }: { night?: boolean }) {
           POP-UP • BONFIRE • SLEEPOVER
         </div>
         <div className={`hero-subtitle mt-2 md:mt-3 font-display font-black tracking-wider md:tracking-widest text-xs md:text-lg uppercase ${night ? "text-brand-acid" : "text-brand-purple"}`}>
-          {CAMP_DATE} • {CAMP_START} • FROM {FROM_PRICE}
+          {CAMP_DATE} • {CAMP_START} • FREE TO REGISTER
         </div>
 
         <h2 className={`hero-headline mt-8 md:mt-12 font-display font-black text-2xl sm:text-3xl md:text-6xl uppercase leading-tight max-w-2xl mx-auto ${night ? "text-brand-cream" : ""}`}>

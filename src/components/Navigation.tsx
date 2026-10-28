@@ -12,7 +12,7 @@ const LINKS = [
   { name: 'Games', href: '/games' },
   { name: 'Casino', href: '/casino' },
   { name: 'Meet campers', href: '/connect' },
-  { name: 'Tickets', href: '/account' },
+  { name: 'Register', href: '/account' },
 ];
 
 // Slim translucent bar (Apple style). On phones it opens into a full-screen sheet.
@@ -74,7 +74,7 @@ export default function Navigation({ night = false }: { night?: boolean }) {
               href="/account"
               className={cn('hidden md:inline-flex items-center h-7 px-3 rounded-full text-[12px] font-semibold', dark ? 'bg-white text-black' : 'bg-brand-black text-white')}
             >
-              Get tickets
+              Register free
             </a>
             <button
               type="button"
@@ -127,7 +127,7 @@ export default function Navigation({ night = false }: { night?: boolean }) {
             ) : (
               <>
                 <a href="/account" tabIndex={open ? 0 : -1} className="flex items-center justify-center h-12 rounded-full bg-white text-black text-[15px] font-semibold">
-                  Get tickets
+                  Register free
                 </a>
                 <a href="/account?mode=login" tabIndex={open ? 0 : -1} className="flex items-center justify-center h-12 rounded-full border border-white/30 text-[15px] font-semibold">
                   Already registered? Log in

@@ -56,9 +56,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
   const [f, setF] = useState({ name: '', phone: '', password: '', email: '', guests: '1' });
   const [ticketId, setTicketId] = useState<TicketId>('attendee');
   const [gender, setGender] = useState<Gender | null>(null);
-  const ticket = TICKETS.find(t => t.id === ticketId)!;
   const people = Math.max(1, Math.min(20, Number(f.guests) || 1));
-  const total = ticket.id === 'attendee' ? ticket.price * people : ticket.price;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -90,7 +88,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
       {mode === 'signup' && !!casino?.foundersLeft && (
         <p data-founders-left className="mb-4 p-3 border-4 border-[#d4a017] bg-[#0f3d2e] text-[#f5d76e] font-display font-black uppercase text-sm">
           ★ Founding spots left: {casino.foundersLeft}
-          <span className="block font-body font-normal normal-case text-[#f3efe2]/85">The first {casino.founders} paid campers get {casino.founderChips.toLocaleString()} free casino chips and a gold badge.</span>
+          <span className="block font-body font-normal normal-case text-[#f3efe2]/85">The first {casino.founders} campers to sign up get {casino.founderChips.toLocaleString()} free casino chips and a gold badge.</span>
         </p>
       )}
       <form onSubmit={submit} className="space-y-4">
@@ -115,7 +113,7 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
             </fieldset>
             <div><label className={label} htmlFor="email">Email (optional)</label><input id="email" type="email" className={field} value={f.email} onChange={set('email')} autoComplete="email" /></div>
             <fieldset>
-              <legend className={label}>Ticket · {CAMP_DATE} from {CAMP_START}</legend>
+              <legend className={label}>How you&apos;re staying · {CAMP_DATE} from {CAMP_START}</legend>
               {tents && (
                 <p data-tents-left className={`mb-2 p-2 poster-border font-display font-black uppercase text-sm ${tentsGone ? 'bg-brand-coral' : 'bg-brand-black text-brand-acid'}`}>
                   {tentsGone ? '⛺ Tents sold out' : `⛺ Only ${tents.left} of ${tents.total} tents left`}
@@ -128,23 +126,20 @@ function SignIn({ onDone }: { onDone: (key: string) => void }) {
                   <label key={t.id} className={`flex items-center justify-between gap-3 p-3 poster-border ${off ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${ticketId === t.id ? 'bg-brand-acid' : 'bg-brand-cream'}`}>
                     <input type="radio" name="ticket" value={t.id} checked={ticketId === t.id} disabled={off} onChange={() => setTicketId(t.id)} className="sr-only" />
                     <span><span className="block font-display font-black uppercase leading-tight">{t.name}</span><span className="block font-body text-sm text-brand-black/60">{t.note}</span></span>
-                    <span className="font-display font-black whitespace-nowrap">{off ? 'Sold out' : naira(t.price)}</span>
+                    <span className="font-display font-black whitespace-nowrap">{off ? 'Sold out' : 'Free'}</span>
                   </label>
                   );
                 })}
               </div>
             </fieldset>
-            {ticket.id === 'attendee' && (
+            {ticketId === 'attendee' && (
               <div><label className={label} htmlFor="guests">How many people</label><input id="guests" inputMode="numeric" className={field} value={f.guests} onChange={set('guests')} /></div>
             )}
-            <div className="flex items-baseline justify-between p-3 bg-brand-black text-brand-cream poster-border">
-              <span className="font-display font-black uppercase text-sm tracking-widest">Total</span>
-              <span className="font-display font-black text-2xl">{naira(total)}</span>
-            </div>
+            <p className="p-3 bg-brand-black text-brand-cream poster-border font-display font-black uppercase text-sm tracking-widest">Registering is free. No payment needed.</p>
           </>
         )}
         {error && <p role="alert" className="p-3 bg-brand-coral poster-border font-body">{error}</p>}
-        <Btn className="w-full" disabled={busy}>{busy ? 'One moment…' : mode === 'signup' ? 'Create my account →' : 'Log in →'}</Btn>
+        <Btn className="w-full" disabled={busy}>{busy ? 'One moment…' : mode === 'signup' ? 'Register free →' : 'Log in →'}</Btn>
         {mode === 'login' && <p className="font-body text-sm text-center text-brand-black/60">Forgot your password? Ask camp staff to reset it.</p>}
       </form>
     </Card>
@@ -214,8 +209,6 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
   const [shopMsg, setShopMsg] = useState('');
   const [pw, setPw] = useState({ old: '', next: '' });
   const [pwMsg, setPwMsg] = useState('');
-  const feePending = me.payments?.some(p => p.kind === 'registration' && p.status === 'pending');
-  const feeRejected = me.payments?.find(p => p.kind === 'registration' && p.status === 'rejected');
 
   return (
     <>
@@ -226,7 +219,7 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
             <div className="font-body text-sm opacity-70">{a.phone}</div>
           </div>
           <span className={`px-2 py-1 font-display font-black text-xs uppercase ${a.status === 'approved' ? 'bg-brand-acid text-brand-black' : 'bg-brand-coral text-brand-black'}`}>
-            {a.status === 'approved' ? 'Paid camper ✓' : a.status === 'rejected' ? 'Not approved' : 'Payment pending'}
+            {a.status === 'approved' ? 'Registered ✓' : a.status === 'rejected' ? 'Not approved' : 'Payment pending'}
           </span>
         </div>
         <div className="mt-4 font-display font-bold text-xs uppercase tracking-widest opacity-60">Wallet</div>
@@ -237,16 +230,8 @@ function Wallet({ me, playerKey, onLogout }: { me: Me; playerKey: string; onLogo
 
       {a.status !== 'approved' && (
         <Card>
-          <h2 className="font-display font-black text-xl uppercase mb-2">Pay your camp fee</h2>
-          {feePending ? <p className="p-3 bg-brand-acid poster-border font-body">We got your receipt. Camp staff are checking it now. This page updates by itself.</p> : (
-            <>
-              {feeRejected && <p className="p-3 bg-brand-coral poster-border font-body mb-3">Your last receipt was not approved{feeRejected.note ? `: ${feeRejected.note}` : '.'} Send it again below.</p>}
-              {a.ticket && a.ticketTotal
-                ? <p className="p-3 poster-border bg-brand-cream font-body mb-3">Your ticket: <b>{a.ticket}</b>{a.ticket === 'Attendee' ? ` × ${a.guests}` : ''}. Send <b>{naira(a.ticketTotal)}</b>.</p>
-                : <p className="font-body mb-3">{me.bank.priceNote}</p>}
-              <SendReceipt playerKey={playerKey} kind="registration" bank={me.bank} cta="Send my receipt →" suggested={a.ticketTotal} />
-            </>
-          )}
+          <h2 className="font-display font-black text-xl uppercase mb-2">Account on hold</h2>
+          <p className="font-body">Camp staff have paused your account. Talk to them at camp or on WhatsApp to sort it out.</p>
         </Card>
       )}
 

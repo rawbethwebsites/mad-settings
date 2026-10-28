@@ -1,5 +1,5 @@
 // The camp admin panel: check bank-transfer receipts, run wallets, set prices, the shop and bank details.
-// Open to the Head Ranger and to Cashiers the Head Ranger appoints.
+// Open to admins (Head Rangers) and to Cashiers. Admins can appoint other admins and Cashiers.
 import { ConvexError, v } from 'convex/values';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import type { DatabaseReader } from './_generated/server';
@@ -7,7 +7,7 @@ import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { checkPassword, hashPassword, randomHex } from './accounts';
 import { bank, cleanAmount, credit, requireStaff, staffRole } from './walletLib';
-import { FOUNDER_CHIPS, FOUNDERS, moveChips } from './casinoLib';
+import { makeFounder } from './casinoLib';
 
 const staffArg = { playerId: v.string() };
 
@@ -25,6 +25,7 @@ export const overview = query({
         return { row: r, camper: a ? { id: a._id, name: a.name, phone: a.phone, status: a.status, balance: a.balance, ticket: a.ticket ?? null, ticketTotal: a.ticketTotal ?? null } : null };
       }));
     const staff = await ctx.db.query('staff').collect();
+    const heads = (await ctx.db.query('rangers').collect()).filter(r => r.role === 'headRanger');
     return {
       role,
       bank: await bank(ctx.db),
@@ -38,6 +39,10 @@ export const overview = query({
       cashiers: await Promise.all(staff.map(async s => {
         const a = await ctx.db.query('accounts').withIndex('by_player_key', q => q.eq('playerKey', s.playerId)).unique();
         return { accountId: a?._id ?? null, name: a?.name ?? 'Unknown camper', phone: a?.phone ?? '' };
+      })),
+      admins: await Promise.all(heads.map(async r => {
+        const a = await ctx.db.query('accounts').withIndex('by_player_key', q => q.eq('playerKey', r.playerId)).unique();
+        return { accountId: a?._id ?? null, name: a?.name ?? 'Unknown camper', phone: a?.phone ?? '', you: r.playerId === playerId };
       })),
     };
   },
@@ -69,13 +74,7 @@ export const review = mutation({
     if (!approve) return null;
     if (p.kind === 'registration') {
       await ctx.db.patch(a._id, { status: 'approved' });
-      // The first 100 campers approved become Founding Campers, with bonus chips
-      const last = await ctx.db.query('accounts').withIndex('by_founder', q => q.gt('founderNo', 0)).order('desc').first();
-      const next = (last?.founderNo ?? 0) + 1;
-      if (!a.founderNo && next <= FOUNDERS) {
-        await ctx.db.patch(a._id, { founderNo: next });
-        await moveChips(ctx.db, (await ctx.db.get(a._id))!, FOUNDER_CHIPS, 'bonus', `Founding Camper #${next} bonus`);
-      }
+      await makeFounder(ctx.db, a);
     }
     else await credit(ctx.db, a, landed, 'topup', 'Wallet top-up (bank transfer)', reviewer);
     return null;
@@ -95,6 +94,7 @@ export const findCampers = query({
     return Promise.all(hits.slice(0, 30).map(async a => ({
       id: a._id, name: a.name, phone: a.phone, status: a.status, balance: a.balance,
       cashier: !!(await ctx.db.query('staff').withIndex('by_player', s => s.eq('playerId', a.playerKey)).unique()),
+      admin: (await staffRole(ctx.db, a.playerKey)) === 'head',
     })));
   },
 });
@@ -213,6 +213,24 @@ export const setCashier = mutation({
   },
 });
 
+// Admins appoint other admins (Head Rangers). You can't remove yourself, so the camp always keeps one.
+export const setAdmin = mutation({
+  args: { ...staffArg, accountId: v.id('accounts'), on: v.boolean() },
+  handler: async (ctx, { playerId, accountId, on }) => {
+    await requireStaff(ctx.db, playerId, true);
+    const a = await ctx.db.get(accountId);
+    if (!a) throw new ConvexError('That camper account is gone.');
+    if (!on && a.playerKey === playerId) throw new ConvexError('You can\'t remove yourself. Ask another admin.');
+    const row = await ctx.db.query('rangers').withIndex('by_player', q => q.eq('playerId', a.playerKey)).unique();
+    if (on) {
+      if (row) await ctx.db.patch(row._id, { role: 'headRanger' });
+      else await ctx.db.insert('rangers', { playerId: a.playerKey, role: 'headRanger', createdAt: Date.now() });
+      if (a.status !== 'approved') await ctx.db.patch(a._id, { status: 'approved' });
+    } else if (row?.role === 'headRanger') await ctx.db.delete(row._id);
+    return null;
+  },
+});
+
 // CLI only (npx convex run): make a camper account a Head Ranger, alongside any existing one
 export const makeHeadRanger = internalMutation({
   args: { email: v.string() },
@@ -225,5 +243,19 @@ export const makeHeadRanger = internalMutation({
     if (existing) await ctx.db.patch(existing._id, { role: 'headRanger' });
     else await ctx.db.insert('rangers', { playerId: a.playerKey, role: 'headRanger', createdAt: Date.now() });
     return { name: a.name, status: a.status };
+  },
+});
+
+// CLI only (npx convex run walletAdmin:approveWaiting): registering went free on 28 Oct 2026,
+// so everyone still waiting on a camp-fee receipt check gets in
+export const approveWaiting = internalMutation({
+  args: {},
+  handler: async ctx => {
+    const waiting = (await ctx.db.query('accounts').collect()).filter(a => a.status === 'pending');
+    for (const a of waiting) {
+      await ctx.db.patch(a._id, { status: 'approved' });
+      await makeFounder(ctx.db, a);
+    }
+    return { approved: waiting.length };
   },
 });

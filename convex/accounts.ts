@@ -1,10 +1,11 @@
-// Camper accounts: sign up with phone + password, pay by bank transfer, and a spend-only wallet.
+// Camper accounts: sign up free with phone + password, and a spend-only wallet topped up by bank transfer.
 import { ConvexError, v } from 'convex/values';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import { accountByKey, bank, charge, cleanAmount, cleanPhone, requireAccount, staffRole } from './walletLib';
 import { TENTS_TOTAL, TICKETS } from '../src/data/tickets';
+import { makeFounder } from './casinoLib';
 import { startingLook } from '../src/data/avatar';
 import type { DatabaseReader } from './_generated/server';
 
@@ -72,22 +73,22 @@ export const create = internalMutation({
     }
     const email = args.email?.trim().toLowerCase() || undefined;
     if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120)) throw new ConvexError('Enter a valid email, or leave it empty.');
-    // Attendee tickets are per person; a tent is one price for the people it sleeps
+    // Registering is free. The ticket only says how they stay: Attendee is per person, a tent sleeps its people
     const ticket = TICKETS.find(t => t.id === args.ticket) ?? TICKETS[0];
     if (ticket.stay === 'sleepover' && await tentsTaken(ctx.db) >= TENTS_TOTAL) {
       throw new ConvexError('All the tents are taken. Pick an Attendee ticket instead.');
     }
     const count = Math.max(1, Math.min(20, Math.floor(args.guests ?? 1)));
     const guests = ticket.id === 'attendee' ? count : ticket.people;
-    const ticketTotal = ticket.id === 'attendee' ? ticket.price * count : ticket.price;
     // Keep this phone's camp history (rooms, chess, Connect) unless that id already belongs to someone else
     const taken = args.playerKey.length >= 8 && await accountByKey(ctx.db, args.playerKey);
     const playerKey = args.playerKey.length >= 8 && !taken ? args.playerKey : args.spareKey;
-    await ctx.db.insert('accounts', {
-      name, phone, email, stay: ticket.stay, guests, ticket: ticket.name, ticketTotal, passwordHash: args.passwordHash, salt: args.salt,
-      playerKey, status: 'pending', balance: 0, failedLogins: 0, lockedUntil: 0, createdAt: Date.now(),
+    const id = await ctx.db.insert('accounts', {
+      name, phone, email, stay: ticket.stay, guests, ticket: ticket.name, passwordHash: args.passwordHash, salt: args.salt,
+      playerKey, status: 'approved', balance: 0, failedLogins: 0, lockedUntil: 0, createdAt: Date.now(),
       ...(args.gender ? { gender: args.gender, look: startingLook(args.gender, name + phone) } : {}),
     });
+    await makeFounder(ctx.db, (await ctx.db.get(id))!);
     return { playerKey, name };
   },
 });
