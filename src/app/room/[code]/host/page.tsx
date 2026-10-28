@@ -212,7 +212,7 @@ export default function HostPage() {
           >
             ← Back to room
           </button>
-          {!confirmClose ? (
+          {room.camp ? null : !confirmClose ? (
             <button onClick={() => setConfirmClose(true)} className={`${btn} px-6 py-3 bg-brand-cream text-brand-black`}>
               🛑 CLOSE ROOM
             </button>

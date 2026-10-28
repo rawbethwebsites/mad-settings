@@ -6,6 +6,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { getPlayer, updatePlayer } from '@/lib/player';
 import { camperId } from '@/lib/camper';
+import { CAMP_ROOM, enterCampRoom } from '@/lib/account';
 
 const btn = 'min-h-11 font-display font-black uppercase poster-border';
 
@@ -24,15 +25,23 @@ export default function RoomPage() {
     playerId ? { code, playerId } : 'skip',
   );
   const leave = useMutation(api.rooms.leave);
+  const joinCamp = useMutation(api.rooms.joinCamp);
 
-  // No saved camper in this room → send them to join
+  // No saved camper in this room → send them to join. The camp room is for camp accounts, so log in instead.
   useEffect(() => {
+    if (code === CAMP_ROOM) {
+      if (!playerId) return;
+      joinCamp({ playerId })
+        .then(r => enterCampRoom(r.name, true))
+        .catch(() => router.replace('/account?mode=login'));
+      return;
+    }
     const t = window.setTimeout(() => {
       const p = getPlayer();
       if (!p || p.roomCode !== code) router.push(`/join?code=${code}`);
     }, 0);
     return () => window.clearTimeout(t);
-  }, [code, router]);
+  }, [code, router, playerId, joinCamp]);
 
   const doLeave = async () => {
     if (!playerId) return;
@@ -40,11 +49,11 @@ export default function RoomPage() {
       await leave({ code, playerId });
     } catch { /* room may already be gone */ }
     updatePlayer({ roomCode: '' });
-    router.push('/join');
+    router.push(code === CAMP_ROOM ? '/games' : '/join');
   };
 
   // A dead room: forget the saved code and go straight back to Join, no dead-end screen
-  const dead = room === null || (room !== undefined && room.status !== 'open');
+  const dead = room === null || (room !== undefined && (room.status !== 'open' || (room.camp && room.me?.kicked)));
   useEffect(() => {
     if (!dead) return;
     if (getPlayer()?.roomCode?.toUpperCase() === code.toUpperCase()) updatePlayer({ roomCode: '' });
@@ -74,7 +83,8 @@ export default function RoomPage() {
   }
 
   const isHost = room.me?.isHost ?? false;
-  const onlineCount = room.players.filter(p => p.online).length;
+  const online = room.players.filter(p => p.online);
+  const onlineCount = online.length;
 
   return (
     <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
@@ -85,15 +95,37 @@ export default function RoomPage() {
             <div>
               <h1 className="font-display font-black text-3xl md:text-4xl uppercase italic">{room.name}</h1>
               <div className="font-display font-bold text-sm uppercase tracking-widest text-brand-acid mt-1">
-                ROOM CODE: {room.code}
+                {room.camp ? 'Every registered camper is here' : `ROOM CODE: ${room.code}`}
               </div>
             </div>
             <div className="text-right">
-              <div className="font-display font-bold text-xs uppercase tracking-widest opacity-50">PLAYERS HERE</div>
+              <div className="font-display font-bold text-xs uppercase tracking-widest opacity-50">{room.camp ? 'ONLINE / CAMPERS' : 'PLAYERS HERE'}</div>
               <div className="font-display font-black text-4xl text-brand-acid">{onlineCount}/{room.players.length}</div>
             </div>
           </div>
         </div>
+
+        {room.camp && (
+          <div className="admin-rise p-4 poster-border poster-shadow bg-white mb-6">
+            <div className="flex items-center gap-2 font-display font-black uppercase mb-3">
+              <span className="admin-live w-2.5 h-2.5 rounded-full bg-brand-acid" aria-hidden="true" />
+              Online now ({onlineCount})
+            </div>
+            {onlineCount === 0 ? <p className="font-body text-sm">Nobody else is on right now. Pick a game and they&apos;ll see you when they come in.</p> : (
+              <ul className="flex gap-3 overflow-x-auto pb-1">
+                {online.map((p, i) => (
+                  <li key={p.id} className="admin-rise shrink-0 w-16 text-center" style={{ animationDelay: `${i * 40}ms` }}>
+                    <span className="relative inline-grid place-items-center w-14 h-14 text-3xl border-4 border-brand-acid bg-brand-acid/10 rounded-full">
+                      {p.avatar}
+                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-brand-acid border-2 border-white" aria-hidden="true" />
+                    </span>
+                    <span className="block font-display font-black text-[11px] uppercase truncate mt-1">{p.name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {error && (
           <div role="alert" className="p-3 mb-4 poster-border bg-brand-coral font-display font-bold text-sm uppercase">
@@ -135,12 +167,12 @@ export default function RoomPage() {
 
         {/* Roster + leaderboard (room.get returns players sorted by total) */}
         <div className="p-6 poster-border poster-shadow bg-white mb-6">
-          <h2 className="font-display font-black text-xl uppercase mb-4">🏕️ Players & scores</h2>
+          <h2 className="font-display font-black text-xl uppercase mb-4">🏕️ {room.camp ? `All ${room.players.length} campers & scores` : 'Players & scores'}</h2>
           <ul className="space-y-2">
             {room.players.map((p, i) => (
               <li
                 key={p.id}
-                className={`flex items-center gap-3 p-3 border-4 ${i === 0 && p.total > 0 ? 'border-brand-acid bg-brand-acid/10' : 'border-brand-black/10'}`}
+                className={`admin-slide flex items-center gap-3 p-3 border-4 ${i === 0 && p.total > 0 ? 'border-brand-acid bg-brand-acid/10' : 'border-brand-black/10'}`}
               >
                 <span className="font-display font-black text-lg w-6 text-brand-black/40">{i + 1}</span>
                 <span
@@ -178,7 +210,7 @@ export default function RoomPage() {
             }
             className={`${btn} w-full py-3 bg-white text-sm`}
           >
-            🚪 LEAVE ROOM
+            {room.camp ? '🚪 Leave for now' : '🚪 LEAVE ROOM'}
           </button>
         </div>
       </div>

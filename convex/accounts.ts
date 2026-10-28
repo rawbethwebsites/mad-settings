@@ -6,6 +6,7 @@ import type { Doc } from './_generated/dataModel';
 import { accountByKey, bank, charge, cleanAmount, cleanPhone, requireAccount, staffRole } from './walletLib';
 import { TENTS_TOTAL, TICKETS } from '../src/data/tickets';
 import { makeFounder } from './casinoLib';
+import { addToCamp } from './roomLib';
 import { startingLook } from '../src/data/avatar';
 import type { DatabaseReader } from './_generated/server';
 
@@ -89,6 +90,7 @@ export const create = internalMutation({
       ...(args.gender ? { gender: args.gender, look: startingLook(args.gender, name + phone) } : {}),
     });
     await makeFounder(ctx.db, (await ctx.db.get(id))!);
+    await addToCamp(ctx.db, (await ctx.db.get(id))!);
     return { playerKey, name };
   },
 });

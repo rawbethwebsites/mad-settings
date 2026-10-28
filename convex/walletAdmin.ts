@@ -8,6 +8,7 @@ import type { Id } from './_generated/dataModel';
 import { checkPassword, hashPassword, randomHex } from './accounts';
 import { bank, cleanAmount, credit, requireStaff, staffRole } from './walletLib';
 import { makeFounder } from './casinoLib';
+import { addToCamp } from './roomLib';
 import { TENTS_TOTAL } from '../src/data/tickets';
 
 const staffArg = { playerId: v.string() };
@@ -279,6 +280,7 @@ export const setAdmin = mutation({
       else await ctx.db.insert('rangers', { playerId: a.playerKey, role: 'headRanger', createdAt: Date.now() });
       if (a.status !== 'approved') await ctx.db.patch(a._id, { status: 'approved' });
     } else if (row?.role === 'headRanger') await ctx.db.delete(row._id);
+    await addToCamp(ctx.db, (await ctx.db.get(a._id))!);
     return null;
   },
 });
@@ -307,6 +309,7 @@ export const approveWaiting = internalMutation({
     for (const a of waiting) {
       await ctx.db.patch(a._id, { status: 'approved' });
       await makeFounder(ctx.db, a);
+      await addToCamp(ctx.db, a);
     }
     return { approved: waiting.length };
   },
