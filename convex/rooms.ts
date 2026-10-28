@@ -229,7 +229,7 @@ export const get = query({
           total: r.total,
           scores: r.scores,
         }))
-        .sort((a, b) => b.total - a.total || Number(b.online) - Number(a.online) || a.name.localeCompare(b.name)),
+        .sort((a, b) => Number(b.online) - Number(a.online) || b.total - a.total || a.name.localeCompare(b.name)),
     };
   },
 });
