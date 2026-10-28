@@ -8,6 +8,7 @@ import type { Id } from './_generated/dataModel';
 import { checkPassword, hashPassword, randomHex } from './accounts';
 import { bank, cleanAmount, credit, requireStaff, staffRole } from './walletLib';
 import { makeFounder } from './casinoLib';
+import { TENTS_TOTAL } from '../src/data/tickets';
 
 const staffArg = { playerId: v.string() };
 
@@ -44,6 +45,57 @@ export const overview = query({
         const a = await ctx.db.query('accounts').withIndex('by_player_key', q => q.eq('playerKey', r.playerId)).unique();
         return { accountId: a?._id ?? null, name: a?.name ?? 'Unknown camper', phone: a?.phone ?? '', you: r.playerId === playerId };
       })),
+    };
+  },
+});
+
+// The live dashboard: who's coming, how they're staying, and what's moving right now
+const DAY = 86_400_000;
+const LAGOS = 3_600_000; // WAT is UTC+1, no daylight saving
+const lagosDay = (t: number) => Math.floor((t + LAGOS) / DAY);
+
+export const stats = query({
+  args: staffArg,
+  handler: async (ctx, { playerId }) => {
+    if (!(await staffRole(ctx.db, playerId))) return null;
+    const now = Date.now();
+    const accounts = await ctx.db.query('accounts').collect();
+    const live = accounts.filter(a => a.status !== 'rejected');
+    const today = lagosDay(now);
+    const days = Array.from({ length: 14 }, (_, i) => today - 13 + i);
+    const perDay = new Map(days.map(d => [d, 0]));
+    for (const a of live) { const d = lagosDay(a.createdAt); if (perDay.has(d)) perDay.set(d, perDay.get(d)! + 1); }
+    const byTicket = (name: string) => live.filter(a => a.ticket === name);
+    const tentsTaken = byTicket('Single tent').length + byTicket('Couples tent').length;
+    const topups = await ctx.db.query('payments').withIndex('by_status', q => q.eq('status', 'approved')).collect();
+    const pending = await ctx.db.query('payments').withIndex('by_status', q => q.eq('status', 'pending')).collect();
+    const orders = await ctx.db.query('shopOrders').withIndex('by_status', q => q.eq('status', 'paid')).collect();
+    const profiles = await ctx.db.query('connectProfiles').collect();
+    const matches = await ctx.db.query('connectMatches').collect();
+    return {
+      now,
+      campers: live.length,
+      people: live.reduce((n, a) => n + (a.guests ?? 1), 0),
+      today: perDay.get(today) ?? 0,
+      lastHour: live.filter(a => now - a.createdAt < 3_600_000).length,
+      onHold: accounts.length - live.length,
+      tents: { taken: tentsTaken, total: TENTS_TOTAL },
+      stay: [
+        { label: 'Attendee', campers: byTicket('Attendee').length, people: byTicket('Attendee').reduce((n, a) => n + (a.guests ?? 1), 0) },
+        { label: 'Single tent', campers: byTicket('Single tent').length, people: byTicket('Single tent').length },
+        { label: 'Couples tent', campers: byTicket('Couples tent').length, people: byTicket('Couples tent').length * 2 },
+      ],
+      gender: { female: live.filter(a => a.gender === 'female').length, male: live.filter(a => a.gender === 'male').length, unset: live.filter(a => !a.gender).length },
+      founders: live.filter(a => a.founderNo).length,
+      perDay: days.map(d => ({ day: d * DAY, count: perDay.get(d)! })),
+      newest: [...live].sort((a, b) => b.createdAt - a.createdAt).slice(0, 8).map(a => ({ id: a._id, name: a.name, ticket: a.ticket ?? 'Attendee', guests: a.guests ?? 1, at: a.createdAt })),
+      money: {
+        wallets: live.reduce((n, a) => n + a.balance, 0),
+        toppedUp: topups.filter(p => p.kind === 'topup').reduce((n, p) => n + p.amount, 0),
+        chips: live.reduce((n, a) => n + (a.chips ?? 0), 0),
+      },
+      waiting: { receipts: pending.length, orders: orders.length },
+      connect: { profiles: profiles.filter(p => !p.banned).length, matches: matches.filter(m => m.active).length, messages: matches.reduce((n, m) => n + m.messageCount, 0) },
     };
   },
 });

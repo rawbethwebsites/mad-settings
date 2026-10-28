@@ -8,22 +8,23 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { camperId } from '@/lib/camper';
 import { naira, serverMessage } from '@/lib/account';
+import Dashboard from '@/components/admin/Dashboard';
 
 type Overview = NonNullable<FunctionReturnType<typeof api.walletAdmin.overview>>;
-const TABS = ['Payments', 'Campers', 'Prices', 'Shop', 'Casino', 'Messages', 'Settings'] as const;
+const TABS = ['Dashboard', 'Payments', 'Campers', 'Prices', 'Shop', 'Casino', 'Messages', 'Settings'] as const;
 const GAMES = ['ludo', 'whot', 'ocho', 'ayo', 'connect4', 'tictactoe', 'dots', 'chopchop', 'minesweeper', 'tenten', 'trivia', 'bingo', 'search', 'puzzles', 'same', 'vault'];
 const input = 'p-2 border-[3px] border-brand-black bg-white font-body';
-const btn = 'px-3 py-2 poster-border font-display font-black uppercase text-sm disabled:opacity-40';
+const btn = 'admin-lift px-3 py-2 poster-border font-display font-black uppercase text-sm disabled:opacity-40';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="p-4 poster-border poster-shadow bg-white mb-5"><h2 className="font-display font-black text-lg uppercase mb-3">{title}</h2>{children}</section>;
+  return <section className="admin-rise p-4 poster-border poster-shadow bg-white mb-5"><h2 className="font-display font-black text-lg uppercase mb-3">{title}</h2>{children}</section>;
 }
 
 export default function AdminPage() {
   const [me, setMe] = useState('');
   useEffect(() => { const t = setTimeout(() => setMe(camperId()), 0); return () => clearTimeout(t); }, []);
   const data = useQuery(api.walletAdmin.overview, me ? { playerId: me } : 'skip');
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Payments');
+  const [tab, setTab] = useState<(typeof TABS)[number]>('Dashboard');
   const [flash, setFlash] = useState('');
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setFlash('');
@@ -32,7 +33,7 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-brand-cream text-brand-black p-4 md:p-6">
-      <div className="max-w-3xl mx-auto">
+      <div className={`${tab === 'Dashboard' ? 'max-w-5xl' : 'max-w-3xl'} mx-auto transition-[max-width] duration-300`}>
         <div className="flex items-center justify-between mb-4">
           <Link href="/account" className="min-h-11 flex items-center font-display font-bold text-sm uppercase">← My camp</Link>
           <h1 className="font-display font-black text-2xl uppercase italic">Camp admin</h1>
@@ -52,7 +53,8 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
-            {flash && <p role="status" className="p-3 mb-4 poster-border bg-brand-acid font-body">{flash}</p>}
+            {flash && <p key={flash} role="status" className="admin-slide p-3 mb-4 poster-border bg-brand-acid font-body">{flash}</p>}
+            {tab === 'Dashboard' && <Dashboard me={me} jump={t => { setTab(t); setFlash(''); }} />}
             {tab === 'Payments' && <Payments data={data} me={me} run={run} />}
             {tab === 'Campers' && <Campers data={data} me={me} run={run} />}
             {tab === 'Prices' && <Prices data={data} me={me} run={run} />}
@@ -79,7 +81,7 @@ function Payments({ data, me, run }: TabProps) {
         {!data.pending.length && <p className="font-body">Nothing waiting. New receipts appear here by themselves.</p>}
         <div className="space-y-4">
           {data.pending.map(p => (
-            <article key={p.id} className="p-3 border-[3px] border-brand-black">
+            <article key={p.id} className="admin-slide p-3 border-[3px] border-brand-black">
               <div className="flex justify-between gap-2 flex-wrap">
                 <div>
                   <div className="font-display font-black uppercase">{p.camper?.name ?? 'Unknown'} · {p.kind === 'registration' ? 'Camp fee' : 'Wallet top-up'}</div>
@@ -132,7 +134,7 @@ function Campers({ data, me, run }: TabProps) {
       <input className={`${input} w-full mb-3`} placeholder="Search name or phone" value={q} onChange={e => setQ(e.target.value)} />
       <div className="space-y-3">
         {campers?.map(c => (
-          <article key={c.id} className="p-3 border-[3px] border-brand-black">
+          <article key={c.id} className="admin-slide p-3 border-[3px] border-brand-black">
             <div className="flex justify-between gap-2 flex-wrap">
               <div>
                 <div className="font-display font-black uppercase">{c.name}{c.admin ? ' · Admin' : c.cashier ? ' · Cashier' : ''}</div>

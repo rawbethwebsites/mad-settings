@@ -426,3 +426,29 @@ html { scroll-behavior: smooth; }
     text-shadow: 0 2px 14px rgba(5, 4, 12, 0.85), 0 1px 3px rgba(5, 4, 12, 0.9);
   }
 }
+
+/* ===== Admin panel motion ===== */
+@keyframes admin-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes admin-slide { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@keyframes admin-pop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes admin-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes admin-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes admin-live { 0%, 100% { box-shadow: 0 0 0 0 rgba(190, 242, 100, .7); } 70% { box-shadow: 0 0 0 9px rgba(190, 242, 100, 0); } }
+@keyframes admin-wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+@keyframes admin-glow { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: .9; transform: scale(1.15); } }
+.admin-rise { animation: admin-rise .5s cubic-bezier(.2, .8, .2, 1) both; }
+.admin-slide { animation: admin-slide .45s cubic-bezier(.2, .8, .2, 1) both; }
+.admin-pop { animation: admin-pop .45s ease-out; }
+.admin-grow { transform-origin: bottom; animation: admin-grow .7s cubic-bezier(.2, .8, .2, 1) both; }
+.admin-fill { transform-origin: left; animation: admin-fill .9s cubic-bezier(.2, .8, .2, 1) both; transition: width .6s ease; }
+.admin-live { animation: admin-live 1.6s ease-out infinite; }
+.admin-wiggle { animation: admin-wiggle 2.4s ease-in-out infinite; }
+.admin-glow { animation: admin-glow 6s ease-in-out infinite; }
+.admin-shimmer { background: linear-gradient(90deg, #fff 0%, #f1ecff 50%, #fff 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.admin-lift { transition: transform .15s ease, box-shadow .15s ease; }
+.admin-lift:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 #0A0A0A; }
+.admin-lift:active { transform: translate(1px, 1px); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  .admin-rise, .admin-slide, .admin-pop, .admin-grow, .admin-fill, .admin-live, .admin-wiggle, .admin-glow, .admin-shimmer { animation: none !important; }
+  .admin-lift, .admin-lift:hover, .admin-lift:active { transform: none; transition: none; }
+}
