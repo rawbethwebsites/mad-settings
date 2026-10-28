@@ -14,6 +14,7 @@ import { useResultSound, useTurnSound } from '@/lib/useGameSounds';
 import { Btn } from './ui';
 import SoundToggle, { buttonTap } from './SoundControls';
 import TurnCountdown from './TurnCountdown';
+import ShuffleBar from './Shuffle';
 import PayGate from '@/components/wallet/PayGate';
 import { ChipBanner, StakePicker } from '@/components/wallet/Chips';
 import { serverMessage } from '@/lib/account';
@@ -146,6 +147,17 @@ export default function GameShell({
             {error}
             <button onClick={() => setError('')} className="min-h-11 px-2 flex items-center gap-1">✕ Dismiss</button>
           </div>
+        )}
+
+        {showOnline && (
+          <ShuffleBar
+            game={id}
+            code={player.roomCode}
+            playerId={playerId}
+            matchId={matchId}
+            playing={playingOnline}
+            onMatch={m => { setMatchId(m); setTab('campers'); }}
+          />
         )}
 
         {online && !playingOnline && (
@@ -348,6 +360,7 @@ interface MatchData {
   pot: number;
   houseCut: number;
   won: number | null;
+  shuffle: boolean;
 }
 
 function WaitingRoom({
@@ -555,7 +568,7 @@ function LiveMatch({
               <button onClick={clearMatch} className={`${btn} flex-1 py-3 bg-[#0f3d2e] text-[#f5d76e]`}>
                 🎰 New chip game
               </button>
-            ) : match.seat !== null && (
+            ) : match.seat !== null && !match.shuffle && (
               <button
                 onClick={() => rematch({ matchId: match.id, playerId }).catch(() => onError('Could not restart. Tap Play again.'))}
                 className={`${btn} flex-1 py-3 bg-brand-black text-brand-cream`}

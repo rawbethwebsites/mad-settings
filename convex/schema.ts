@@ -3,11 +3,13 @@ import { v } from "convex/values";
 import { connectTables } from "./connectSchema";
 import { walletTables } from "./walletSchema";
 import { movieTables } from "./movieSchema";
+import { shuffleTables } from "./shuffleSchema";
 
 export default defineSchema({
   ...connectTables,
   ...walletTables,
   ...movieTables,
+  ...shuffleTables,
   registrations: defineTable({
     name: v.string(),
     email: v.string(),
@@ -126,6 +128,8 @@ export default defineSchema({
     staked: v.optional(v.array(v.string())), // playerIds whose stake is in the pot
     houseCut: v.optional(v.number()), // percent, fixed when the game was set up
     payout: v.optional(v.object({ house: v.number(), seats: v.array(v.number()) })),
+    // Made by the random-campers shuffle: losers go back in the queue when it ends
+    shuffle: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_room", ["roomId", "status"]),
